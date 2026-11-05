@@ -135,7 +135,6 @@ td.company { font-size: 14px; color: #334155; }
 .blinkie.updated { --rainbow: linear-gradient(165deg, #00a8ff 0%, #17c964 34%, #e3bf00 60%, #ff6a1a 80%, #ec2f7c 100%); transform: rotate(-4deg); }
 
 /* ---------- dead zone ---------- */
-.dead-note { color: var(--muted); font-size: 13.5px; margin: 0 0 12px; }
 table.dead .jt { color: #8b95a5; }
 table.dead td { color: #8b95a5; }
 .stamp { display: inline-block; margin-right: 9px; padding: 0 7px; vertical-align: 1px; transform: rotate(-3deg); font: 400 14px/17px var(--comic); letter-spacing: .06em; text-transform: uppercase; color: #6b7280; background: #fff; border: 2px solid #9aa3b2; border-radius: 4px; }

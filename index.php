@@ -115,8 +115,15 @@ function table_head(bool $dead = false): string
           <p>A simple list of design and creative jobs from companies around the internet.<br>No accounts. No applications here. No bullshit. Just the job and a link to where you can apply.</p>        </div>
       </div>
 
+      <!-- Dead zone intro: takes the welcome card's place (and style) on the Dead zone tab -->
+      <div class="intro win" id="deadNote" hidden>
+        <?= winbar() ?>
+        <div class="winbody">
+          <p>Jobs that are closed, or inactive (not posted or updated in over <?= (int)$settings['stale_days'] ?> days, so probably not hiring any more). Kept here for reference.</p>
+        </div>
+      </div>
+
       <div class="main">
-        <p class="dead-note" id="deadNote" hidden>Jobs that are <b>closed</b>, or <b>inactive</b> (not posted or updated in over <?= (int)$settings['stale_days'] ?> days, so probably not hiring any more). Kept here for reference.</p>
         <div class="card win">
           <?= winbar() ?>
           <table class="jobs" id="liveTable"><?= table_head() ?><tbody>
