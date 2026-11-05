@@ -4,7 +4,7 @@ require_once __DIR__ . '/lib/jobs.php';
 $settings = require __DIR__ . '/config/settings.php';
 $all  = load_jobs($settings);
 $live = sort_live(array_values(array_filter($all, fn($j) => !$j['dead'])));
-$dead = array_slice(sort_dead(array_values(array_filter($all, fn($j) => $j['dead']))), 0, (int)$settings['dead_limit']);   // only the latest few
+$dead = sort_dead(array_values(array_filter($all, fn($j) => $j['dead'])));   // every dead job, most recently removed first (the page numbers handle long lists)
 $log  = build_log($all, $settings);
 
 // Numbers shown on the tabs
@@ -30,7 +30,7 @@ function pills(array $tags): string
 function job_row(array $j, bool $isDead, int $staleDays): string
 {
     $posted = $j['posted'] ? time_ago($j['posted']) : '';
-    // Dead zone rows show the date it was removed (worked out in lib/jobs.php).
+    // Dead Zone rows show the date it was removed (worked out in lib/jobs.php).
     $removedAt = $isDead ? $j['removed'] : 0;
     $dateCell  = $isDead ? ($removedAt ? date('M j, Y', $removedAt) : '') : $posted;
 
@@ -67,7 +67,7 @@ function winbar(): string
 
 function table_head(bool $dead = false): string
 {
-    // The Dead zone is kept simple: no Tag column, and "Removed On" instead of "Posted".
+    // The Dead Zone is kept simple: no Tag column, and "Removed On" instead of "Posted".
     return '<thead><tr><th class="rank"></th><th>Job</th><th class="company">Company &amp; location</th>'
          . ($dead ? '' : '<th class="tags">Tag</th>')
          . '<th class="posted">' . ($dead ? 'Removed On' : 'Posted') . '</th>' . ($dead ? '' : '<th class="pin"></th>') . '</tr></thead>';
@@ -98,7 +98,7 @@ function table_head(bool $dead = false): string
         <a href="#<?= $key ?>" data-view="<?= $key ?>"><?= h($label) ?> <span class="n"><?= $n[$key] ?></span></a>
       <?php endforeach; ?>
       <span class="gap"></span>
-      <a href="#dead" data-view="dead">Dead zone <span class="n"><?= count($dead) ?></span></a>
+      <a href="#dead" data-view="dead">Dead Zone <span class="n"><?= count($dead) ?></span></a>
       <a href="#log" data-view="log">Update log</a>
       <a href="#about" data-view="about">About</a>
     </nav>
@@ -108,7 +108,7 @@ function table_head(bool $dead = false): string
 
 <main class="wrap">
 
-  <!-- ===== Jobs + Dead zone ===== -->
+  <!-- ===== Jobs + Dead Zone ===== -->
   <section id="listView">
     <div class="layout">
       <div class="intro win pink" id="intro">
@@ -118,11 +118,11 @@ function table_head(bool $dead = false): string
           <p>A simple list of design and creative jobs from companies around the internet.<br>No accounts. No applications here. No bullshit. Just the job and a link to where you can apply.</p>        </div>
       </div>
 
-      <!-- Dead zone intro: takes the welcome card's place (and style) on the Dead zone tab -->
+      <!-- Dead Zone intro: takes the welcome card's place (and style) on the Dead Zone tab -->
       <div class="intro win pink" id="deadNote" hidden>
         <?= winbar() ?>
         <div class="winbody">
-          <p>Jobs that are closed, or inactive (not posted or updated in over <?= (int)$settings['stale_days'] ?> days, so probably not hiring any more). Kept here for reference. Any entries more than <?= (int)$settings['dead_limit'] ?> will be removed from here.</p>
+          <p>The jobs here are the ones that are inactive or dead, or have not been updated in the past <?= (int)$settings['stale_days'] ?> days. That is why we move them here.</p>
         </div>
       </div>
 
@@ -253,7 +253,7 @@ function table_head(bool $dead = false): string
       <div class="winbody">
         <ol class="steps">
           <li>Jobs are collected from around the internet.</li>
-          <li>Everything is hand picked and added manually.</li>
+          <li>Everything is actively updated.</li>
           <li>Every listing links to the original posting.</li>
           <li>Mostly design and creative jobs.</li>
           <li>India, abroad and remote.</li>

@@ -1,4 +1,4 @@
-/* JobBoard: clean table + glossy early-2000s Mac touches (menu bar, mini-window cards, glossy page buttons)
+/* Jobbies!: clean table + glossy early-2000s Mac touches (menu bar, mini-window cards, glossy page buttons)
    plus comic-style stickers. Change the main colours here: */
 :root {
   --blue: #2563eb;          /* accents */
@@ -95,6 +95,7 @@ a.pg:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(0,0,0
 .layout {
   display: grid; grid-template-columns: minmax(0, 1fr) 330px; column-gap: 20px; align-items: start; margin-top: 22px;
   grid-template-areas: "intro pin" "main pin";
+  grid-template-rows: auto 1fr;   /* when the right column is taller, the spare height goes below the table (not between the welcome card and the table) */
 }
 .main { grid-area: main; min-width: 0; }
 
@@ -110,7 +111,7 @@ table.jobs td.pin, table.jobs th.pin { padding-left: 4px; padding-right: 8px; }
 td.posted, th.posted { width: 108px; color: var(--muted); font-size: 13px; white-space: nowrap; }
 td.tags, th.tags { width: 150px; }
 td.company, th.company { width: 300px; }
-table.dead td.company, table.dead th.company { width: 340px; }   /* Dead zone: narrower job names, wider company column */
+table.dead td.company, table.dead th.company { width: 340px; }   /* Dead Zone: narrower job names, wider company column */
 
 .jt { font-weight: 600; font-size: 14px; color: var(--ink); }   /* same size as the company name, still bold */
 .jt:visited { color: #6b7280; }
@@ -228,7 +229,7 @@ td.company { font-size: 14px; line-height: 1.3; color: #334155; }
 /* ---------- phones ---------- */
 @media (max-width: 1100px) {
   /* narrower screens: one column, in this order: welcome card, pinned box, table */
-  .layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "intro" "pin" "main"; }
+  .layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "intro" "pin" "main"; grid-template-rows: auto; }
   .side { position: static; display: block; }
   .side > .win { margin-bottom: 20px; }
   #pinbox.nopins { display: none; }

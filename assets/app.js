@@ -30,7 +30,7 @@
     var list = $('#pinList'); list.innerHTML = '';
     pins.forEach(function (p) {
       var row = $('tr[data-id="' + p.id + '"]');
-      var gone = !row || row.closest('table') === deadTable;   // not on the page any more (or in the Dead zone) = no longer a live job
+      var gone = !row || row.closest('table') === deadTable;   // not on the page any more (or in the Dead Zone) = no longer a live job
       var li = document.createElement('li'); if (gone) li.className = 'gone';
       var box = document.createElement('div');
       var a = document.createElement('a'); a.href = p.url; a.target = '_blank'; a.rel = 'nofollow noopener'; a.textContent = p.title;
@@ -44,7 +44,7 @@
     $('#pinbox').classList.toggle('nopins', pins.length === 0);
     $$('tr[data-id]').forEach(function (r) {
       var b = $('.pinbtn', r), on = isPinned(r.dataset.id);
-      if (!b) return;                                   // Dead zone rows have no star
+      if (!b) return;                                   // Dead Zone rows have no star
       b.classList.toggle('on', on); b.innerHTML = on ? '&#9733;' : '&#9734;';
       b.title = on ? 'Unpin this job' : 'Pin this job';
     });
@@ -88,7 +88,7 @@
     });
 
     emptyEl.hidden = total > 0;
-    emptyEl.textContent = isDead ? 'Nothing in the Dead zone yet.' : 'No jobs here yet.';
+    emptyEl.textContent = isDead ? 'Nothing in the Dead Zone yet.' : 'No jobs here yet.';
     table.hidden = total === 0;
     renderPager(pages);
   }

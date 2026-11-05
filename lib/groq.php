@@ -11,13 +11,15 @@ function groq_system_prompt(array $roles): string
 {
     $tagLines = [];
     foreach ($roles['tags'] as $t) {
-        $tagLines[] = '- "' . $t['tag'] . '": ' . $t['means'] . '. Typical titles: ' . $t['titles'] . '. NOT: ' . $t['not'] . '.';
+        $tagLines[] = '- "' . $t['tag'] . '": ' . $t['means'] . '. Typical titles: ' . $t['titles'] . '. NOT: ' . $t['not'] . '.' . (!empty($t['category']) ? ' Usual category: ' . $t['category'] . '.' : '');
     }
     $global = !empty($roles['rules']['global_remote_counts_as_india'])
         ? 'Remote with no country limit ("worldwide", "anywhere", "global") => "india" (India can apply) and open_to_india true.'
         : 'Remote with no country limit ("worldwide", "anywhere", "global") => "abroad", but set open_to_india to true.';
+    $catLines = [];
+    foreach ($roles['categories'] as $c) $catLines[] = '- "' . $c['name'] . '": ' . $c['means'] . '.';
     $text = (string)file_get_contents(__DIR__ . '/../config/groq_prompt.txt');
-    return str_replace(['{{TAGS}}', '{{GLOBAL_REMOTE_RULE}}', '{{TODAY}}'], [implode("\n", $tagLines), $global, date('Y-m-d')], $text);
+    return str_replace(['{{TAGS}}', '{{CATEGORIES}}', '{{GLOBAL_REMOTE_RULE}}', '{{TODAY}}'], [implode("\n", $tagLines), implode("\n", $catLines), $global, date('Y-m-d')], $text);
 }
 
 // ---------- the call ----------
@@ -180,8 +182,12 @@ function validate_answer(array $a, array $roles, string $pageText, string $url, 
         // an internship whose field the AI forgot: nothing to fall back on, so refuse
         return ['ok' => false, 'reason' => 'The AI named a role that is not on our list ("' . clean_line($role, 40) . '").', 'notes' => $notes];
     }
-    $shownTag = $isIntern ? 'Internship' : $role;
-    if ($tag !== $shownTag) $notes[] = 'tag corrected to "' . $shownTag . '"';
+    // the tag shown on the site is the CATEGORY (Product, Brand, Creative, Visual, Research, Technology, AI); an internship adds " · Intern"
+    $categories  = array_column($roles['categories'], 'name');
+    $roleDefault = array_column($roles['tags'], 'category', 'tag');
+    $category = (string)($a['category'] ?? '');
+    if (!in_array($category, $categories, true)) { $category = $roleDefault[$role] ?? 'Creative'; $notes[] = 'category taken from the role'; }
+    $shownTag = $category . ($isIntern ? ' · Intern' : '');
 
     // --- the facts
     $title   = clean_line($a['title'] ?? '', 200);
@@ -230,7 +236,7 @@ function validate_answer(array $a, array $roles, string $pageText, string $url, 
     if ($posted !== null) {
         $age = (int)floor((strtotime($today) - strtotime($posted)) / 86400);
         $limit = (int)($settings['stale_days'] ?? 90);
-        if ($age > $limit) return ['ok' => false, 'reason' => "Posted $age days ago, older than $limit days, so it would go straight to the Dead zone.", 'notes' => $notes];
+        if ($age > $limit) return ['ok' => false, 'reason' => "Posted $age days ago, older than $limit days, so it would go straight to the Dead Zone.", 'notes' => $notes];
     }
 
     $job = [
