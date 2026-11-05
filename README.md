@@ -1,14 +1,14 @@
 # Design Jobs
 
 A simple website (HTML + CSS + PHP + a little JavaScript) that lists creative jobs in a clean table.
-Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards with traffic-light dots, glossy blue pill buttons, faint dotted background) and small RGB-glowing NEW / UPDATED pills.
+Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards with traffic-light dots, glossy blue pill buttons, faint dotted background) and small comic-style NEW / UPDATED pills (halftone dots, thick outline).
 
 ## What's on the page
 
 - **Menu bar** at the top with the **tabs** (all on the same page, no reloading): All, India, Abroad, Remote, In-office (Hybrid appears automatically if any job is hybrid), **Dead zone**, **Update log**, **About**.
 - **Table** with # / Job / Company & location / Tag / Posted / pin star. Each job has exactly **one tag** (the kind of job, e.g. Product Design, Brand, Motion), shown as plain text (same size and boldness as the role name). No search box and no filters: just the list.
 - **Pinned box** at the side: click the star on a job to pin it. Pins are saved in the visitor's own browser (localStorage), nothing is stored on a server.
-- **NEW / UPDATED pills**: small ovals in capitals with a border and black text, right after the role name. They glow like RGB lighting: the colours cycle through the rainbow, a bright band slides across and the glow pulses (all still for people who turned motion off in their device). Jobs added or updated in the last few days get one and sit at the top. To hide them, set `show_badges` to `false` in `config/settings.php`; the list is then simply newest first.
+- **NEW / UPDATED pills**: small ovals in capitals with black text and a thick coloured outline, right after the role name. The fill is a comic-book halftone (rows of little dots): green for NEW, amber for UPDATED. They blink gently (still for people who turned motion off in their device). Jobs added or updated in the last few days get one and sit at the top. To hide them, set `show_badges` to `false` in `config/settings.php`; the list is then simply newest first.
 - **Dead zone**: jobs that are `closed`, or *inactive* (not posted/updated for 90+ days). Kept for reference, never deleted.
 - **Update log**: generated automatically from the jobs' dates (added / updated / closed / inactive).
 - **About page**: five cards. The last two are a contact card (`contact_email` in `config/settings.php`) and a stats card: total jobs, last update, and **views**. Views come from a free public counter service (abacus.jasoncameron.dev); each visitor counts once per browser session, and visits from `localhost` are never counted. If the service is down, the number shows a dash. To restart the count from zero, change `views_counter.key` in `config/settings.php`.

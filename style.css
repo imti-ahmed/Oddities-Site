@@ -120,21 +120,22 @@ td.company { font-size: 14px; line-height: 1.3; color: #334155; }
 .pinbtn:hover { color: #f59e0b; }
 .pinbtn.on { color: #f59e0b; }
 
-/* ---------- NEW / UPDATED pills: small ovals right after the role name, capitals, black text, a border, RGB-lighting shine ---------- */
+/* ---------- NEW / UPDATED pills: small ovals right after the role name, capitals, black text, a thick border, comic halftone-dot fill, blinking ---------- */
 .pill {
-  display: inline-block; vertical-align: 1px; margin-left: 6px; padding: 0 5px; border-radius: 999px; white-space: nowrap;
+  display: inline-block; vertical-align: 1px; margin-left: 6px; padding: 0 6px; border-radius: 999px; white-space: nowrap;
   font-size: 8.5px; font-weight: 800; letter-spacing: .07em; line-height: 12px; color: #000;
-  border: 1px solid rgba(0, 0, 0, .55);
-  background: linear-gradient(100deg, var(--c1), var(--c2), var(--c3), var(--c1)); background-size: 200% 100%;   /* a rainbow band that slides across */
-  animation: pill-hue 4s linear infinite, pill-slide 2.4s linear infinite, pill-pulse 1.3s ease-in-out infinite;
+  border: 2px solid var(--edge);                          /* the thick outline (its colour is set per pill below) */
+  /* comic "halftone": rows of little dots, every second row shifted, on a pale base colour */
+  background-color: var(--tint);
+  background-image: radial-gradient(circle, var(--dot) 0.9px, transparent 1.25px), radial-gradient(circle, var(--dot) 0.9px, transparent 1.25px);
+  background-size: 4px 4px; background-position: 0 0, 2px 2px;
+  animation: pill-blink 1.3s ease-in-out infinite;
 }
-.pill.new     { --c1: #ff6b6b; --c2: #ffe066; --c3: #6bffa0; --glow: rgba(255, 90, 90, .75); }
-.pill.updated { --c1: #5ee1ff; --c2: #b99bff; --c3: #ff7ad9; --glow: rgba(90, 160, 255, .75); animation-delay: -2s, -1.2s, -.4s; }   /* starts at a different point, so the two never match */
+.pill.new     { --tint: #c9f7d8; --dot: #2fbf68; --edge: #17803f; }   /* green */
+.pill.updated { --tint: #ffeaad; --dot: #ffb21e; --edge: #a36b00; }   /* amber */
 .nw { white-space: nowrap; }                              /* keeps the last word of the role name and its pill together */
-@keyframes pill-hue   { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }   /* the colours cycle through the whole rainbow (black text stays black) */
-@keyframes pill-slide { from { background-position: 0 0; } to { background-position: 200% 0; } }   /* the bright band slides across: the shine */
-@keyframes pill-pulse { 0%, 100% { box-shadow: 0 0 3px 0 var(--glow); } 50% { box-shadow: 0 0 10px 3px var(--glow); } }   /* the glow pulses (the pill itself never fades, so the text stays solid black) */
-@media (prefers-reduced-motion: reduce) { .pill { animation: none; filter: none; } }                /* people who turned motion off just see a still pill */
+@keyframes pill-blink { 0%, 55%, 100% { opacity: 1; } 78% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .pill { animation: none; } }   /* people who turned motion off just see a still pill */
 
 /* ---------- dead zone ---------- */
 .stamp { display: inline-block; margin-right: 9px; padding: 0 7px; vertical-align: 1px; transform: rotate(-3deg); font: 400 14px/17px var(--comic); letter-spacing: .06em; text-transform: uppercase; color: #6b7280; background: #fff; border: 2px solid #9aa3b2; border-radius: 4px; }
