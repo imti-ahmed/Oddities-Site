@@ -78,6 +78,9 @@ function table_head(bool $dead = false): string
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= h($settings['site_name']) ?> - <?= h($settings['tagline']) ?></title>
   <meta name="description" content="<?= h($settings['tagline']) ?>">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -87,7 +90,7 @@ function table_head(bool $dead = false): string
 
 <header id="top">
   <div class="bar wrap">
-    <a class="brand" href="#all"><?= h(mb_strtolower($settings['site_name'])) ?></a>
+    <a class="brand" href="#all"><?= h($settings['site_name']) ?></a>
     <nav id="tabs">
       <?php foreach ($tabs as [$key, $label]): ?>
         <a href="#<?= $key ?>" data-view="<?= $key ?>"><?= h($label) ?> <span class="n"><?= $n[$key] ?></span></a>

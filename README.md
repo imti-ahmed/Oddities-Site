@@ -1,4 +1,4 @@
-# Design Jobs
+# JobBoard
 
 A simple website (HTML + CSS + PHP + a little JavaScript) that lists creative jobs in a clean table.
 Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards with traffic-light dots in a pink / orange / blue rotation (add `pink` or `orange` to a card's class in `index.php`; no class = blue), glossy blue pill buttons, faint dotted background) and small comic-style NEW / UPDATED pills (halftone dots, thick outline).
@@ -56,6 +56,10 @@ Then open http://localhost:8000
 ## On Vercel
 
 `vercel.json` makes Vercel run the PHP code (via the `vercel-php` add-on). Nothing else to set up.
+
+- **Plain address:** the web address stays the plain domain whatever tab or page you are on (no `#india`, no `?page=2`). The tab and page you are on live in the browser's history, so the Back button still steps through them. An old `#about` style link still opens the right place once, then the address is tidied.
+- **Favicon:** the smiley icon lives in `assets/icons/` (`favicon.ico`, `favicon-32.png`, `apple-touch-icon.png`). Vercel doesn't serve plain files by itself, so `api/icon.php` hands out exactly those three files (and nothing else) through the routes in `vercel.json`.
+- **Site name:** change `site_name` in `config/settings.php` (top-left header and browser tab title).
 
 ## Coming next
 

@@ -119,23 +119,38 @@
     add('Next ›', page < pages ? page + 1 : 0, page < pages ? '' : 'off');
   }
 
-  // The address looks like  #india  or  #india/2  (view, then page). A bad or too-big page number is tidied up.
-  function go(h) {
-    var parts = String(h || '').split('/'), v = parts[0], asked = parseInt(parts[1], 10);
+  // The web address always stays the plain domain: it never shows #india or ?page=2.
+  // Where you are (which tab, which page) is kept in the browser's history instead, so the Back button still works.
+  function parse(h) { var parts = String(h || '').split('/'); return { v: parts[0], p: parseInt(parts[1], 10) }; }
+
+  function show(v, pg) {                                         // show a tab and page (a bad name or too-big page number is tidied up)
     if (!JOB_VIEWS.hasOwnProperty(v) && OTHER_VIEWS.indexOf(v) === -1) v = 'all';
-    view = v; page = asked > 0 ? asked : 1;
+    view = v; page = pg > 0 ? pg : 1;
     render();
-    var tidy = '#' + view + (page > 1 && JOB_VIEWS.hasOwnProperty(view) ? '/' + page : '');
-    if (h && ('#' + h) !== tidy && history.replaceState) history.replaceState(null, '', tidy);
     if (pendingScroll) { pendingScroll = false; var card = $('#listView .card'); if (card && !listView.hidden) card.scrollIntoView(); }
   }
 
+  function go(h) {                                               // a tab or page button was clicked
+    var before = view + '/' + page, t = parse(h);
+    show(t.v, t.p);
+    if (view + '/' + page !== before) history.pushState({ view: view, page: page }, '', location.pathname);   // new Back-button step, same plain address
+  }
+
   /* ---------- wiring ---------- */
-  window.addEventListener('hashchange', function () { go(location.hash.slice(1)); });
+  window.addEventListener('popstate', function (e) {             // Back / Forward button
+    if (e.state) { show(e.state.view, e.state.page); return; }
+    var t = parse(location.hash.slice(1)); show(t.v, t.p);       // someone typed a #address by hand: honour it once, then tidy the address
+    history.replaceState({ view: view, page: page }, '', location.pathname);
+  });
   document.addEventListener('click', function (e) {
     var pin = e.target.closest('.pinbtn');
     if (pin) togglePin(pin.closest('tr').dataset.id);
-    if (e.target.closest('#pager a')) pendingScroll = true;       // after changing page, bring the top of the table into view
+    var link = e.target.closest('a[href^="#"]');                 // our tab and page buttons
+    if (link && e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) {
+      e.preventDefault();
+      if (link.closest('#pager')) pendingScroll = true;          // after changing page, bring the top of the table into view
+      go(link.getAttribute('href').slice(1));
+    }
   });
 
   // little clock in the menu bar (the visitor's own time)
@@ -162,5 +177,7 @@
   })();
 
   renderPins();
-  go(location.hash.slice(1));
+  var first = parse(location.hash.slice(1));                     // opening the site: honour an old #link once, then show the plain address
+  show(first.v, first.p);
+  history.replaceState({ view: view, page: page }, '', location.pathname);
 })();
