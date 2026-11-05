@@ -43,7 +43,7 @@ function job_row(array $j, bool $isDead, int $staleDays): string
         <?php if ($isDead): ?>
           <span class="stamp" title="<?= h($j['dead'] === 'closed' ? ($j['dead_note'] ?: 'Marked as closed') : "Not posted or updated in over $staleDays days") ?>"><?= $j['dead'] === 'closed' ? 'Closed' : 'Inactive' ?></span>
         <?php elseif ($j['badge']): ?>
-          <span class="blinkie <?= h($j['badge']) ?>"><?= h($j['badge']) ?></span>
+          <span class="blinkie <?= h($j['badge']) ?>" data-t="<?= h($j['badge']) ?>"><?= h($j['badge']) ?></span>
         <?php endif; ?>
         <a class="jt" href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><?= h($j['title']) ?></a>
         <div class="m-only meta"><span class="co"><?= h($j['company']) ?></span><br><?= pills($j['tags']) ?><br><?= h(trim($j['location'] . ($j['location'] && $posted ? ' · ' : '') . $posted)) ?></div>
@@ -76,7 +76,7 @@ function table_head(): string
   <meta name="description" content="<?= h($settings['tagline']) ?>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bangers&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bangers&family=Playfair+Display:ital,wght@1,700&display=swap">
   <style><?= file_get_contents(__DIR__ . '/style.css') ?></style>
 </head>
 <body>
@@ -158,7 +158,7 @@ function table_head(): string
     <h2>About</h2>
     <p><?= h($settings['site_name']) ?> is a simple, hand-picked list of creative jobs: design, brand, motion, illustration, video, content and more. It's built to be one clean page you can scan quickly and click through to apply.</p>
     <p><b>How it works.</b> Every row links straight to the company's own job page. We don't host applications. Jobs are split into tabs: <b>India</b>, <b>Abroad</b>, <b>Remote</b> and <b>In-office</b>.</p>
-    <p><b>New and updated.</b> Jobs that were just added or changed move to the top and get a little <span class="blinkie new">new</span> or <span class="blinkie updated">updated</span> sticker.</p>
+    <p><b>New and updated.</b> Jobs that were just added or changed move to the top and get a little <span class="blinkie new" data-t="new">new</span> or <span class="blinkie updated" data-t="updated">updated</span> sticker.</p>
     <p><b>Dead zone.</b> Jobs that have closed, or haven't been posted or updated in a long time, move to the Dead zone so the main list stays fresh. Nothing is deleted.</p>
     <p><b>Pins.</b> Click the &#9734; on a job to pin it to the box at the side. Your pins are saved in your own browser, not on any server, so they're private to you (and clearing your browser data clears them).</p>
     <p><b>Tags.</b> Each job gets one sticker that says what kind of job it is, like Product Design, Brand or Motion.</p>

@@ -1,14 +1,14 @@
 # Design Jobs
 
 A simple website (HTML + CSS + PHP + a little JavaScript) that lists creative jobs in a clean table.
-Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards with traffic-light dots, glossy blue pill buttons, faint dotted background) and comic-style NEW!/UPDATED! stickers.
+Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards with traffic-light dots, glossy blue pill buttons, faint dotted background) and sticker-style labels (comic tags, rainbow-script NEW / UPDATED).
 
 ## What's on the page
 
 - **Menu bar** at the top with the **tabs** (all on the same page, no reloading): All, India, Abroad, Remote, In-office (Hybrid appears automatically if any job is hybrid), **Dead zone**, **Update log**, **About**.
 - **Table** with # / Job / Company & location / Tag / Posted / pin star. Each job has exactly **one tag** (the kind of job, e.g. Product Design, Brand, Motion), shown as a comic sticker. No search box and no filters: just the list.
 - **Pinned box** at the side: click the star on a job to pin it. Pins are saved in the visitor's own browser (localStorage), nothing is stored on a server.
-- **Comic-style NEW! / UPDATED! stickers**: jobs added or updated in the last few days sit at the top (static, no blinking).
+- **NEW / UPDATED stickers**: rainbow script lettering with a white die-cut outline. Jobs added or updated in the last few days sit at the top with one of these (still, no blinking).
 - **Dead zone**: jobs that are `closed`, or *inactive* (not posted/updated for 90+ days). Kept for reference, never deleted.
 - **Update log**: generated automatically from the jobs' dates (added / updated / closed / inactive).
 

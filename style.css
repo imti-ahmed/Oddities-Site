@@ -112,15 +112,23 @@ td.company { font-size: 14px; color: #334155; }
 .pinbtn:hover { color: #f59e0b; }
 .pinbtn.on { color: #f59e0b; }
 
-/* ---------- comic stickers: NEW! / UPDATED! (flat, still, no glow) ---------- */
+/* ---------- NEW / UPDATED stickers: rainbow script lettering with a white die-cut outline (still, no glow) ---------- */
 .blinkie {
-  display: inline-block; position: relative; vertical-align: 1px; margin-right: 9px; padding: 0 7px; color: #111;
-  font: 400 15px/18px var(--comic); letter-spacing: .06em; text-transform: uppercase; border: 2px solid #111; box-shadow: 2px 2px 0 #111;
+  position: relative; display: inline-block; vertical-align: -2px; margin-right: 10px; padding: 1px 5px 5px;
+  font: italic 700 21px/1.1 "Playfair Display", "Palatino Linotype", Georgia, "Times New Roman", serif; letter-spacing: -.01em; text-transform: none;
+  transform: rotate(-6deg);
+  /* bottom layer: the word in white with a thick white edge = the die-cut sticker outline */
+  color: #fff; -webkit-text-fill-color: #fff; -webkit-text-stroke: 3px #fff; paint-order: stroke fill; stroke-linejoin: round;
+  filter: drop-shadow(0 2px 2px rgba(20, 30, 60, .35));   /* soft shadow under the whole sticker */
 }
-.blinkie.new     { background: #ffe14d; color: #c0143c; border-radius: 9px 3px 9px 3px; transform: rotate(-4deg); }
-.blinkie.updated { background: #7dd8ff; border-radius: 12px; transform: rotate(3deg); }
-.blinkie.new::after, .blinkie.updated::after { content: "!"; }
-.blinkie.updated::before { content: ""; position: absolute; left: 8px; bottom: -8px; width: 0; height: 0; border: 5px solid transparent; border-top: 7px solid #111; border-bottom: 0; }
+/* top layer: the same word in rainbow colours */
+.blinkie::after {
+  content: attr(data-t); position: absolute; inset: 0; padding: inherit;
+  background-image: var(--rainbow); -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent; -webkit-text-stroke: 0;
+}
+.blinkie.new     { --rainbow: linear-gradient(165deg, #2f6bff 0%, #b436e8 26%, #ff2f8e 50%, #ff6a1a 74%, #f2c200 100%); }
+.blinkie.updated { --rainbow: linear-gradient(165deg, #00a8ff 0%, #17c964 34%, #e3bf00 60%, #ff6a1a 80%, #ec2f7c 100%); transform: rotate(-4deg); }
 
 /* ---------- dead zone ---------- */
 .dead-note { color: var(--muted); font-size: 13.5px; margin: 0 0 12px; }
