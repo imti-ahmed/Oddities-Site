@@ -10,8 +10,9 @@
   --soft: #f7f9fd;
   --chip: #eef0f4;
   --win-line: #a8b5c9;      /* card outline */
-  --strip-a: #eaf2ff;       /* card title strip (top / bottom colour) */
+  --strip-a: #eaf2ff;       /* card title strip (top / bottom colour): blue is the default */
   --strip-b: #d5e5fc;
+  --strip-line: #b7c8e4;    /* thin line under the strip */
   --comic: "Bangers", "Comic Sans MS", "Comic Neue", "Chalkboard SE", cursive;
 }
 
@@ -47,9 +48,12 @@ button, select, input { font: inherit; color: inherit; }
 
 /* ---------- mini-window cards (traffic-light dots + soft title strip) ---------- */
 .win { background: #fff; border: 1px solid var(--win-line); border-radius: 10px; box-shadow: 0 10px 28px rgba(20,40,80,.09); overflow: hidden; }
+/* colour themes for a card's title strip and outline: add "pink" or "orange" to a card (no class = blue) */
+.win.pink   { --strip-a: #ffeef6; --strip-b: #ffd2e5; --strip-line: #f1b5cf; --win-line: #dba4bd; }
+.win.orange { --strip-a: #fff3e3; --strip-b: #ffdcb2; --strip-line: #f2c796; --win-line: #dcb88b; }
 .winbar {
   position: relative; display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 11px;
-  background: linear-gradient(var(--strip-a), var(--strip-b)); border-bottom: 1px solid #b7c8e4;
+  background: linear-gradient(var(--strip-a), var(--strip-b)); border-bottom: 1px solid var(--strip-line);
 }
 .winbar .dot { width: 11px; height: 11px; border-radius: 50%; border: 1px solid; box-shadow: inset 0 1px 0 rgba(255,255,255,.45); }
 .dot.r { background: #ff5f57; border-color: #df4740; }
@@ -171,6 +175,7 @@ td.company { font-size: 14px; line-height: 1.3; color: #334155; }
 .stats p { margin: 0; }
 .steps { margin: 0; padding: 0 0 0 24px; columns: 2; column-gap: 48px; }
 .steps li { break-inside: avoid; margin: 0 0 12px; padding-left: 4px; color: #334155; line-height: 1.55; }
+.steps li::marker { font-weight: 700; }                   /* only the numbers are bold, not the text */
 .log-day { margin: 20px 0 6px; font-size: 12.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 .log-row { display: flex; gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid #eef1f6; font-size: 14.5px; }
 .log-row small { color: var(--muted); font-size: 13px; }

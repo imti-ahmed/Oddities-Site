@@ -106,7 +106,7 @@ function table_head(bool $dead = false): string
   <!-- ===== Jobs + Dead zone ===== -->
   <section id="listView">
     <div class="layout">
-      <div class="intro win" id="intro">
+      <div class="intro win pink" id="intro">
         <?= winbar() ?>
         <div class="winbody">
           <p>Hand-picked creative jobs. No noise.</p>
@@ -114,7 +114,7 @@ function table_head(bool $dead = false): string
       </div>
 
       <!-- Dead zone intro: takes the welcome card's place (and style) on the Dead zone tab -->
-      <div class="intro win" id="deadNote" hidden>
+      <div class="intro win pink" id="deadNote" hidden>
         <?= winbar() ?>
         <div class="winbody">
           <p>Jobs that are closed, or inactive (not posted or updated in over <?= (int)$settings['stale_days'] ?> days, so probably not hiring any more). Kept here for reference. Any entries more than <?= (int)$settings['dead_limit'] ?> will be removed from here.</p>
@@ -135,7 +135,7 @@ function table_head(bool $dead = false): string
         <nav class="pager" id="pager" aria-label="Pages" hidden></nav>
       </div>
 
-      <aside id="pinbox" class="win" aria-label="Pinned jobs">
+      <aside id="pinbox" class="win orange" aria-label="Pinned jobs">
         <?= winbar() ?>
         <div class="winbody">
           <ul id="pinList"></ul>
@@ -167,14 +167,15 @@ function table_head(bool $dead = false): string
   <section id="aboutView" class="about" hidden>
     <div class="about-row">
 
-      <div class="win">
+      <div class="win pink">
         <?= winbar() ?>
         <div class="winbody">
-          <p>A simple job board for creative people.</p>
-          <p>I collect design and creative jobs from around the internet and put them here in one place. Every listing takes you directly to the original job posting.</p>        </div>
+          <p><b>A simple job board for creative people.</b></p>
+          <p>I collect design and creative jobs from around the internet and put them here in one place. Every listing takes you directly to the original job posting.</p>
+        </div>
       </div>
 
-      <div class="win">
+      <div class="win orange">
         <?= winbar() ?>
         <div class="winbody">
           <p>Made by Imtiyaz, a designer who spends too much time on the internet and probably too much time looking at job boards.</p>
@@ -202,20 +203,20 @@ function table_head(bool $dead = false): string
 
     <div class="about-row">
 
-      <div class="win">
+      <div class="win pink">
         <?= winbar() ?>
         <div class="winbody">
-          <p>Email: <a href="mailto:<?= h($settings['contact_email']) ?>"><?= h($settings['contact_email']) ?></a></p>
+          <p><b>Email:</b> <a href="mailto:<?= h($settings['contact_email']) ?>"><?= h($settings['contact_email']) ?></a></p>
         </div>
       </div>
 
-      <div class="win">
+      <div class="win orange">
         <?= winbar() ?>
         <div class="winbody">
           <div class="stats">
-            <p>Total jobs: <?= (int)$n['all'] ?></p>
-            <p>Last update: <?= $lastUpdate ? h(date('M j, Y', $lastUpdate)) : 'n/a' ?></p>
-            <p>Views: <span id="viewsNum">&ndash;</span></p>
+            <p><b>Total jobs:</b> <?= (int)$n['all'] ?></p>
+            <p><b>Last update:</b> <?= $lastUpdate ? h(date('M j, Y', $lastUpdate)) : 'n/a' ?></p>
+            <p><b>Views:</b> <span id="viewsNum">&ndash;</span></p>
           </div>
         </div>
       </div>

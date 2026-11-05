@@ -1,7 +1,7 @@
 # Design Jobs
 
 A simple website (HTML + CSS + PHP + a little JavaScript) that lists creative jobs in a clean table.
-Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards with traffic-light dots, glossy blue pill buttons, faint dotted background) and small comic-style NEW / UPDATED pills (halftone dots, thick outline).
+Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards with traffic-light dots in a pink / orange / blue rotation (add `pink` or `orange` to a card's class in `index.php`; no class = blue), glossy blue pill buttons, faint dotted background) and small comic-style NEW / UPDATED pills (halftone dots, thick outline).
 
 ## What's on the page
 
