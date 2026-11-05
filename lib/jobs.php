@@ -76,7 +76,7 @@ function load_jobs(array $settings): array
         if (empty($settings['show_badges'])) $badge = null;   // stickers are switched off in config/settings.php: no sticker, and no jumping to the top
 
         $jobs[] = [
-            'id' => substr(sha1($j['url']), 0, 10), 'title' => no_em_dash($j['title']), 'company' => no_em_dash($j['company']),
+            'id' => substr(sha1($j['url']), 0, 10), 'title' => no_em_dash(trim($j['title'])), 'company' => no_em_dash(trim($j['company'])),
             'location' => no_em_dash(format_location((string)($j['location'] ?? ''))), 'url' => $j['url'],   // always "City, Country"
             'region' => region_of($j), 'mode' => mode_of($j), 'tags' => tags_of($j),
             'posted' => $posted, 'added' => $added, 'updated' => $updated, 'closed' => $closed,

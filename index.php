@@ -80,7 +80,7 @@ function table_head(bool $dead = false): string
   <meta name="description" content="<?= h($settings['tagline']) ?>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bangers&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
   <style><?= file_get_contents(__DIR__ . '/style.css') ?></style>
 </head>
 <body>
@@ -151,13 +151,24 @@ function table_head(bool $dead = false): string
     <div class="winbody">
     <h2>Update log</h2>
     <p>Everything that was added, updated, closed or went inactive, newest first.</p>
-    <?php $day = ''; foreach ($log as $e):
-        $d = date('M j, Y', $e['ts']);
-        if ($d !== $day): $day = $d; ?><div class="log-day"><?= h($d) ?></div><?php endif; ?>
-      <div class="log-row">
-        <span class="stamp <?= h($e['type']) ?>"><?= h($e['type']) ?></span>
-        <span><a href="<?= h($e['job']['url']) ?>" target="_blank" rel="nofollow noopener"><b><?= h($e['job']['company']) ?></b>: <?= h($e['job']['title']) ?></a>
-          <?php if ($e['job']['location']): ?><small>&middot; <?= h($e['job']['location']) ?></small><?php endif; ?></span>
+    <?php
+      // One block per day. Inside a day there is ONE pill for each kind of change (so 2 additions + 3 updates = an ADDED pill and an UPDATED pill),
+      // with the jobs listed beside it, separated by commas.
+      $byDay = [];
+      foreach ($log as $e) {
+          $key = date('Y-m-d', $e['ts']);
+          $byDay[$key]['label'] = $byDay[$key]['label'] ?? date('M j, Y', $e['ts']);
+          $byDay[$key]['types'][$e['type']][] = $e['job'];
+      }
+      foreach ($byDay as $day): ?>
+      <div class="log-day-block">
+        <div class="log-day"><?= h($day['label']) ?></div>
+        <?php foreach (['added', 'updated', 'closed', 'inactive'] as $type): if (empty($day['types'][$type])) continue; ?>
+          <div class="log-line">
+            <span class="pill <?= $type ?>"><?= strtoupper($type) ?></span>
+            <span class="log-items"><?php foreach ($day['types'][$type] as $i => $j): ?><?= $i ? ', ' : '' ?><a href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><b><?= h($j['company']) ?></b>: <?= h($j['title']) ?></a><?php endforeach; ?></span>
+          </div>
+        <?php endforeach; ?>
       </div>
     <?php endforeach; ?>
     </div>
