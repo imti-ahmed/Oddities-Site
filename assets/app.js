@@ -77,16 +77,19 @@
   // Admin mode: delete a job for good (asks first). It also disappears from the database, and the collector will not bring it back.
   function deleteJob(row) {
     var title = row.dataset.title, co = row.dataset.co;
-    var btn = $('.delbtn', row); if (btn) btn.disabled = true;
+    // The row disappears AT ONCE (no waiting for the server). If saving fails, it comes back with a message.
+    var parent = row.parentNode, next = row.nextSibling;
+    parent.removeChild(row);
+    recountTabs(); render(); renderPins();
+    adminSay('Deleted: ' + title + ' at ' + co + '.', 'good');
     fetch('/api/index.php?add=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', url: row.dataset.url }) })
       .then(function (r) { return r.json(); })
-      .then(function (d) {
-        if (d.status !== 'ok') throw new Error(d.message || 'Could not delete.');
-        row.parentNode.removeChild(row);
+      .then(function (d) { if (d.status !== 'ok' && !/not in the list/i.test(d.message || '')) throw new Error(d.message || 'Could not delete.'); })
+      .catch(function (e) {
+        parent.insertBefore(row, next);                                // put it back where it was
         recountTabs(); render(); renderPins();
-        adminSay('Deleted: ' + title + ' at ' + co + '.', 'good');
-      })
-      .catch(function (e) { if (btn) btn.disabled = false; adminSay('Not deleted: ' + e.message, 'bad'); });
+        adminSay('Not deleted (' + title + '): ' + e.message, 'bad');
+      });
   }
   function toggleHighlight(row) {
     var on = row.dataset.hl !== '1';

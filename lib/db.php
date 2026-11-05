@@ -140,10 +140,17 @@ function db_all_jobs(): array
 function db_set_highlight(string $url, bool $on): bool
 {
     require_once __DIR__ . '/pagefetch.php';
-    db_add_check_columns();
-    $st = db()->prepare('UPDATE jobs SET highlighted = :on WHERE url_key = :k');
-    $st->execute([':on' => $on ? 'true' : 'false', ':k' => normalize_job_url($url)]);
-    return $st->rowCount() > 0;
+    $run = function () use ($url, $on) {
+        $st = db()->prepare('UPDATE jobs SET highlighted = :on WHERE url_key = :k');
+        $st->execute([':on' => $on ? 'true' : 'false', ':k' => normalize_job_url($url)]);
+        return $st->rowCount() > 0;
+    };
+    try { return $run(); }
+    catch (PDOException $e) {
+        if (!str_contains($e->getMessage(), '42703')) throw $e;       // "column does not exist": an older database, add the new columns once and try again
+        db_add_check_columns();
+        return $run();
+    }
 }
 
 // Deletes one job for good. The deletion is also written in the collector's queue (result "deleted"), so a later scan never brings the job back.
@@ -156,10 +163,16 @@ function db_delete_job(string $url): bool
     $st = $pdo->prepare('DELETE FROM jobs WHERE url_key = :k');
     $st->execute([':k' => $key]);
     $found = $st->rowCount() > 0;
-    $pdo->prepare("INSERT INTO job_queue (url_key, url, source, payload, state, result, reason, done_at)
+    $mark = fn() => $pdo->prepare("INSERT INTO job_queue (url_key, url, source, payload, state, result, reason, done_at)
         VALUES (:k, :u, 'admin', '{}', 'done', 'deleted', 'Deleted by admin', now())
         ON CONFLICT (url_key) DO UPDATE SET state = 'done', result = 'deleted', reason = 'Deleted by admin', done_at = now()")
         ->execute([':k' => $key, ':u' => $url]);
+    try { $mark(); }                                                   // remember the deletion, so the collector never brings the job back
+    catch (PDOException $e) {
+        if (!db_missing_table($e)) throw $e;
+        require_once __DIR__ . '/collector.php'; collector_ready();    // the queue table does not exist yet: make it, then remember
+        $mark();
+    }
     return $found;
 }
 

@@ -84,11 +84,8 @@ function jobs_delete(string $url): bool
     $mode = jobs_store_mode();
     if ($mode === 'none') throw new RuntimeException('Saving is not set up. Add DATABASE_URL in Vercel (the Neon connection string), then redeploy.');
     if ($mode === 'db') {
-        try {
-            require_once __DIR__ . '/collector.php';
-            collector_ready();                                   // makes sure the queue table exists, so the deletion can be remembered there
-            return db_delete_job($url);
-        } catch (Throwable $e) { throw new RuntimeException('Could not delete from the database: ' . db_error_hint($e)); }
+        try { return db_delete_job($url); }
+        catch (Throwable $e) { throw new RuntimeException('Could not delete from the database: ' . db_error_hint($e)); }
     }
     $fp = fopen(JOBS_FILE_PATH, 'c+');
     if (!$fp || !flock($fp, LOCK_EX)) throw new RuntimeException('Could not open data/jobs.json for writing.');
