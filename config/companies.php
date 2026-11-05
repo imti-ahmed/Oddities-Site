@@ -12,10 +12,8 @@ return [
         // ---- Product & tools
         ['name' => 'Stripe', 'group' => 'Product & tools', 'ats' => 'greenhouse', 'token' => 'stripe', 'open_design_roles' => 28],
         ['name' => 'Figma', 'group' => 'Product & tools', 'ats' => 'greenhouse', 'token' => 'figma', 'open_design_roles' => 13],
-        ['name' => 'Intercom', 'group' => 'Product & tools', 'ats' => 'greenhouse', 'token' => 'intercom', 'open_design_roles' => 5],
         ['name' => 'Asana', 'group' => 'Product & tools', 'ats' => 'greenhouse', 'token' => 'asana', 'open_design_roles' => 4],
         ['name' => 'Linear', 'group' => 'Product & tools', 'ats' => 'ashby', 'token' => 'linear', 'open_design_roles' => 4],
-        ['name' => 'Amplitude', 'group' => 'Product & tools', 'ats' => 'ashby', 'token' => 'amplitude', 'open_design_roles' => 2],
         ['name' => 'GitLab', 'group' => 'Product & tools', 'ats' => 'greenhouse', 'token' => 'gitlab', 'open_design_roles' => 2],
         ['name' => 'Notion', 'group' => 'Product & tools', 'ats' => 'ashby', 'token' => 'notion', 'open_design_roles' => 2],
         ['name' => 'Vercel', 'group' => 'Product & tools', 'ats' => 'greenhouse', 'token' => 'vercel', 'open_design_roles' => 2],
