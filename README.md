@@ -79,7 +79,7 @@ Set these in Vercel, Settings, Environment Variables (Preview and Production), t
 | `GROQ_API_KEY` | Your Groq key. Never put it in code. |
 | `JOBS_GITHUB_TOKEN` | A GitHub token with **Contents: Read and write** on this repository. Needed because Vercel cannot save files, so each new job is saved by committing `data/jobs.json`. |
 
-Optional: `GROQ_MODEL` (default `llama-3.3-70b-versatile`). On your own computer (no token) the local file is edited directly; open `http://localhost:8000/admin.php`.
+Optional: `GROQ_MODEL` (default `llama-3.3-70b-versatile`). If Groq says that model is gone, the app asks Groq which models your key can use and picks one from the list in `lib/groq.php` by itself; if none fit, the error message lists what is available so you can set `GROQ_MODEL`. On your own computer (no token) the local file is edited directly; open `http://localhost:8000/admin.php`.
 
 ## Coming next
 
