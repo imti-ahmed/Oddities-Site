@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/lib/store.php';
+require_once __DIR__ . '/lib/helpers.php';
 
 $settings = require __DIR__ . '/config/settings.php';
 $perPage  = (int)$settings['jobs_per_page'];
@@ -10,7 +10,8 @@ $q      = trim((string)($_GET['q'] ?? ''));
 $page   = max(1, (int)($_GET['p'] ?? 1));
 $offset = ($page - 1) * $perPage;
 
-$all = array_values(array_filter(load_jobs(), fn($j) => !empty($j['title']) && is_safe_url($j['url'] ?? '')));
+$jobsFile = json_decode((string)@file_get_contents(__DIR__ . '/data/jobs.json'), true);
+$all = array_values(array_filter(is_array($jobsFile) ? $jobsFile : [], fn($j) => !empty($j['title']) && is_safe_url($j['url'] ?? '')));
 
 // Count jobs in each tab (for the numbers in the top bar)
 $counts = ['india' => 0, 'abroad' => 0];

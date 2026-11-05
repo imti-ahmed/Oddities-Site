@@ -36,8 +36,3 @@ function region_of(array $job): string
     return preg_match($india, (string)($job['location'] ?? '')) ? 'india' : 'abroad';
 }
 
-// A short stable id for a job (made from its link), used by the admin page to delete one.
-function job_key(array $job): string
-{
-    return substr(sha1((string)($job['url'] ?? '')), 0, 10);
-}
