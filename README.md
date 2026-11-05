@@ -6,16 +6,15 @@ Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards
 ## What's on the page
 
 - **Menu bar** at the top with the **tabs** (all on the same page, no reloading): All, India, Abroad, Remote, In-office (Hybrid appears automatically if any job is hybrid), **Dead zone**, **Update log**, **About**.
-- **Table** with # / Job / Company & location / Tag / Posted / pin star. Search box + Tag and Company filters. Each job has exactly **one tag** (the kind of job, e.g. Product Design, Brand, Motion), shown as a comic sticker. Click a sticker to filter by it.
+- **Table** with # / Job / Company & location / Tag / Posted / pin star. Each job has exactly **one tag** (the kind of job, e.g. Product Design, Brand, Motion), shown as a comic sticker. No search box and no filters: just the list.
 - **Pinned box** at the side: click the star on a job to pin it. Pins are saved in the visitor's own browser (localStorage), nothing is stored on a server.
 - **Comic-style NEW! / UPDATED! stickers**: jobs added or updated in the last few days sit at the top (static, no blinking).
 - **Dead zone**: jobs that are `closed`, or *inactive* (not posted/updated for 90+ days). Kept for reference, never deleted.
 - **Update log**: generated automatically from the jobs' dates (added / updated / closed / inactive).
-- A banner header with a scrolling ticker, a status bar, and a footer.
 
 ## Files
 
-- `index.php` – the page. `style.css` – the look (change colours at the top). `assets/app.js` – tabs, search, filters, pins.
+- `index.php` – the page. `style.css` – the look (change colours at the top). `assets/app.js` – tabs, "show more", pins.
 - `lib/jobs.php` – works out each job's tab, tags, badge and Dead-zone status.
 - `config/settings.php` – site name, tagline, rows per page, `new_days` (badge window), `stale_days` (inactive after).
 - `data/jobs.json` – the jobs. No database, no admin page.

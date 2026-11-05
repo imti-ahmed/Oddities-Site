@@ -21,7 +21,7 @@ body {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: #f5f5f5;
   background-image: radial-gradient(#d6d6d6 1px, transparent 1px);   /* faint dot grid */
-  background-size: 22px 22px;
+  background-size: 22px 22px; padding-bottom: 56px;
 }
 a { color: inherit; text-decoration: none; }
 a:hover { text-decoration: underline; }
@@ -59,7 +59,7 @@ button, select, input { font: inherit; color: inherit; }
 .winbody { padding: 14px 18px 16px; }
 
 /* ---------- glossy buttons ---------- */
-.btn-aqua, .btn-glass, .toolbar select {
+.btn-aqua {
   display: inline-block; border-radius: 999px; font-weight: 500; font-size: 14px; line-height: 1.2; cursor: pointer; text-decoration: none;
 }
 .btn-aqua {
@@ -67,37 +67,16 @@ button, select, input { font: inherit; color: inherit; }
   background: linear-gradient(#edf4ff 0%, #d6e7ff 18%, #a2c7ff 50%, #99cbf8 80%, #a2d2f7 100%);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 8px 18px rgba(30,60,140,.18);
 }
-.btn-glass, .toolbar select {
-  padding: 7px 16px; color: #111; border: 1px solid #a5abb5;
-  background: linear-gradient(#fff 0%, #f7f7f7 48%, #e9e9ea 52%, #f6f6f6 100%);
-  box-shadow: inset 0 1px 0 #fff, 0 4px 12px rgba(0,0,0,.07);
-}
-.btn-aqua:hover, .btn-glass:hover, .toolbar select:hover { filter: brightness(1.04); text-decoration: none; }
-.btn-aqua:active, .btn-glass:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(0,0,0,.2); }
+.btn-aqua:hover { filter: brightness(1.04); text-decoration: none; }
+.btn-aqua:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(0,0,0,.2); }
 
 /* ---------- welcome card ---------- */
 .intro { margin: 22px 0 0; font-size: 14.5px; color: #333; }
 .intro b { color: var(--ink); }
 .intro .legend { margin-top: 9px; color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
 
-/* ---------- search + filters ---------- */
-.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 20px 0 16px; }
-.toolbar input[type=text] {
-  width: 280px; max-width: 100%; padding: 9px 16px; border: 1px solid #bfc5cf; border-radius: 999px; background: #fff;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,.08);
-}
-.toolbar input[type=text]:focus, .toolbar select:focus { outline: 3px solid #bcd0fb; outline-offset: 0; }
-.toolbar select {
-  appearance: none; -webkit-appearance: none; padding-right: 32px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23444' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E"),
-                    linear-gradient(#fff 0%, #f7f7f7 48%, #e9e9ea 52%, #f6f6f6 100%);
-  background-repeat: no-repeat, no-repeat; background-position: right 13px center, 0 0;
-}
-.toolbar .clear { padding: 6px 14px; font-size: 13px; }
-.toolbar .count { margin-left: auto; font-size: 13px; color: var(--muted); }
-
 /* ---------- layout: table + pinned window ---------- */
-.layout { display: flex; gap: 20px; align-items: flex-start; }
+.layout { display: flex; gap: 20px; align-items: flex-start; margin-top: 20px; }
 .main { flex: 1; min-width: 0; }
 
 table.jobs { width: 100%; border-collapse: collapse; }
@@ -118,20 +97,16 @@ td.company, th.company { width: 200px; }
 .m-only { display: none; }
 
 td.company { font-size: 14px; color: #334155; }
-.av { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 8px; border-radius: 7px; vertical-align: middle; font-size: 12px; font-weight: 700; background: hsl(var(--h) 75% 90%); color: hsl(var(--h) 55% 28%); }
-.cn { vertical-align: middle; font-weight: 500; }
-.cloc { display: block; margin: 1px 0 0 32px; font-size: 12.5px; color: var(--muted); }
+.cn { font-weight: 500; }
+.cloc { display: block; margin: 1px 0 0 0; font-size: 12.5px; color: var(--muted); }
 
-/* tag stickers: one per job, same comic style as NEW! / UPDATED! (click one to filter) */
+/* tag stickers: one per job, same comic style as NEW! / UPDATED! */
 .tag {
-  display: inline-block; margin: 2px 6px 2px 0; padding: 0 8px; cursor: pointer; white-space: nowrap;
+  display: inline-block; margin: 2px 6px 2px 0; padding: 0 8px; white-space: nowrap;
   font: 400 14px/17px var(--comic); letter-spacing: .06em; text-transform: uppercase; color: #111;
   background: var(--c, #e3e6ea); border: 2px solid #111; border-radius: 6px; box-shadow: 2px 2px 0 #111;
   transform: rotate(var(--r, 0deg));
 }
-.tag:hover { transform: rotate(var(--r, 0deg)) translateY(-1px); }
-.tag:active { box-shadow: none; transform: rotate(var(--r, 0deg)) translate(2px, 2px); }
-.tag.active { outline: 2px solid var(--blue); outline-offset: 2px; }
 
 .pinbtn { border: 0; background: none; cursor: pointer; font-size: 19px; line-height: 1; color: #c3cad6; padding: 2px 4px; }
 .pinbtn:hover { color: #f59e0b; }
@@ -151,7 +126,6 @@ td.company { font-size: 14px; color: #334155; }
 .dead-note { color: var(--muted); font-size: 13.5px; margin: 0 0 12px; }
 table.dead .jt { color: #8b95a5; text-decoration: line-through; }
 table.dead td { color: #8b95a5; }
-table.dead .av { filter: grayscale(1); opacity: .7; }
 .stamp { display: inline-block; margin-right: 9px; padding: 0 7px; vertical-align: 1px; transform: rotate(-3deg); font: 400 14px/17px var(--comic); letter-spacing: .06em; text-transform: uppercase; color: #6b7280; background: #fff; border: 2px solid #9aa3b2; border-radius: 4px; }
 
 /* ---------- pinned window ---------- */
@@ -180,16 +154,6 @@ table.dead .av { filter: grayscale(1); opacity: .7; }
 .stamp.added, .stamp.updated, .stamp.closed, .stamp.inactive { margin: 0; flex: none; min-width: 78px; text-align: center; transform: none; font-size: 13px; line-height: 16px; border-width: 1.5px; border-radius: 6px; color: #111; border-color: #111; }
 .stamp.added { background: #b9f0c8; } .stamp.updated { background: #bfe8ff; } .stamp.closed { background: #ffc9c9; } .stamp.inactive { background: #e5e7eb; }
 
-/* ---------- footer ---------- */
-footer { margin-top: 52px; border-top: 1px dotted #b5b5b5; }
-footer .wrap { display: flex; flex-wrap: wrap; gap: 28px 64px; padding-top: 28px; padding-bottom: 10px; }
-footer .col { min-width: 150px; }
-footer .col.grow { flex: 1; min-width: 220px; max-width: 400px; }
-footer h4 { margin: 0 0 9px; font-size: 12px; text-transform: lowercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
-footer a { display: block; padding: 2px 0; color: #333; font-size: 14px; }
-footer p { margin: 0; color: var(--muted); font-size: 14px; }
-footer .small { padding: 16px 20px 30px; color: var(--faint); font-size: 12.5px; max-width: 1320px; margin: 0 auto; }
-
 /* ---------- phones ---------- */
 @media (max-width: 1100px) {
   .layout { flex-direction: column-reverse; }
@@ -209,6 +173,4 @@ footer .small { padding: 16px 20px 30px; color: var(--faint); font-size: 12.5px;
   .m-only { display: block; }
   td.rank, th.rank { width: 30px; padding-left: 6px; padding-right: 2px; }
   table.jobs td { padding: 11px 8px; }
-  .toolbar input[type=text] { width: 100%; }
-  .toolbar .count { margin-left: 0; width: 100%; }
 }

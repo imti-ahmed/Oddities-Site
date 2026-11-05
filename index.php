@@ -11,11 +11,6 @@ $log  = build_log($all, $settings);
 $n = ['all' => count($live), 'india' => 0, 'abroad' => 0, 'remote' => 0, 'hybrid' => 0, 'in-office' => 0];
 foreach ($live as $j) { $n[$j['region']]++; $n[$j['mode']]++; }
 
-// Lists for the two drop-down filters
-$allTags = []; $allCompanies = [];
-foreach ($all as $j) { foreach ($j['tags'] as $t) $allTags[$t[0]] = true; $allCompanies[$j['company']] = true; }
-ksort($allTags); ksort($allCompanies, SORT_NATURAL | SORT_FLAG_CASE);
-
 $tabs = [['all', 'All'], ['india', 'India'], ['abroad', 'Abroad'], ['remote', 'Remote']];
 if ($n['hybrid'] > 0) $tabs[] = ['hybrid', 'Hybrid'];
 $tabs[] = ['in-office', 'In-office'];
@@ -34,17 +29,15 @@ function tag_style(string $name): string
 function pills(array $tags): string
 {
     $out = '';
-    foreach ($tags as [$name]) $out .= '<button type="button" class="tag" style="' . h(tag_style($name)) . '" data-tag="' . h($name) . '">' . h($name) . '</button>';
+    foreach ($tags as [$name]) $out .= '<span class="tag" style="' . h(tag_style($name)) . '">' . h($name) . '</span>';
     return $out;
 }
 
 function job_row(array $j, bool $isDead, int $staleDays): string
 {
-    $tagNames = implode('|', array_map(fn($t) => $t[0], $j['tags']));
-    $text = mb_strtolower($j['title'] . ' ' . $j['company'] . ' ' . $j['location'] . ' ' . str_replace('|', ' ', $tagNames));
     $posted = $j['posted'] ? time_ago($j['posted']) : '';
     ob_start(); ?>
-    <tr data-id="<?= h($j['id']) ?>" data-region="<?= h($j['region']) ?>" data-mode="<?= h($j['mode']) ?>" data-co="<?= h($j['company']) ?>" data-tags="<?= h($tagNames) ?>" data-text="<?= h($text) ?>" data-title="<?= h($j['title']) ?>" data-url="<?= h($j['url']) ?>">
+    <tr data-id="<?= h($j['id']) ?>" data-region="<?= h($j['region']) ?>" data-mode="<?= h($j['mode']) ?>" data-co="<?= h($j['company']) ?>" data-title="<?= h($j['title']) ?>" data-url="<?= h($j['url']) ?>">
       <td class="rank"></td>
       <td class="job">
         <?php if ($isDead): ?>
@@ -55,7 +48,7 @@ function job_row(array $j, bool $isDead, int $staleDays): string
         <a class="jt" href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><?= h($j['title']) ?></a>
         <div class="m-only meta"><span class="co"><?= h($j['company']) ?></span><br><?= pills($j['tags']) ?><br><?= h(trim($j['location'] . ($j['location'] && $posted ? ' · ' : '') . $posted)) ?></div>
       </td>
-      <td class="company"><span class="av" style="--h:<?= crc32($j['company']) % 360 ?>"><?= h(mb_strtoupper(mb_substr($j['company'], 0, 1))) ?></span><span class="cn"><?= h($j['company']) ?></span><?php if ($j['location']): ?><small class="cloc"><?= h($j['location']) ?></small><?php endif; ?></td>
+      <td class="company"><span class="cn"><?= h($j['company']) ?></span><?php if ($j['location']): ?><small class="cloc"><?= h($j['location']) ?></small><?php endif; ?></td>
       <td class="tags"><?= pills($j['tags']) ?></td>
       <td class="posted"><?= h($posted) ?></td>
       <td class="pin"><button type="button" class="pinbtn" title="Pin this job" aria-label="Pin this job">&#9734;</button></td>
@@ -114,16 +107,6 @@ function table_head(): string
       <div class="legend">&#9734; Pin jobs to keep them in the box on the side (saved in this browser).</div></div>
     </div>
 
-    <div class="toolbar">
-      <input type="text" id="q" placeholder="Search jobs, companies, cities..." autocomplete="off" aria-label="Search">
-      <select id="fTag" aria-label="Filter by tag"><option value="">Tag</option>
-        <?php foreach ($allTags as $t => $_): ?><option><?= h($t) ?></option><?php endforeach; ?></select>
-      <select id="fCo" aria-label="Filter by company"><option value="">Company</option>
-        <?php foreach ($allCompanies as $c => $_): ?><option><?= h($c) ?></option><?php endforeach; ?></select>
-      <a href="#" class="clear btn-glass" id="clear" hidden>clear filters</a>
-      <span class="count" id="count"></span>
-    </div>
-
     <div class="layout">
       <div class="main">
         <p class="dead-note" id="deadNote" hidden>Jobs that are <b>closed</b>, or <b>inactive</b> (not posted or updated in over <?= (int)$settings['stale_days'] ?> days, so probably not hiring any more). Kept here for reference.</p>
@@ -178,22 +161,11 @@ function table_head(): string
     <p><b>New and updated.</b> Jobs that were just added or changed move to the top and get a little <span class="blinkie new">new</span> or <span class="blinkie updated">updated</span> sticker.</p>
     <p><b>Dead zone.</b> Jobs that have closed, or haven't been posted or updated in a long time, move to the Dead zone so the main list stays fresh. Nothing is deleted.</p>
     <p><b>Pins.</b> Click the &#9734; on a job to pin it to the box at the side. Your pins are saved in your own browser, not on any server, so they're private to you (and clearing your browser data clears them).</p>
-    <p><b>Tags.</b> Each job gets one sticker that says what kind of job it is, like Product Design, Brand or Motion. Click a sticker to see only that kind of job.</p>
+    <p><b>Tags.</b> Each job gets one sticker that says what kind of job it is, like Product Design, Brand or Motion.</p>
     </div>
   </section>
 
 </main>
-
-<footer>
-  <div class="wrap">
-    <div class="col grow"><h4><?= h($settings['site_name']) ?></h4><p><?= h($settings['tagline']) ?> One simple page, no sign-up.</p></div>
-    <div class="col"><h4>Browse</h4>
-      <a href="#india">India</a><a href="#abroad">Abroad</a><a href="#remote">Remote</a><a href="#in-office">In-office</a></div>
-    <div class="col"><h4>Site</h4>
-      <a href="#dead">Dead zone</a><a href="#log">Update log</a><a href="#about">About</a></div>
-  </div>
-  <div class="small">&copy; <?= date('Y') ?> <?= h($settings['site_name']) ?> &middot; Job links lead to external websites we don't control &middot; Your pins stay in your browser.</div>
-</footer>
 
 <script>window.DJ = { perPage: <?= (int)$settings['jobs_per_page'] ?> };</script>
 <script><?= file_get_contents(__DIR__ . '/assets/app.js') ?></script>

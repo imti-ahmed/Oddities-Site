@@ -1,4 +1,4 @@
-// Everything on the page happens here, in your browser: tabs, search, filters, "show more" and pins.
+// Everything on the page happens here, in your browser: tabs, "show more" and pins.
 (function () {
   var PER_PAGE = (window.DJ && window.DJ.perPage) || 30;
   var $  = function (s, r) { return (r || document).querySelector(s); };
@@ -17,8 +17,7 @@
 
   var listView = $('#listView'), logView = $('#logView'), aboutView = $('#aboutView');
   var liveTable = $('#liveTable'), deadTable = $('#deadTable');
-  var q = $('#q'), fTag = $('#fTag'), fCo = $('#fCo'), clearBtn = $('#clear');
-  var countEl = $('#count'), emptyEl = $('#empty'), moreEl = $('#more');
+  var emptyEl = $('#empty'), moreEl = $('#more');
   var view = 'all', shown = PER_PAGE;
 
   /* ---------- pins (saved in this browser with localStorage) ---------- */
@@ -73,15 +72,11 @@
     $('#intro').hidden = isDead;
 
     var table = isDead ? deadTable : liveTable;
-    var words = q.value.toLowerCase().split(/\s+/).filter(Boolean);
-    var tag = fTag.value, co = fCo.value, inView = JOB_VIEWS[view];
+    var inView = JOB_VIEWS[view];
     var matches = 0, visible = 0;
 
     $$('tbody tr', table).forEach(function (r) {
-      var ok = inView(r)
-        && words.every(function (w) { return r.dataset.text.indexOf(w) !== -1; })
-        && (!tag || r.dataset.tags.split('|').indexOf(tag) !== -1)
-        && (!co || r.dataset.co === co);
+      var ok = inView(r);
       if (ok) matches++;
       var showIt = ok && matches <= shown;
       r.hidden = !showIt;
@@ -91,13 +86,9 @@
         visible++;
       }
     });
-    $$('.tag').forEach(function (t) { t.classList.toggle('active', !!tag && t.dataset.tag === tag); });
 
-    var filtered = words.length || tag || co;
-    clearBtn.hidden = !filtered;
-    countEl.textContent = matches + (matches === 1 ? ' job' : ' jobs');
     emptyEl.hidden = matches > 0;
-    emptyEl.textContent = filtered ? 'No jobs match your search.' : (isDead ? 'Nothing in the Dead zone yet.' : 'No jobs here yet.');
+    emptyEl.textContent = isDead ? 'Nothing in the Dead zone yet.' : 'No jobs here yet.';
     table.hidden = matches === 0;
     moreEl.hidden = matches <= visible;
   }
@@ -109,17 +100,11 @@
 
   /* ---------- wiring ---------- */
   window.addEventListener('hashchange', function () { go(location.hash.slice(1)); });
-  q.addEventListener('input', function () { shown = PER_PAGE; render(); });
-  fTag.addEventListener('change', function () { shown = PER_PAGE; render(); });
-  fCo.addEventListener('change', function () { shown = PER_PAGE; render(); });
-  clearBtn.addEventListener('click', function (e) { e.preventDefault(); q.value = ''; fTag.value = ''; fCo.value = ''; shown = PER_PAGE; render(); });
   $('#moreBtn').addEventListener('click', function () { shown += PER_PAGE; render(); });
 
   document.addEventListener('click', function (e) {
     var pin = e.target.closest('.pinbtn');
-    if (pin) { togglePin(pin.closest('tr').dataset.id); return; }
-    var tag = e.target.closest('.tag');        // click a tag to filter by it (click again to undo)
-    if (tag) { fTag.value = fTag.value === tag.dataset.tag ? '' : tag.dataset.tag; shown = PER_PAGE; render(); }
+    if (pin) togglePin(pin.closest('tr').dataset.id);
   });
 
   // little clock in the menu bar (the visitor's own time)
