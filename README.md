@@ -11,6 +11,7 @@ Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards
 - **NEW / UPDATED stickers**: rainbow script lettering with a white die-cut outline. Jobs added or updated in the last few days sit at the top with one of these (still, no blinking).
 - **Dead zone**: jobs that are `closed`, or *inactive* (not posted/updated for 90+ days). Kept for reference, never deleted.
 - **Update log**: generated automatically from the jobs' dates (added / updated / closed / inactive).
+- **About page**: five cards. The last two are a contact card (`contact_email` in `config/settings.php`) and a stats card: total jobs, last update, and **views**. Views come from a free public counter service (abacus.jasoncameron.dev); each visitor counts once per browser session, and visits from `localhost` are never counted. If the service is down, the number shows a dash. To restart the count from zero, change `views_counter.key` in `config/settings.php`.
 
 ## Files
 

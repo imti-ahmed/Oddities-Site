@@ -111,6 +111,25 @@
   function tick() { var c = $('#clock'); if (c) c.textContent = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
   tick(); setInterval(tick, 20000);
 
+  // page views, from a free public counter service. Each visitor counts once per browser session
+  // (refreshing or clicking tabs does not add more), and visits from a computer's own test address are not counted.
+  (function () {
+    var el = $('#viewsNum'), cfg = window.DJ && window.DJ.views;
+    if (!el || !cfg) return;
+    var local = /^(localhost|127\.|\[::1\])/.test(location.hostname);
+    var counted = false;
+    try { counted = sessionStorage.getItem('dj_counted') === '1'; } catch (e) { /* storage blocked */ }
+    var action = (counted || local) ? 'get' : 'hit';          // 'hit' adds one and returns the new total, 'get' only reads it
+    fetch('https://abacus.jasoncameron.dev/' + action + '/' + encodeURIComponent(cfg.ns) + '/' + encodeURIComponent(cfg.key))
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (typeof d.value !== 'number') return;
+        el.textContent = d.value.toLocaleString();
+        if (action === 'hit') { try { sessionStorage.setItem('dj_counted', '1'); } catch (e) { /* ignore */ } }
+      })
+      .catch(function () { /* the counter service is down: leave the dash, nothing else is affected */ });
+  })();
+
   renderPins();
   go(location.hash.slice(1));
 })();

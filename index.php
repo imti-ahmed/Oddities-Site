@@ -11,6 +11,8 @@ $log  = build_log($all, $settings);
 $n = ['all' => count($live), 'india' => 0, 'abroad' => 0, 'remote' => 0, 'hybrid' => 0, 'in-office' => 0];
 foreach ($live as $j) { $n[$j['region']]++; $n[$j['mode']]++; }
 
+$lastUpdate = $all ? max(array_column($all, 'change')) : 0;   // date of the most recent added/updated job
+
 $tabs = [['all', 'All'], ['india', 'India'], ['abroad', 'Abroad'], ['remote', 'Remote']];
 if ($n['hybrid'] > 0) $tabs[] = ['hybrid', 'Hybrid'];
 $tabs[] = ['in-office', 'In-office'];
@@ -188,11 +190,31 @@ function table_head(): string
         </ol>
       </div>
     </div>
+
+    <div class="about-row">
+
+      <div class="win">
+        <?= winbar() ?>
+        <div class="winbody">
+          <p>Email: <a href="mailto:<?= h($settings['contact_email']) ?>"><?= h($settings['contact_email']) ?></a></p>
+        </div>
+      </div>
+
+      <div class="win">
+        <?= winbar() ?>
+        <div class="winbody">
+          <p>Total jobs: <?= (int)$n['all'] ?></p>
+          <p>Last update: <?= $lastUpdate ? h(date('M j, Y', $lastUpdate)) : 'n/a' ?></p>
+          <p>Views: <span id="viewsNum">&ndash;</span></p>
+        </div>
+      </div>
+
+    </div>
   </section>
 
 </main>
 
-<script>window.DJ = { perPage: <?= (int)$settings['jobs_per_page'] ?> };</script>
+<script>window.DJ = { perPage: <?= (int)$settings['jobs_per_page'] ?>, views: <?= json_encode($settings['views_counter']) ?> };</script>
 <script><?= file_get_contents(__DIR__ . '/assets/app.js') ?></script>
 </body>
 </html>
