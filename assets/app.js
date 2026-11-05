@@ -77,7 +77,6 @@
   // Admin mode: delete a job for good (asks first). It also disappears from the database, and the collector will not bring it back.
   function deleteJob(row) {
     var title = row.dataset.title, co = row.dataset.co;
-    if (!window.confirm('Delete "' + title + '" at ' + co + '?\n\nThis removes it from the site for good.')) return;
     var btn = $('.delbtn', row); if (btn) btn.disabled = true;
     fetch('/api/index.php?add=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', url: row.dataset.url }) })
       .then(function (r) { return r.json(); })
