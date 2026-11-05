@@ -1,4 +1,4 @@
-/* Design Jobs: clean table + glossy early-2000s Mac touches (menu bar, mini-window cards, glossy buttons)
+/* Design Jobs: clean table + glossy early-2000s Mac touches (menu bar, mini-window cards, glossy page buttons)
    plus comic-style stickers. Change the main colours here: */
 :root {
   --blue: #2563eb;          /* accents */
@@ -57,17 +57,24 @@ button, select, input { font: inherit; color: inherit; }
 .dot.g { background: #28c840; border-color: #1ca832; }
 .winbody { padding: 14px 18px 16px; }
 
-/* ---------- glossy buttons ---------- */
-.btn-aqua {
-  display: inline-block; border-radius: 999px; font-weight: 500; font-size: 14px; line-height: 1.2; cursor: pointer; text-decoration: none;
+/* ---------- page buttons (pagination): glossy white pills, the current page is glossy blue ---------- */
+.pager { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; padding: 18px 0 4px; }
+.pg {
+  display: inline-grid; place-items: center; min-width: 36px; height: 34px; padding: 0 13px; border-radius: 999px;
+  font-size: 14px; font-weight: 500; line-height: 1; color: #111; text-decoration: none; user-select: none; cursor: pointer;
+  background: linear-gradient(#fff 0%, #f7f7f7 48%, #e9e9ea 52%, #f6f6f6 100%); border: 1px solid #a5abb5;
+  box-shadow: inset 0 1px 0 #fff, 0 4px 12px rgba(0,0,0,.07);
 }
-.btn-aqua {
-  padding: 9px 26px; color: #071a3f; border: 1px solid #2b3fa6;
+a.pg:hover { filter: brightness(1.04); text-decoration: none; color: #111; }
+a.pg:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(0,0,0,.2); }
+.pg.on {
+  color: #071a3f; border-color: #2b3fa6; cursor: default;
   background: linear-gradient(#edf4ff 0%, #d6e7ff 18%, #a2c7ff 50%, #99cbf8 80%, #a2d2f7 100%);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 8px 18px rgba(30,60,140,.18);
 }
-.btn-aqua:hover { filter: brightness(1.04); text-decoration: none; }
-.btn-aqua:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(0,0,0,.2); }
+.pg.off { opacity: .45; cursor: default; }
+.pg.gap { border: 0; background: none; box-shadow: none; min-width: 18px; padding: 0 2px; color: var(--muted); cursor: default; }
+.card { scroll-margin-top: 70px; }   /* when you change page, the table's top lands just under the menu bar */
 
 /* ---------- welcome card ---------- */
 .intro { grid-area: intro; margin: 0 0 20px; font-size: 14.5px; color: #333; }
@@ -84,7 +91,7 @@ button, select, input { font: inherit; color: inherit; }
 
 table.jobs { width: 100%; border-collapse: collapse; }
 table.jobs th { text-align: left; font-size: 12.5px; font-weight: 500; color: var(--faint); padding: 9px 14px; background: #fafbfe; border-bottom: 1px solid #e6ecf5; }
-table.jobs td { padding: 8px 14px; vertical-align: middle; }
+table.jobs td { padding: 10px 14px; vertical-align: middle; }
 table.jobs tbody tr.z { background: var(--zebra); }
 table.jobs tbody tr:hover { background: #e7efff; }
 td.rank, th.rank { width: 44px; color: var(--faint); text-align: right; font-size: 13px; }
@@ -151,7 +158,6 @@ td.company { font-size: 14px; line-height: 1.3; color: #334155; }
 #pinbox .x:hover { color: #b91c1c; }
 #pinbox .hint { padding: 12px 18px 16px; color: #8b95a5; font-size: 14.5px; line-height: 1.55; }   /* same size as the welcome card, light grey: it is only a temporary hint */
 
-.more { padding: 18px 0 4px; text-align: center; }
 .empty { padding: 32px 16px; text-align: center; color: var(--muted); }
 
 /* ---------- update log + about ---------- */
@@ -199,5 +205,5 @@ td.company { font-size: 14px; line-height: 1.3; color: #334155; }
   th.company, td.company, th.posted, td.posted, th.tags, td.tags { display: none; }
   .m-only { display: block; }
   td.rank, th.rank { width: 30px; padding-left: 6px; padding-right: 2px; }
-  table.jobs td { padding: 8px; }
+  table.jobs td { padding: 10px 8px; }
 }

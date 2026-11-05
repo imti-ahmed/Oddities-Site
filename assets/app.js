@@ -1,4 +1,4 @@
-// Everything on the page happens here, in your browser: tabs, "show more" and pins.
+// Everything on the page happens here, in your browser: tabs, page numbers and pins.
 (function () {
   var PER_PAGE = (window.DJ && window.DJ.perPage) || 30;
   var $  = function (s, r) { return (r || document).querySelector(s); };
@@ -17,8 +17,8 @@
 
   var listView = $('#listView'), logView = $('#logView'), aboutView = $('#aboutView');
   var liveTable = $('#liveTable'), deadTable = $('#deadTable');
-  var emptyEl = $('#empty'), moreEl = $('#more');
-  var view = 'all', shown = PER_PAGE;
+  var emptyEl = $('#empty'), pagerEl = $('#pager');
+  var view = 'all', page = 1, pendingScroll = false;
 
   /* ---------- pins (saved in this browser with localStorage) ---------- */
   var KEY = 'dj_pins_v1', pins = [];
@@ -74,38 +74,68 @@
 
     var table = isDead ? deadTable : liveTable;
     var inView = JOB_VIEWS[view];
-    var matches = 0, visible = 0;
+    var rows = $$('tbody tr', table).filter(function (r) { return inView(r); });   // the rows that belong to this tab, in order
+    var total = rows.length, pages = Math.max(1, Math.ceil(total / PER_PAGE));
+    if (page > pages) page = pages;
+    var from = (page - 1) * PER_PAGE, to = from + PER_PAGE;
 
-    $$('tbody tr', table).forEach(function (r) {
-      var ok = inView(r);
-      if (ok) matches++;
-      var showIt = ok && matches <= shown;
-      r.hidden = !showIt;
-      if (showIt) {
-        $('.rank', r).textContent = matches + '.';
-        r.classList.toggle('z', visible % 2 === 1);
-        visible++;
-      }
+    $$('tbody tr', table).forEach(function (r) { r.hidden = true; });
+    rows.forEach(function (r, i) {
+      if (i < from || i >= to) return;
+      r.hidden = false;
+      $('.rank', r).textContent = (i + 1) + '.';             // numbering carries on across pages (page 2 starts at 31)
+      r.classList.toggle('z', (i - from) % 2 === 1);
     });
 
-    emptyEl.hidden = matches > 0;
+    emptyEl.hidden = total > 0;
     emptyEl.textContent = isDead ? 'Nothing in the Dead zone yet.' : 'No jobs here yet.';
-    table.hidden = matches === 0;
-    moreEl.hidden = matches <= visible;
+    table.hidden = total === 0;
+    renderPager(pages);
   }
 
-  function go(v) {
+  // Page buttons: Prev, 1 2 3 ... , Next. With many pages: first, last and the pages around the current one, with ... between.
+  function renderPager(pages) {
+    pagerEl.innerHTML = '';
+    pagerEl.hidden = pages < 2;
+    if (pages < 2) return;
+    function add(label, target, extra) {                      // target = page number to link to, or 0 for a plain (non-clickable) label
+      var el = document.createElement(target ? 'a' : 'span');
+      el.className = 'pg' + (extra ? ' ' + extra : '');
+      el.textContent = label;
+      if (target) el.href = '#' + view + (target > 1 ? '/' + target : '');
+      pagerEl.appendChild(el);
+      return el;
+    }
+    add('‹ Prev', page > 1 ? page - 1 : 0, page > 1 ? '' : 'off');
+    var last = 0;
+    for (var n = 1; n <= pages; n++) {
+      var keep = n === 1 || n === pages || Math.abs(n - page) <= 1 || (page <= 3 && n <= 4) || (page >= pages - 2 && n >= pages - 3);
+      if (!keep) continue;
+      if (n - last > 1) add('…', 0, 'gap');
+      var el = add(String(n), n === page ? 0 : n, n === page ? 'on' : '');
+      if (n === page) el.setAttribute('aria-current', 'page');
+      last = n;
+    }
+    add('Next ›', page < pages ? page + 1 : 0, page < pages ? '' : 'off');
+  }
+
+  // The address looks like  #india  or  #india/2  (view, then page). A bad or too-big page number is tidied up.
+  function go(h) {
+    var parts = String(h || '').split('/'), v = parts[0], asked = parseInt(parts[1], 10);
     if (!JOB_VIEWS.hasOwnProperty(v) && OTHER_VIEWS.indexOf(v) === -1) v = 'all';
-    view = v; shown = PER_PAGE; render();
+    view = v; page = asked > 0 ? asked : 1;
+    render();
+    var tidy = '#' + view + (page > 1 && JOB_VIEWS.hasOwnProperty(view) ? '/' + page : '');
+    if (h && ('#' + h) !== tidy && history.replaceState) history.replaceState(null, '', tidy);
+    if (pendingScroll) { pendingScroll = false; var card = $('#listView .card'); if (card && !listView.hidden) card.scrollIntoView(); }
   }
 
   /* ---------- wiring ---------- */
   window.addEventListener('hashchange', function () { go(location.hash.slice(1)); });
-  $('#moreBtn').addEventListener('click', function () { shown += PER_PAGE; render(); });
-
   document.addEventListener('click', function (e) {
     var pin = e.target.closest('.pinbtn');
     if (pin) togglePin(pin.closest('tr').dataset.id);
+    if (e.target.closest('#pager a')) pendingScroll = true;       // after changing page, bring the top of the table into view
   });
 
   // little clock in the menu bar (the visitor's own time)

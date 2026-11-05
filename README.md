@@ -15,7 +15,7 @@ Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards
 
 ## Files
 
-- `index.php` – the page. `style.css` – the look (change colours at the top). `assets/app.js` – tabs, "show more", pins.
+- `index.php` – the page. `style.css` – the look (change colours at the top). `assets/app.js` – tabs, page numbers, pins.
 - `lib/jobs.php` – works out each job's tab, tags, badge and Dead-zone status.
 - `config/settings.php` – site name, tagline, rows per page, `new_days` (badge window), `stale_days` (inactive after).
 - `data/jobs.json` – the jobs. No database, no admin page.

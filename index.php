@@ -119,7 +119,7 @@ function table_head(bool $dead = false): string
       <div class="intro win" id="deadNote" hidden>
         <?= winbar() ?>
         <div class="winbody">
-          <p>Jobs that are closed, or inactive (not posted or updated in over <?= (int)$settings['stale_days'] ?> days, so probably not hiring any more). Kept here for reference.<br>Any entries more than <?= (int)$settings['dead_limit'] ?> will be removed from here.</p>
+          <p>Jobs that are closed, or inactive (not posted or updated in over <?= (int)$settings['stale_days'] ?> days, so probably not hiring any more). Kept here for reference. Any entries more than <?= (int)$settings['dead_limit'] ?> will be removed from here.</p>
         </div>
       </div>
 
@@ -134,7 +134,7 @@ function table_head(bool $dead = false): string
           </tbody></table>
           <div class="empty" id="empty" hidden></div>
         </div>
-        <div class="more" id="more" hidden><button type="button" class="btn-aqua" id="moreBtn">Show more</button></div>
+        <nav class="pager" id="pager" aria-label="Pages" hidden></nav>
       </div>
 
       <aside id="pinbox" class="win" aria-label="Pinned jobs">
