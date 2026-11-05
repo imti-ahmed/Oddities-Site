@@ -72,9 +72,8 @@ button, select, input { font: inherit; color: inherit; }
 
 /* ---------- welcome card ---------- */
 .intro { margin: 22px 0 0; font-size: 14.5px; color: #333; }
-.intro .lead { font-size: 20px; font-weight: 700; letter-spacing: -.01em; color: var(--ink); margin: 0 0 6px; }
-.intro p { margin: 0; line-height: 1.55; }
-.intro .legend { margin-top: 10px; color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+.intro p { margin: 0 0 12px; line-height: 1.55; }   /* every line is the same plain paragraph: no headline, no small print */
+.intro p:last-child { margin-bottom: 0; }
 
 /* ---------- layout: table + pinned window ---------- */
 .layout { display: flex; gap: 20px; align-items: flex-start; margin-top: 20px; }
@@ -162,13 +161,10 @@ table.dead td { color: #8b95a5; }
 .about { margin-top: 22px; display: grid; gap: 20px; }
 .about-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .about .winbody { padding: 22px 26px 26px; }
-.about h2 { font-size: 22px; margin: 0 0 12px; letter-spacing: -.01em; }
-.about p { margin: 0 0 12px; color: #334155; line-height: 1.65; }
+.about p { margin: 0 0 12px; color: #334155; line-height: 1.65; }   /* every line is the same plain paragraph */
 .about p:last-child { margin-bottom: 0; }
-.about p.lead { font-size: 17px; font-weight: 600; color: var(--ink); }
 .steps { margin: 0; padding: 0 0 0 24px; columns: 2; column-gap: 48px; }
 .steps li { break-inside: avoid; margin: 0 0 12px; padding-left: 4px; color: #334155; line-height: 1.55; }
-.steps li::marker { color: var(--blue); font-weight: 700; }
 .log-day { margin: 20px 0 6px; font-size: 12.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 .log-row { display: flex; gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid #eef1f6; font-size: 14.5px; }
 .log-row small { color: var(--muted); font-size: 13px; }

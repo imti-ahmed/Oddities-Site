@@ -104,9 +104,9 @@ function table_head(): string
     <div class="intro win" id="intro">
       <?= winbar() ?>
       <div class="winbody">
-        <div class="lead">Hand-picked creative jobs. No noise.</div>
+        <p>Hand-picked creative jobs. No noise.</p>
         <p>A simple list of design and creative jobs from companies around the internet.<br>No accounts. No applications here. No bullshit. Just the job and a link to where you can apply.</p>
-        <div class="legend">&#9734; Pin jobs you want to come back to. Pins are saved in this browser.</div>
+        <p>&#9734; Pin jobs you want to come back to. Pins are saved in this browser.</p>
       </div>
     </div>
 
@@ -161,8 +161,8 @@ function table_head(): string
       <div class="win">
         <?= winbar() ?>
         <div class="winbody">
-          <h2>The project</h2>
-          <p class="lead">A simple job board for creative people.</p>
+          <p>The project</p>
+          <p>A simple job board for creative people.</p>
           <p>I collect design and creative jobs from around the internet and put them here in one place. Every listing takes you directly to the original job posting.</p>
           <p>That's pretty much it.</p>
         </div>
@@ -171,7 +171,7 @@ function table_head(): string
       <div class="win">
         <?= winbar() ?>
         <div class="winbody">
-          <h2>Who made this</h2>
+          <p>Who made this</p>
           <p>Made by Imtiyaz, a designer who spends too much time on the internet and probably too much time looking at job boards.</p>
           <p>I wanted a small, useful place to find creative jobs without all the extra stuff.</p>
         </div>
@@ -182,7 +182,7 @@ function table_head(): string
     <div class="win">
       <?= winbar() ?>
       <div class="winbody">
-        <h2>How it works</h2>
+        <p>How it works</p>
         <ol class="steps">
           <li>Jobs are collected from around the internet.</li>
           <li>Everything is hand picked and added manually.</li>
