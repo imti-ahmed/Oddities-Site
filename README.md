@@ -22,8 +22,9 @@ Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards
 - `lib/db.php` – talks to Neon. `lib/store.php` – decides where jobs are read and saved.
 - `config/roles.php` – the list of roles we accept (UI/UX Designer ... Internship) and the rules (`min_confidence`, whether worldwide remote counts as India). **Edit this to add or remove a role.**
 - `config/groq_prompt.txt` – the instructions given to the Groq AI, in plain English. Read and edit freely; `{{TAGS}}` is filled in from `config/roles.php`.
-- `config/sources.php` – the websites the automatic collector will read (not built yet). `config/companies.php` – companies with job boards we can read (Figma, Canva, ...).
+- `config/sources.php` – the job sites the collector reads. `config/companies.php` – companies with job boards we can read (Figma, Canva, ...).
 - `lib/pagefetch.php`, `lib/groq.php`, `lib/intake.php` – the engine: read a job page, ask the AI, double-check its answer in code, save.
+- `lib/ats.php`, `lib/collector.php`, `scripts/collect.php` – the collector (reads company boards and job sites into a queue, then checks each job).
 - `lib/add_job_endpoint.php` – the endpoint behind the `/admin` card (reached through `api/index.php?add=1`). `api/index.php` shows the admin card when the address is `/admin`.
 
 ## The jobs file
@@ -82,6 +83,21 @@ Set these in Vercel, Settings, Environment Variables (Preview and Production), t
 
 Optional: `GROQ_MODEL` (default `llama-3.3-70b-versatile`). If Groq says that model is gone, the app asks Groq which models your key can use and picks one from the list in `lib/groq.php` by itself; if none fit, the error message lists what is available so you can set `GROQ_MODEL`. On your own computer (no `DATABASE_URL`) the local file `data/jobs.json` is edited directly; open `http://localhost:8000/admin.php`.
 
+## Filling the board automatically (the collector)
+
+The **Collect jobs** button on `/admin` (and the same thing as a command, see below) fills the board from our own lists, using the AI:
+
+1. **Gather:** it reads the public job boards of the companies in `config/companies.php` (Greenhouse, Lever, Ashby, SmartRecruiters) and the sites in `config/sources.php`. Every opening whose *title* could fit one of our roles is put in a queue (a database table called `job_queue`). Titles like "Software Engineer" are dropped here, without using the AI.
+2. **Check:** one queued job at a time goes to Groq with the rules in `config/groq_prompt.txt`, the answer is double-checked in code (same strict checks as the single-link card), and the job is listed or refused. Jobs that look like India jobs are checked first, then the newest.
+
+The queue remembers every job it has checked, so a run can be **stopped and continued** at any time and never asks the AI about the same job twice (a refused job is looked at again after 30 days). If Groq's limit is reached the run pauses or stops by itself; press the button again later.
+
+**Groq's free limits matter.** Each check costs a few thousand AI "tokens", and the first run queues several hundred jobs. On Groq's free plan a daily token limit may mean the first fill takes several days of runs; a paid Groq plan removes that. Nothing breaks: it simply continues the next time.
+
+**As a command / on a schedule:** `php scripts/collect.php` (options at the top of that file). `.github/workflows/collect.yml` runs it every 6 hours on GitHub, and you can run it by hand under GitHub, Actions, "Collect jobs". It needs two GitHub secrets, `GROQ_API_KEY` and `DATABASE_URL` (the same values as in Vercel). The schedule and the Run button only work once the file is on your `main` branch.
+
+**Starting from an empty board:** `data/jobs.json` is empty, so a new database starts empty. To empty an existing Neon database, run this once in Neon's SQL Editor: `TRUNCATE TABLE jobs RESTART IDENTITY;` (the Update log is built from the jobs, so it empties too).
+
 ## Coming next
 
-The automatic collector (cron) that visits the sources in `config/sources.php` and the companies in `config/companies.php`, and sends every link through the same `intake_job()` check. The Update log and the About page's "added manually" line will need rewording once that exists.
+Rewording the About page line "hand picked and added manually", a way to close or remove a job from the site, and tuning the rules after we see real results.

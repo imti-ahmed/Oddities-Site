@@ -34,7 +34,7 @@ function intake_job(string $url, string $source = 'admin', bool $allowList = tru
     if (!$ok) return ['status' => 'error', 'message' => $why];
 
     // 1. already listed? (cheap check first, before spending any AI time)
-    try { $existing = jobs_read_fresh(); } catch (Throwable $e) { return ['status' => 'error', 'message' => $e->getMessage()]; }
+    try { $existing = jobs_read_fresh(); } catch (Throwable $e) { return ['status' => 'error', 'service_error' => true, 'message' => $e->getMessage()]; }
     if (job_already_listed($existing, ['url' => $url, 'title' => "\0", 'company' => "\0", 'location' => "\0"])) return ['status' => 'duplicate', 'message' => 'That link is already in the list.'];
 
     // 2. read the page
@@ -44,10 +44,19 @@ function intake_job(string $url, string $source = 'admin', bool $allowList = tru
         if ($allowList) { $list = intake_list($page, $existing, $roles); if ($list['status'] !== 'rejected') return $list; }   // maybe it is a page of links to jobs
         return ['status' => 'rejected', 'message' => 'Not enough readable text on that page. Some sites only show the job after JavaScript runs; try the link of the same job on the company\'s own careers page.'];
     }
+    return intake_decide($page, $url, $source, $existing, $roles, $settings, $allowList);
+}
 
+// Steps 3 to 6 for a page we already hold: ask the AI, double-check its answer, check for duplicates, save.
+// $hints (optional) = facts already known from the job board itself, e.g. ['posted_at' => '2026-11-03'].
+// Errors that come from a service (Groq, the database) carry 'service_error' => true, so a long run can pause or stop instead of marking jobs as failed.
+function intake_decide(array $page, string $url, string $source, array $existing, array $roles, array $settings, bool $allowList = true, array $hints = []): array
+{
     // 3. ask the AI
     $ask = groq_ask($page, $url, $source, $roles);
-    if (!$ask['ok']) return ['status' => 'error', 'message' => $ask['error']];
+    if (!$ask['ok']) return ['status' => 'error', 'service_error' => empty($ask['soft']), 'message' => $ask['error'], 'rate_limited' => !empty($ask['rate_limited']),
+                             'retry_after' => $ask['retry_after'] ?? null, 'daily_limit' => !empty($ask['daily_limit'])];
+    if (empty($ask['answer']['posted_at']) && !empty($hints['posted_at'])) $ask['answer']['posted_at'] = $hints['posted_at'];
 
     // 3b. a page that lists many jobs: find the job links on it (each one is then checked on its own)
     // (Also when the AI is unsure what kind of page it is: a careers page with little text but links to job pages is a list too.)
@@ -69,7 +78,7 @@ function intake_job(string $url, string $source = 'admin', bool $allowList = tru
     // 6. save
     try {
         $result = jobs_append($job, fn($list) => job_already_listed($list, $job), 'Add job: ' . $job['company'] . ', ' . $job['title'] . ' (via ' . $source . ')');
-    } catch (Throwable $e) { return ['status' => 'error', 'message' => $e->getMessage()]; }
+    } catch (Throwable $e) { return ['status' => 'error', 'service_error' => true, 'message' => $e->getMessage()]; }
     if ($result === 'duplicate') return ['status' => 'duplicate', 'message' => 'That job is already in the list.'];
 
     $bits = [$job['tags'][0], $job['region'] === 'india' ? 'India' : 'Abroad'];
@@ -77,7 +86,6 @@ function intake_job(string $url, string $source = 'admin', bool $allowList = tru
     return ['status' => 'added', 'message' => 'Added: ' . $job['title'] . ' at ' . $job['company'] . ' (' . implode(', ', $bits) . ').' . (jobs_store_mode() === 'db' ? ' It is saved. The site shows it within a minute.' : ''),
             'job' => $job, 'notes' => $check['notes'], 'confidence' => $check['confidence']];
 }
-
 
 // A page that lists many jobs. Finds the links on it, asks the AI which look like our roles, and hands them back so the
 // caller (the /admin card in the browser) can check them one at a time with intake_job(..., allowList: false).
@@ -99,4 +107,23 @@ function intake_list(array $page, array $existing, array $roles): array
 
     return ['status' => 'list', 'message' => 'This page lists many jobs. ' . count($pick['links']) . ' may fit our roles' . ($known ? " ($known already in the list)" : '') . '. Checking each one now.',
             'links' => $pick['links'], 'already_listed' => $known];
+}
+
+
+// A candidate from a company job board: we already hold the text, so no page needs to be downloaded.
+function intake_candidate(array $c): array
+{
+    $roles    = require __DIR__ . '/../config/roles.php';
+    $settings = require __DIR__ . '/../config/settings.php';
+    try { $existing = jobs_read_fresh(); } catch (Throwable $e) { return ['status' => 'error', 'service_error' => true, 'message' => $e->getMessage()]; }
+    $url = trim((string)$c['url']);
+    if (job_already_listed($existing, ['url' => $url, 'title' => "\0", 'company' => "\0", 'location' => "\0"])) return ['status' => 'duplicate', 'message' => 'That link is already in the list.'];
+
+    $structured = array_filter([
+        'title' => $c['title'], 'company' => $c['company'], 'locations' => $c['location'] !== '' ? [$c['location']] : null,
+        'workplace_type' => $c['workplace'] ?? null, 'date_posted' => $c['posted_at'] ?? null, 'employment_type' => $c['employment_type'] ?? null,
+    ], fn($v) => $v !== null && $v !== '' && $v !== []);
+    $page = ['ok' => true, 'final_url' => $url, 'page_title' => (string)$c['title'], 'description' => '', 'structured' => $structured,
+             'text' => mb_substr((string)($c['description'] ?? ''), 0, (int)$roles['rules']['max_page_chars']), 'html' => ''];
+    return intake_decide($page, $url, (string)($c['source'] ?? 'collector'), $existing, $roles, $settings, false, ['posted_at' => $c['posted_at'] ?? null]);
 }

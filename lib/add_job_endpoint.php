@@ -19,6 +19,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') reply(405, ['status' => 'erro
 $in = json_decode((string)file_get_contents('php://input'), true);
 $in = is_array($in) ? $in : [];
 
+// the "Collect jobs" button on the card: read our company list and job sites, then check the jobs one at a time
+$action = (string)($in['action'] ?? '');
+if ($action !== '') {
+    set_time_limit(55); ini_set('memory_limit', '256M');
+    require_once __DIR__ . '/collector.php';
+    reply(200, collector_action($action, $in));
+}
+
 $url = trim((string)($in['url'] ?? ''));
 if ($url === '' || mb_strlen($url) > 1500) reply(400, ['status' => 'error', 'message' => 'Paste a job link first.']);
 

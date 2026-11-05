@@ -36,7 +36,9 @@ function groq_http(string $method, string $path, ?string $body = null): array
 {
     $base = rtrim(env('GROQ_API_BASE') ?: 'https://api.groq.com/openai/v1', '/');
     $ch = curl_init($base . $path);
+    $retryHeader = null;
     curl_setopt_array($ch, [
+        CURLOPT_HEADERFUNCTION => function ($c, $line) use (&$retryHeader) { if (stripos($line, 'retry-after:') === 0) $retryHeader = (int)trim(substr($line, 12)); return strlen($line); },
         CURLOPT_RETURNTRANSFER => true, CURLOPT_CUSTOMREQUEST => $method, CURLOPT_TIMEOUT => 40, CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . env('GROQ_API_KEY'), 'Content-Type: application/json', 'Accept: application/json'],
     ]);
@@ -44,6 +46,7 @@ function groq_http(string $method, string $path, ?string $body = null): array
     $raw = curl_exec($ch);
     $err = curl_error($ch);
     $code = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $GLOBALS['groq_retry_after'] = $retryHeader;
     return [$code, $raw === false ? null : json_decode((string)$raw, true), $err, $raw === false];
 }
 
@@ -78,9 +81,16 @@ function groq_json(string $system, string $user, int $maxTokens = 1500, ?string 
     if ($failed) return ['ok' => false, 'error' => 'Could not reach Groq' . ($err ? " ($err)" : '') . '.'];
 
     if ($code === 401 || $code === 403) return ['ok' => false, 'error' => 'Groq refused the key (HTTP ' . $code . '). Check that GROQ_API_KEY in Vercel is correct and active.'];
-    if ($code === 429) return ['ok' => false, 'error' => 'Groq is busy (rate limit). Wait a minute and try again.'];
-
     $msg = (string)($data['error']['message'] ?? '');
+    if ($code === 429) {
+        // how long Groq wants us to wait: the Retry-After header, or "try again in 1m26.4s" in the message
+        $wait = (int)($GLOBALS['groq_retry_after'] ?? 0);
+        if ($wait <= 0 && preg_match('/try again in\s+(?:(\d+)h)?\s*(?:(\d+)m(?!s))?\s*(?:([\d.]+)s)?/i', $msg, $m)) $wait = (int)ceil(((int)($m[1] ?? 0)) * 3600 + ((int)($m[2] ?? 0)) * 60 + (float)($m[3] ?? 0));
+        $daily = (bool)preg_match('/per day|\bTPD\b|\bRPD\b/i', $msg) || $wait > 600;
+        return ['ok' => false, 'rate_limited' => true, 'retry_after' => max(2, $wait ?: 30), 'daily_limit' => $daily,
+                'error' => 'Groq is busy (rate limit). ' . ($daily ? 'The daily limit looks used up; try again later.' : 'Wait a minute and try again.')];
+    }
+
     if (($code === 404 || $code === 400) && preg_match('/model/i', $msg) && $forceModel === null) {
         // the model is gone or not allowed for this key: find one that works and try again once
         $have = groq_available_models();
@@ -96,7 +106,7 @@ function groq_json(string $system, string $user, int $maxTokens = 1500, ?string 
     $content = $data['choices'][0]['message']['content'] ?? '';
     $content = is_string($content) ? trim(preg_replace('#<think>.*?</think>#s', '', $content)) : '';
     $answer  = json_decode($content, true);
-    if (!is_array($answer)) return ['ok' => false, 'error' => 'The AI did not answer in the expected format. Try again.'];
+    if (!is_array($answer)) return ['ok' => false, 'soft' => true, 'error' => 'The AI did not answer in the expected format. Try again.'];   // soft: only this one answer was bad
     return ['ok' => true, 'answer' => $answer, 'model' => $model];
 }
 

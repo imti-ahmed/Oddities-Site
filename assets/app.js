@@ -239,6 +239,62 @@
         .catch(function () { say('Could not reach the server. Check your internet and try again.', 'bad'); })
         .then(function () { btn.disabled = false; });
     });
+
+    // "Collect jobs": read our company list and job sites into a queue, then check the queued jobs one at a time.
+    // Every step is a short request, so nothing runs into Vercel's time limit, and it can be stopped and resumed at any moment.
+    var colBtn = $('#colBtn'), colStop = $('#colStop'), colMsg = $('#colMsg'), colLog = $('#colLog'), stopNow = false;
+    function colSay(text, kind) { colMsg.textContent = text; colMsg.className = 'admin-msg ' + kind; }
+    function colLine(text, kind) { var li = document.createElement('li'); li.className = kind; li.textContent = text; colLog.appendChild(li); colLog.scrollTop = colLog.scrollHeight; }
+    function act(action, extra) {
+      return fetch('/api/index.php?add=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ action: action }, extra || {})) })
+        .then(function (r) { return r.json().catch(function () { return { status: 'stop', message: 'The server gave an answer we could not read. Try again in a moment.' }; }); });
+    }
+    async function collect() {
+      stopNow = false; colBtn.disabled = true; colStop.hidden = false; colLog.innerHTML = '';
+      var added = 0, notAdded = 0, failed = 0, ended = 'Done.';
+      try {
+        var plan = await act('plan');
+        if (plan.status !== 'ok') { colSay(plan.message || 'Could not start.', 'bad'); return; }
+        if (plan.pending > 0) {
+          colSay('Continuing where we left off: ' + plan.pending + ' jobs are waiting to be checked.', 'wait');
+        } else {
+          var queued = 0, from = 0;
+          while (from < plan.companies && !stopNow) {
+            var g = await act('gather_companies', { from: from });
+            if (g.status !== 'ok') { colSay(g.message || 'Problem while reading company job boards.', 'bad'); return; }
+            queued += g.queued; from = g.next;
+            colSay('Reading company job boards: ' + Math.min(from, plan.companies) + ' of ' + plan.companies + ' (' + queued + ' jobs to check so far)...', 'wait');
+            if (g.finished) break;
+          }
+          for (var i = 0; i < plan.sources && !stopNow; i++) {
+            var s = await act('gather_source', { index: i });
+            if (s.status === 'stop') { colSay(s.message, 'bad'); return; }
+            if (s.status === 'wait') { colSay(s.message + ' Waiting ' + s.seconds + ' seconds...', 'wait'); await wait(Math.min(120, s.seconds || 30) * 1000); i--; continue; }
+            queued += s.queued || 0;
+            colLine(s.message, 'skip');
+            colSay('Reading job sites: ' + (i + 1) + ' of ' + plan.sources + ' (' + queued + ' jobs to check so far)...', 'wait');
+          }
+        }
+        while (!stopNow) {
+          var r = await act('next');
+          if (r.status === 'empty') break;
+          if (r.status === 'wait') { colSay('Groq asked us to slow down. Waiting ' + r.seconds + ' seconds...', 'wait'); await wait(r.seconds * 1000); continue; }
+          if (r.status === 'stop') { colSay(r.message + ' So far: ' + added + ' added.', 'bad'); return; }
+          if (r.status !== 'checked') break;
+          if (r.result === 'added') { added++; colLine(r.message.replace(/ It is saved\..*$/, ''), 'ok'); }
+          else if (r.result === 'error') failed++;
+          else notAdded++;
+          colSay('Checking jobs: ' + added + ' added, ' + notAdded + ' not added, ' + r.remaining + ' waiting...', 'wait');
+        }
+        if (stopNow) ended = 'Stopped. Press Collect jobs again to continue where it left off.';
+        colSay(ended + ' Added ' + added + ', not added ' + notAdded + (failed ? ', could not check ' + failed : '') + '. The site shows new jobs within a minute.', added ? 'good' : 'wait');
+      } catch (e) {
+        colSay('Lost the connection to the server. Press Collect jobs again to continue where it left off.', 'bad');
+      } finally {
+        colBtn.disabled = false; colStop.hidden = true;
+      }
+    }
+    if (colBtn) { colBtn.addEventListener('click', collect); colStop.addEventListener('click', function () { stopNow = true; colSay('Stopping after the current job...', 'wait'); }); }
   })();
 
   renderPins();

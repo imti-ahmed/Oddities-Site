@@ -1,0 +1,44 @@
+# Fills the board from our list of companies and job sites, using the Groq AI, and saves into the Neon database.
+# Runs by itself every 6 hours, and you can run it by hand: GitHub > Actions > "Collect jobs" > Run workflow.
+#
+# It needs two secrets (GitHub > Settings > Secrets and variables > Actions > New repository secret):
+#   GROQ_API_KEY   your Groq key
+#   DATABASE_URL   your Neon connection string
+# (These are the same two values that are in your Vercel settings. They are never written into the code.)
+name: Collect jobs
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_fresh:
+        description: 'FIRST delete every listed job (the board starts empty)'
+        type: boolean
+        default: false
+      max_checks:
+        description: 'How many jobs the AI may check in this run'
+        default: '150'
+  schedule:
+    - cron: '17 */6 * * *'
+
+concurrency:
+  group: collect-jobs
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl, mbstring, dom, libxml, pdo_pgsql, simplexml
+      - name: Collect jobs
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MAX_CHECKS: ${{ inputs.max_checks || '150' }}
+          START_FRESH: ${{ inputs.start_fresh && 'yes' || 'no' }}
+        run: |
+          if [ "$START_FRESH" = "yes" ]; then php scripts/collect.php --fresh --yes --max="$MAX_CHECKS"; else php scripts/collect.php --max="$MAX_CHECKS"; fi

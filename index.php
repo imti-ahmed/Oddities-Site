@@ -153,6 +153,12 @@ function table_head(bool $dead = false): string
             </form>
             <p id="adminMsg" class="admin-msg" role="status"></p>
             <ul id="adminLog" class="admin-log"></ul>
+            <div class="col-box">
+              <p>Or fill the board from our list of companies and job sites. Keep this tab open while it runs.</p>
+              <div class="col-row"><button type="button" id="colBtn">Collect jobs</button><button type="button" id="colStop" hidden>Stop</button></div>
+              <p id="colMsg" class="admin-msg" role="status"></p>
+              <ul id="colLog" class="admin-log"></ul>
+            </div>
           </div>
         </div>
         <?php else: ?>
@@ -169,6 +175,12 @@ function table_head(bool $dead = false): string
               </form>
               <p id="adminMsg" class="admin-msg" role="status"></p>
             <ul id="adminLog" class="admin-log"></ul>
+            <div class="col-box">
+              <p>Or fill the board from our list of companies and job sites. Keep this tab open while it runs.</p>
+              <div class="col-row"><button type="button" id="colBtn">Collect jobs</button><button type="button" id="colStop" hidden>Stop</button></div>
+              <p id="colMsg" class="admin-msg" role="status"></p>
+              <ul id="colLog" class="admin-log"></ul>
+            </div>
             </div>
           </div>
         </template>
