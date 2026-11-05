@@ -77,4 +77,5 @@ while ($checked < $max) {
 }
 $s = collector_stats();
 say("Finished. Settled $checked jobs: $added added ($noAi of them without the AI), $refused not added, $failed could not be checked. AI calls used: $aiCalls. {$s['jobs']} jobs listed, {$s['pending']} still waiting.");
+if (!empty($GLOBALS['groq_key_switches'])) say('A Groq key hit its limit or was refused ' . $GLOBALS['groq_key_switches'] . ' time(s), so the other key was used.');
 if (!empty($GLOBALS['groq_last_model'])) say('AI model used: ' . $GLOBALS['groq_last_model'] . (isset($GLOBALS['groq_batch_cap']) ? ' (your Groq limit only fits ' . $GLOBALS['groq_batch_cap'] . ' jobs per call, so groups were made smaller)' : ''));

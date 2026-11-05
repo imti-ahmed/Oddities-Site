@@ -42,6 +42,7 @@ jobs:
       - name: Collect jobs
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_API_KEY_TWO: ${{ secrets.GROQ_API_KEY_TWO }}      # optional spare key: used when the first one hits its limit
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           MAX_CHECKS: ${{ inputs.max_checks || '400' }}
           START_FRESH: ${{ inputs.start_fresh && 'yes' || 'no' }}

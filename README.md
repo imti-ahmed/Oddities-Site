@@ -83,6 +83,7 @@ Set these in Vercel, Settings, Environment Variables (Preview and Production), t
 | Name | What it is |
 |---|---|
 | `GROQ_API_KEY` | Your Groq key. Never put it in code. |
+| `GROQ_API_KEY_TWO` | Optional spare Groq key. When the first key hits a limit (or is refused), the AI calls switch to this one by themselves, and go back to the first key once it has recovered. It must also be added as a GitHub secret for the scheduled fill (see below). |
 | `DATABASE_URL` | The Neon connection string (starts with `postgresql://`). It contains your database password, so it lives only here, never in the code or on GitHub. |
 
 Optional: `GROQ_MODEL` (default `llama-3.3-70b-versatile`). If Groq says that model is gone, the app asks Groq which models your key can use and picks one from the list in `lib/groq.php` by itself; if none fit, the error message lists what is available so you can set `GROQ_MODEL`. On your own computer (no `DATABASE_URL`) the local file `data/jobs.json` is edited directly; open `http://localhost:8000/admin.php`.
@@ -107,7 +108,7 @@ The queue remembers every job it has settled, so a run can be **stopped and cont
 
 **Groq's limits.** On Groq's free plan a daily token limit may still slow the very first fill, because the first run queues several hundred jobs. Nothing breaks: it continues the next time.
 
-**The schedules** are the two files in `.github/workflows/` (`collect.yml` every 3 days, `check-live.yml` every night). GitHub uses UTC, so the files say 22:30 UTC and 20:30 UTC. They need the secrets `GROQ_API_KEY` and `DATABASE_URL` (the second only for the nightly check) under GitHub, Settings, Secrets and variables, Actions, and they only run once the files are on your `main` branch. You can also run each by hand under GitHub, Actions.
+**The schedules** are the two files in `.github/workflows/` (`collect.yml` every 3 days, `check-live.yml` every night). GitHub uses UTC, so the files say 22:30 UTC and 20:30 UTC. They need the secrets `GROQ_API_KEY`, optionally `GROQ_API_KEY_TWO`, and `DATABASE_URL` (the nightly check needs only `DATABASE_URL`) under GitHub, Settings, Secrets and variables, Actions, and they only run once the files are on your `main` branch. You can also run each by hand under GitHub, Actions.
 
 **Starting from an empty board:** `data/jobs.json` is empty, so a new database starts empty. To empty an existing Neon database, run this once in Neon's SQL Editor: `TRUNCATE TABLE jobs RESTART IDENTITY;` (the Update log is built from the jobs, so it empties too).
 

@@ -33,8 +33,23 @@ const GROQ_MODEL_PREFERENCE = [
     'llama-3.1-8b-instant',
 ];
 
-// One request to Groq. Returns [httpCode, decodedJson|null, curlError]
-function groq_http(string $method, string $path, ?string $body = null): array
+// The Groq keys we may use: GROQ_API_KEY, and GROQ_API_KEY_TWO as the spare. (Key values are never printed or logged anywhere.)
+function groq_keys(): array
+{
+    return array_values(array_filter([env('GROQ_API_KEY'), env('GROQ_API_KEY_TWO')], fn($k) => $k !== ''));
+}
+
+// How long Groq wants us to wait after "429 too many requests": the Retry-After header, or "try again in 1m26.4s" in the message.
+function groq_wait_seconds($data, ?int $header): int
+{
+    $wait = (int)$header;
+    $msg = (string)($data['error']['message'] ?? '');
+    if ($wait <= 0 && preg_match('/try again in\s+(?:(\d+)h)?\s*(?:(\d+)m(?!s))?\s*(?:([\d.]+)s)?/i', $msg, $m)) $wait = (int)ceil(((int)($m[1] ?? 0)) * 3600 + ((int)($m[2] ?? 0)) * 60 + (float)($m[3] ?? 0));
+    return max(2, $wait ?: 30);
+}
+
+// One request to Groq with ONE key. Returns [httpCode, decodedJson|null, curlError, failedToConnect, retryAfterHeader]
+function groq_http_once(string $key, string $method, string $path, ?string $body): array
 {
     $base = rtrim(env('GROQ_API_BASE') ?: 'https://api.groq.com/openai/v1', '/');
     $ch = curl_init($base . $path);
@@ -42,14 +57,47 @@ function groq_http(string $method, string $path, ?string $body = null): array
     curl_setopt_array($ch, [
         CURLOPT_HEADERFUNCTION => function ($c, $line) use (&$retryHeader) { if (stripos($line, 'retry-after:') === 0) $retryHeader = (int)trim(substr($line, 12)); return strlen($line); },
         CURLOPT_RETURNTRANSFER => true, CURLOPT_CUSTOMREQUEST => $method, CURLOPT_TIMEOUT => 40, CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . env('GROQ_API_KEY'), 'Content-Type: application/json', 'Accept: application/json'],
+        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $key, 'Content-Type: application/json', 'Accept: application/json'],
     ]);
     if ($body !== null) curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
     $raw = curl_exec($ch);
     $err = curl_error($ch);
     $code = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-    $GLOBALS['groq_retry_after'] = $retryHeader;
-    return [$code, $raw === false ? null : json_decode((string)$raw, true), $err, $raw === false];
+    return [$code, $raw === false ? null : json_decode((string)$raw, true), $err, $raw === false, $retryHeader];
+}
+
+// One request to Groq. Uses the first key; if Groq says that key is at its limit (429) or refuses it (401/403), the next key is used.
+// A key that hit a limit is skipped until the time Groq gave us has passed (then the first key is used again); a refused key is set aside.
+// Returns [httpCode, decodedJson|null, curlError, failedToConnect]
+function groq_http(string $method, string $path, ?string $body = null): array
+{
+    $keys = groq_keys();
+    if (!$keys) return [0, null, 'no Groq key is set', true];
+    $now = time();
+    $blocked = $GLOBALS['groq_blocked'] ?? [];                  // key number => blocked until (a time; PHP_INT_MAX = refused)
+    $last = null;
+    foreach ($keys as $i => $key) {
+        if (($blocked[$i] ?? 0) > $now) continue;
+        $r = groq_http_once($key, $method, $path, $body);
+        [$code, $data, , , $hdr] = $r;
+        $last = $r;
+        if ($code === 429 || $code === 401 || $code === 403) {
+            $blocked[$i] = $code === 429 ? $now + groq_wait_seconds($data, $hdr) : PHP_INT_MAX;
+            $GLOBALS['groq_blocked'] = $blocked;
+            if (count(array_filter(array_keys($keys), fn($j) => ($blocked[$j] ?? 0) <= $now)) > 0) $GLOBALS['groq_key_switches'] = ($GLOBALS['groq_key_switches'] ?? 0) + 1;   // another key is ready: carry on with it
+            continue;
+        }
+        $GLOBALS['groq_retry_after'] = $hdr;
+        return [$code, $data, $r[2], $r[3]];
+    }
+    if ($last === null) {                                       // every key was already waiting from before: answer like Groq would, with the shortest wait
+        $left = array_filter(array_map(fn($j) => ($blocked[$j] ?? 0) - $now, array_keys($keys)), fn($s) => $s > 0 && $s < PHP_INT_MAX / 2);
+        $wait = $left ? max(2, min($left)) : 30;
+        $GLOBALS['groq_retry_after'] = $wait;
+        return [429, ['error' => ['message' => 'All Groq keys are at their limit. Please try again in ' . $wait . 's.']], '', false];
+    }
+    $GLOBALS['groq_retry_after'] = $last[4];
+    return [$last[0], $last[1], $last[2], $last[3]];           // every key we tried was limited or refused: report the last answer
 }
 
 // The models this key can use (text chat models only). Empty list if we could not find out.
@@ -69,7 +117,7 @@ function groq_available_models(): array
 // Returns ['ok' => true, 'answer' => array, 'model' => string] or ['ok' => false, 'error' => 'plain message']
 function groq_json(string $system, string $user, int $maxTokens = 1500, ?string $forceModel = null): array
 {
-    if (env('GROQ_API_KEY') === '') return ['ok' => false, 'error' => 'GROQ_API_KEY is not set. Add it in Vercel > Settings > Environment Variables, then redeploy.'];
+    if (!groq_keys()) return ['ok' => false, 'error' => 'GROQ_API_KEY is not set. Add it in Vercel > Settings > Environment Variables, then redeploy.'];
 
     $model = $forceModel ?: (env('GROQ_MODEL') ?: GROQ_MODEL_PREFERENCE[0]);
     $req = [
@@ -82,14 +130,13 @@ function groq_json(string $system, string $user, int $maxTokens = 1500, ?string 
     [$code, $data, $err, $failed] = groq_http('POST', '/chat/completions', json_encode($req, JSON_UNESCAPED_UNICODE));
     if ($failed) return ['ok' => false, 'error' => 'Could not reach Groq' . ($err ? " ($err)" : '') . '.'];
 
-    if ($code === 401 || $code === 403) return ['ok' => false, 'error' => 'Groq refused the key (HTTP ' . $code . '). Check that GROQ_API_KEY in Vercel is correct and active.'];
+    if ($code === 401 || $code === 403) return ['ok' => false, 'error' => 'Groq refused the key (HTTP ' . $code . ').' . (count(groq_keys()) > 1 ? ' Both GROQ_API_KEY and GROQ_API_KEY_TWO were tried.' : '') . ' Check that GROQ_API_KEY is correct and active.'];
     $msg = (string)($data['error']['message'] ?? '');
     if ($code === 429) {
-        // how long Groq wants us to wait: the Retry-After header, or "try again in 1m26.4s" in the message
-        $wait = (int)($GLOBALS['groq_retry_after'] ?? 0);
-        if ($wait <= 0 && preg_match('/try again in\s+(?:(\d+)h)?\s*(?:(\d+)m(?!s))?\s*(?:([\d.]+)s)?/i', $msg, $m)) $wait = (int)ceil(((int)($m[1] ?? 0)) * 3600 + ((int)($m[2] ?? 0)) * 60 + (float)($m[3] ?? 0));
+        // (with two keys, we only get here when BOTH are at their limit)
+        $wait = groq_wait_seconds($data, (int)($GLOBALS['groq_retry_after'] ?? 0));
         $daily = (bool)preg_match('/per day|\bTPD\b|\bRPD\b/i', $msg) || $wait > 600;
-        return ['ok' => false, 'rate_limited' => true, 'retry_after' => max(2, $wait ?: 30), 'daily_limit' => $daily,
+        return ['ok' => false, 'rate_limited' => true, 'retry_after' => $wait, 'daily_limit' => $daily,
                 'error' => 'Groq is busy (rate limit). ' . ($daily ? 'The daily limit looks used up; try again later.' : 'Wait a minute and try again.')];
     }
 
