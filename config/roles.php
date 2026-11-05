@@ -136,7 +136,7 @@ return [
         'global_remote_counts_as_india' => false, // "Remote, worldwide" jobs: false = listed as Abroad, true = listed as India
         'max_page_chars'               => 14000,  // how much of the page text is sent to the AI
         'batch_size'                   => 8,      // how many jobs are checked in ONE AI call (fewer calls = faster, and Groq asks us to wait less)
-        'batch_page_chars'             => 1800,   // text per job when several are sent together
+        'batch_page_chars'             => 1200,   // text per job when several are sent together
         'fast_path'                    => true,   // true = jobs with a clear title ("Product Designer", "Brand Designer", ...) whose board gives the
                                                   // location are listed by plain code, without asking the AI. false = the AI checks every job.
     ],

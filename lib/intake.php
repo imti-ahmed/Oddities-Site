@@ -35,7 +35,17 @@ function intake_job(string $url, string $source = 'admin', bool $allowList = tru
 
     // 1. already listed? (cheap check first, before spending any AI time)
     try { $existing = jobs_read_fresh(); } catch (Throwable $e) { return ['status' => 'error', 'service_error' => true, 'message' => $e->getMessage()]; }
-    if (job_already_listed($existing, ['url' => $url, 'title' => "\0", 'company' => "\0", 'location' => "\0"])) return ['status' => 'duplicate', 'message' => 'That link is already in the list.'];
+    if (job_already_listed($existing, ['url' => $url, 'title' => "\0", 'company' => "\0", 'location' => "\0"])) {
+        // A job you deleted earlier is only hidden. Pasting its link into Add job by hand brings it back; the collector and list pages never do.
+        $gone = null;
+        foreach ($existing as $j) if (!empty($j['hidden']) && normalize_job_url((string)($j['url'] ?? '')) === normalize_job_url($url)) { $gone = $j; break; }
+        if ($gone && $allowList && $source === 'admin') {
+            try { jobs_restore($url); } catch (Throwable $e) { return ['status' => 'error', 'service_error' => true, 'message' => $e->getMessage()]; }
+            return ['status' => 'added', 'message' => 'Restored: ' . ($gone['title'] ?? 'the job') . ' at ' . ($gone['company'] ?? '') . '. You had deleted it, now it is back on the site.'];
+        }
+        if ($gone) return ['status' => 'duplicate', 'message' => 'That job was deleted earlier, so it is not added again.'];
+        return ['status' => 'duplicate', 'message' => 'That link is already in the list.'];
+    }
 
     // 2. read the page
     $page = read_job_page($url, (int)$roles['rules']['max_page_chars'], $strict);

@@ -23,23 +23,24 @@ function jobs_read_file(): array
     return is_array($jobs) ? $jobs : [];
 }
 
-// The current list of jobs, straight from where they are kept.
+// The current list of jobs for the DUPLICATE CHECKS, straight from where they are kept. It includes deleted (hidden) jobs, marked 'hidden' => true,
+// so a job you deleted is never checked or added again.
 function jobs_read_fresh(): array
 {
     if (jobs_store_mode() === 'db') {
-        try { return db_all_jobs(); }
+        try { return db_all_jobs(true); }
         catch (Throwable $e) { throw new RuntimeException('Could not read the database: ' . db_error_hint($e)); }
     }
-    return jobs_read_file();
+    return array_map(fn($j) => !empty($j['deleted_at']) ? $j + ['hidden' => true] : $j, jobs_read_file());
 }
 
-// The page uses this one: if the database is down, show the jobs from the file instead of an empty site.
+// The website uses this one (without the deleted jobs): if the database is down, show the jobs from the file instead of an empty site.
 function jobs_for_page(): array
 {
     if (jobs_store_mode() === 'db') {
-        try { return db_all_jobs(); } catch (Throwable $e) { /* fall through to the file */ }
+        try { return db_all_jobs(false); } catch (Throwable $e) { /* fall through to the file */ }
     }
-    return jobs_read_file();
+    return array_values(array_filter(jobs_read_file(), fn($j) => empty($j['deleted_at'])));
 }
 
 function db_error_hint(Throwable $e): string
@@ -58,7 +59,7 @@ function jobs_append(array $job, callable $isDuplicate, string $message = ''): s
 
     if ($mode === 'db') {
         try {
-            if ($isDuplicate(db_all_jobs())) return 'duplicate';
+            if ($isDuplicate(db_all_jobs(true))) return 'duplicate';        // (deleted jobs count: they are never added again)
             return db_insert_job($job) ? 'added' : 'duplicate';      // the database also refuses the same link twice
         } catch (Throwable $e) {
             throw new RuntimeException('Could not save to the database: ' . db_error_hint($e));
@@ -77,7 +78,24 @@ function jobs_append(array $job, callable $isDuplicate, string $message = ''): s
     return 'added';
 }
 
-// Deletes one job for good (admin only). Returns true if the job was found.
+// Brings a deleted (hidden) job back onto the website. Returns true if there was one.
+function jobs_restore(string $url): bool
+{
+    require_once __DIR__ . '/pagefetch.php';
+    if (jobs_store_mode() === 'db') return db_restore_job($url);
+    if (jobs_store_mode() === 'none') throw new RuntimeException('Saving is not set up. Add DATABASE_URL in Vercel (the Neon connection string), then redeploy.');
+    $fp = fopen(JOBS_FILE_PATH, 'c+');
+    if (!$fp || !flock($fp, LOCK_EX)) throw new RuntimeException('Could not open data/jobs.json for writing.');
+    $list = json_decode((string)stream_get_contents($fp), true);
+    $list = is_array($list) ? $list : [];
+    $key = normalize_job_url($url); $found = false;
+    foreach ($list as $i => $j) if (!empty($j['deleted_at']) && normalize_job_url((string)($j['url'] ?? '')) === $key) { unset($list[$i]['deleted_at']); $found = true; }
+    if ($found) { ftruncate($fp, 0); rewind($fp); fwrite($fp, json_encode(array_values($list), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"); }
+    flock($fp, LOCK_UN); fclose($fp);
+    return $found;
+}
+
+// "Deletes" one job (admin only): it is hidden from the website but kept, so it is never checked or added again. Returns true if the job was found.
 function jobs_delete(string $url): bool
 {
     require_once __DIR__ . '/pagefetch.php';
@@ -91,10 +109,12 @@ function jobs_delete(string $url): bool
     if (!$fp || !flock($fp, LOCK_EX)) throw new RuntimeException('Could not open data/jobs.json for writing.');
     $list = json_decode((string)stream_get_contents($fp), true);
     $list = is_array($list) ? $list : [];
-    $key = normalize_job_url($url);
-    $kept = array_values(array_filter($list, fn($j) => normalize_job_url((string)($j['url'] ?? '')) !== $key));
-    $found = count($kept) !== count($list);
-    if ($found) { ftruncate($fp, 0); rewind($fp); fwrite($fp, json_encode($kept, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"); }
+    $key = normalize_job_url($url); $found = false;
+    foreach ($list as $i => $j) {
+        if (normalize_job_url((string)($j['url'] ?? '')) !== $key) continue;
+        $list[$i]['deleted_at'] = date('c'); unset($list[$i]['highlighted']); $found = true;
+    }
+    if ($found) { ftruncate($fp, 0); rewind($fp); fwrite($fp, json_encode(array_values($list), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"); }
     flock($fp, LOCK_UN); fclose($fp);
     return $found;
 }

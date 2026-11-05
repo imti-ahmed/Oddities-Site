@@ -23,6 +23,7 @@ function collector_ready(): void
     if (jobs_store_mode() !== 'db') throw new RuntimeException('The collector needs the database. Add DATABASE_URL in Vercel (the Neon connection string), then redeploy.');
     try { db()->query('SELECT 1 FROM jobs LIMIT 1'); }                  // the jobs table itself is made on first use
     catch (Throwable $e) { if (!db_missing_table($e)) throw $e; db_create_and_seed(); }
+    db_add_check_columns();                                              // columns added later (check times, highlight, deleted_at) for older databases
     db()->exec("CREATE TABLE IF NOT EXISTS job_queue (
         url_key    TEXT PRIMARY KEY,
         url        TEXT NOT NULL,
@@ -57,7 +58,7 @@ function collector_stats(): array
         $by[$r['state']] = ($by[$r['state']] ?? 0) + (int)$r['n'];
         if ($r['result'] === 'added') $by['added'] += (int)$r['n'];
     }
-    $by['jobs'] = (int)db()->query('SELECT count(*) FROM jobs')->fetchColumn();
+    $by['jobs'] = (int)db()->query('SELECT count(*) FROM jobs WHERE deleted_at IS NULL')->fetchColumn();
     return $by;
 }
 
@@ -136,7 +137,7 @@ function collector_gather_source(int $i): array
             if ($links) {
                 $roles = require __DIR__ . '/../config/roles.php';
                 $pick = groq_pick_links($links, $roles, 60);
-                if (!$pick['ok']) return $out + ['status' => !empty($pick['rate_limited']) ? 'wait' : 'ok', 'seconds' => $pick['retry_after'] ?? null, 'message' => $s['name'] . ': ' . $pick['error'], 'note' => $pick['error']];
+                if (!$pick['ok']) return ['status' => !empty($pick['rate_limited']) ? 'wait' : 'ok', 'seconds' => $pick['retry_after'] ?? null, 'message' => $s['name'] . ': ' . $pick['error'], 'note' => $pick['error']] + $out;   // (the first status wins, so the "wait" must come first)
                 foreach ($pick['links'] as $l) $cands[] = ['url' => $l['url'], 'title' => $l['text'], 'posted_at' => null, 'source' => $label, 'mode' => 'url'];
             }
         }
@@ -162,7 +163,7 @@ function collector_next(): array
     $pdo = db();
     $roles = require __DIR__ . '/../config/roles.php';
     $settings = require __DIR__ . '/../config/settings.php';
-    $size = max(1, (int)($roles['rules']['batch_size'] ?? 8));
+    $size = max(1, min((int)($roles['rules']['batch_size'] ?? 8), (int)($GLOBALS['groq_batch_cap'] ?? 99)));   // smaller once Groq has told us how much one request may hold
     $order = 'priority, posted_at DESC NULLS LAST, queued_at';
 
     $mode = $pdo->query("SELECT mode FROM job_queue WHERE state = 'pending' ORDER BY $order LIMIT 1")->fetchColumn();

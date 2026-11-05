@@ -36,7 +36,7 @@ function liveness_due_where(): string
 {
     $settings = require __DIR__ . '/../config/settings.php';
     $days = (int)$settings['stale_days'];
-    return "status IS DISTINCT FROM 'closed'
+    return "status IS DISTINCT FROM 'closed' AND deleted_at IS NULL
         AND COALESCE(GREATEST(posted_at, updated_at), posted_at, updated_at, added_at, current_date) >= current_date - $days
         AND (last_checked_at IS NULL OR last_checked_at < now() - interval '" . LIVENESS_RECHECK_HOURS . " hours')";
 }

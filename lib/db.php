@@ -76,6 +76,7 @@ function db_create_and_seed(): void
         last_seen_at    TIMESTAMPTZ,
         check_fails     SMALLINT NOT NULL DEFAULT 0,
         highlighted     BOOLEAN NOT NULL DEFAULT false,
+        deleted_at      TIMESTAMPTZ,
         created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
     )");
     $count = (int)$pdo->query('SELECT count(*) FROM jobs')->fetchColumn();
@@ -115,7 +116,9 @@ function db_insert_job(array $j): bool
 }
 
 // All jobs, newest first, in the same shape the old data/jobs.json had.
-function db_all_jobs(): array
+// Deleted jobs are only HIDDEN (they keep a deleted_at time), so every duplicate check still knows them. The website asks without them;
+// the duplicate checks ask with them ($includeHidden = true) and see 'hidden' => true on those.
+function db_all_jobs(bool $includeHidden = false): array
 {
     $run = fn() => db()->query('SELECT * FROM jobs ORDER BY id DESC')->fetchAll();
     try { $rows = $run(); }
@@ -126,7 +129,9 @@ function db_all_jobs(): array
     }
     $jobs = [];
     foreach ($rows as $r) {
-        $j = ['title' => $r['title'], 'company' => $r['company'], 'location' => $r['location'], 'url' => $r['url'], 'posted_at' => $r['posted_at'],
+        $hidden = !empty($r['deleted_at']);                      // (checked here, not in SQL, so an older database without the column still works)
+        if ($hidden && !$includeHidden) continue;
+        $j = ['hidden' => $hidden ? true : null, 'title' => $r['title'], 'company' => $r['company'], 'location' => $r['location'], 'url' => $r['url'], 'posted_at' => $r['posted_at'],
               'added_at' => $r['added_at'], 'updated_at' => $r['updated_at'], 'region' => $r['region'], 'mode' => $r['mode'],
               'role' => $r['role'], 'highlighted' => !empty($r['highlighted']) ? true : null, 'status' => $r['status'], 'closed_at' => $r['closed_at'], 'closed_reason' => $r['closed_reason'], 'source' => $r['source'], 'created_at' => $r['created_at'] ?? null];   // created_at = the exact moment the job was saved
         if (!empty($r['tag'])) $j['tags'] = [$r['tag']];
@@ -153,27 +158,32 @@ function db_set_highlight(string $url, bool $on): bool
     }
 }
 
-// Deletes one job for good. The deletion is also written in the collector's queue (result "deleted"), so a later scan never brings the job back.
-// Returns true if a job was found.
+// "Deletes" one job: it is hidden from the website but KEPT in the database (deleted_at is set), so the collector and every duplicate
+// check remember it and never check or add it again. Returns true if a job was found.
 function db_delete_job(string $url): bool
 {
     require_once __DIR__ . '/pagefetch.php';
-    $key = normalize_job_url($url);
-    $pdo = db();
-    $st = $pdo->prepare('DELETE FROM jobs WHERE url_key = :k');
-    $st->execute([':k' => $key]);
-    $found = $st->rowCount() > 0;
-    $mark = fn() => $pdo->prepare("INSERT INTO job_queue (url_key, url, source, payload, state, result, reason, done_at)
-        VALUES (:k, :u, 'admin', '{}', 'done', 'deleted', 'Deleted by admin', now())
-        ON CONFLICT (url_key) DO UPDATE SET state = 'done', result = 'deleted', reason = 'Deleted by admin', done_at = now()")
-        ->execute([':k' => $key, ':u' => $url]);
-    try { $mark(); }                                                   // remember the deletion, so the collector never brings the job back
+    $run = function () use ($url) {
+        $st = db()->prepare('UPDATE jobs SET deleted_at = now(), highlighted = false WHERE url_key = :k');
+        $st->execute([':k' => normalize_job_url($url)]);
+        return $st->rowCount() > 0;
+    };
+    try { return $run(); }
     catch (PDOException $e) {
-        if (!db_missing_table($e)) throw $e;
-        require_once __DIR__ . '/collector.php'; collector_ready();    // the queue table does not exist yet: make it, then remember
-        $mark();
+        if (!str_contains($e->getMessage(), '42703')) throw $e;        // an older database without the column: add it once and try again
+        db_add_check_columns();
+        return $run();
     }
-    return $found;
+}
+
+// Brings a hidden (deleted) job back onto the website. Returns true if there was one.
+function db_restore_job(string $url): bool
+{
+    require_once __DIR__ . '/pagefetch.php';
+    db_add_check_columns();
+    $st = db()->prepare('UPDATE jobs SET deleted_at = NULL WHERE url_key = :k AND deleted_at IS NOT NULL');
+    $st->execute([':k' => normalize_job_url($url)]);
+    return $st->rowCount() > 0;
 }
 
 // Older databases get the columns the "still open?" check and the highlight star need (safe to run again and again).
@@ -185,5 +195,6 @@ function db_add_check_columns(): void
     db()->exec('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ');
     db()->exec('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS check_fails SMALLINT NOT NULL DEFAULT 0');
     db()->exec('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS highlighted BOOLEAN NOT NULL DEFAULT false');
+    db()->exec('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ');
     $done = true;
 }
