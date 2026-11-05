@@ -148,7 +148,6 @@ function table_head(bool $dead = false): string
             <p>Paste a job link. The AI checks it against our roles and lists it.</p>
             <form id="adminForm" autocomplete="off">
               <input type="url" id="adminUrl" placeholder="https://..." aria-label="Job link" required>
-              <input type="password" id="adminPass" placeholder="Admin password" aria-label="Admin password" autocomplete="current-password">
               <button type="submit" id="adminBtn">Add job</button>
             </form>
             <p id="adminMsg" class="admin-msg" role="status"></p>

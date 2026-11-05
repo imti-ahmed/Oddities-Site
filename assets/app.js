@@ -180,8 +180,7 @@
   (function () {
     var form = $('#adminForm');
     if (!form) return;
-    var urlBox = $('#adminUrl'), passBox = $('#adminPass'), btn = $('#adminBtn'), msg = $('#adminMsg');
-    try { passBox.value = sessionStorage.getItem('dj_admin') || ''; } catch (e) { /* storage blocked */ }
+    var urlBox = $('#adminUrl'), btn = $('#adminBtn'), msg = $('#adminMsg');
     function say(text, kind) { msg.textContent = text; msg.className = 'admin-msg ' + kind; }
     form.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -191,13 +190,12 @@
       say('Reading the page and asking the AI. This takes a few seconds...', 'wait');
       fetch('/api/add-job.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': passBox.value },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url })
       })
         .then(function (r) { return r.json().catch(function () { return { status: 'error', message: 'The server gave an answer we could not read. Try again in a moment.' }; }).then(function (d) { return { code: r.status, d: d }; }); })
         .then(function (x) {
           var d = x.d || {};
-          if (x.code !== 401) { try { sessionStorage.setItem('dj_admin', passBox.value); } catch (e) { /* ignore */ } }
           if (d.status === 'added') { say(d.message, 'good'); urlBox.value = ''; }
           else if (d.status === 'duplicate') say(d.message, 'wait');
           else say(d.message || 'Something went wrong.', 'bad');
