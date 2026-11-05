@@ -101,16 +101,16 @@ function table_head(): string
 
   <!-- ===== Jobs + Dead zone ===== -->
   <section id="listView">
-    <div class="intro win" id="intro">
-      <?= winbar() ?>
-      <div class="winbody">
-        <p>Hand-picked creative jobs. No noise.</p>
-        <p>A simple list of design and creative jobs from companies around the internet.<br>No accounts. No applications here. No bullshit. Just the job and a link to where you can apply.</p>
-        <p>&#9734; Pin jobs you want to come back to. Pins are saved in this browser.</p>
-      </div>
-    </div>
-
     <div class="layout">
+      <div class="intro win" id="intro">
+        <?= winbar() ?>
+        <div class="winbody">
+          <p>Hand-picked creative jobs. No noise.</p>
+          <p>A simple list of design and creative jobs from companies around the internet.<br>No accounts. No applications here. No bullshit. Just the job and a link to where you can apply.</p>
+          <p>&#9734; Pin jobs you want to come back to. Pins are saved in this browser.</p>
+        </div>
+      </div>
+
       <div class="main">
         <p class="dead-note" id="deadNote" hidden>Jobs that are <b>closed</b>, or <b>inactive</b> (not posted or updated in over <?= (int)$settings['stale_days'] ?> days, so probably not hiring any more). Kept here for reference.</p>
         <div class="card win">
@@ -161,7 +161,6 @@ function table_head(): string
       <div class="win">
         <?= winbar() ?>
         <div class="winbody">
-          <p>The project</p>
           <p>A simple job board for creative people.</p>
           <p>I collect design and creative jobs from around the internet and put them here in one place. Every listing takes you directly to the original job posting.</p>
           <p>That's pretty much it.</p>
@@ -171,7 +170,6 @@ function table_head(): string
       <div class="win">
         <?= winbar() ?>
         <div class="winbody">
-          <p>Who made this</p>
           <p>Made by Imtiyaz, a designer who spends too much time on the internet and probably too much time looking at job boards.</p>
           <p>I wanted a small, useful place to find creative jobs without all the extra stuff.</p>
         </div>
@@ -182,7 +180,6 @@ function table_head(): string
     <div class="win">
       <?= winbar() ?>
       <div class="winbody">
-        <p>How it works</p>
         <ol class="steps">
           <li>Jobs are collected from around the internet.</li>
           <li>Everything is hand picked and added manually.</li>
