@@ -153,6 +153,22 @@ function table_head(bool $dead = false): string
             <p id="adminMsg" class="admin-msg" role="status"></p>
           </div>
         </div>
+        <?php else: ?>
+        <!-- Backup: if the server could not tell the address was /admin, the browser adds the card itself (see assets/app.js). Nothing shows on other addresses. -->
+        <template id="adminTpl">
+          <!-- Admin card: only on /admin. Paste a job link; the AI checks it against our roles and lists it. -->
+          <div class="win" id="adminCard">
+            <?= winbar() ?>
+            <div class="winbody">
+              <p>Paste a job link. The AI checks it against our roles and lists it.</p>
+              <form id="adminForm" autocomplete="off">
+                <input type="url" id="adminUrl" placeholder="https://..." aria-label="Job link" required>
+                <button type="submit" id="adminBtn">Add job</button>
+              </form>
+              <p id="adminMsg" class="admin-msg" role="status"></p>
+            </div>
+          </div>
+        </template>
         <?php endif; ?>
 
         <aside id="pinbox" class="win orange" aria-label="Pinned jobs">

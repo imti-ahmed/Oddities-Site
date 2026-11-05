@@ -179,6 +179,10 @@
   // admin card (only present on /admin): send the pasted link to the server, show what the AI decided
   (function () {
     var form = $('#adminForm');
+    if (!form && /^\/admin\/?$/.test(location.pathname)) {       // backup: the address is /admin but the server did not add the card
+      var tpl = $('#adminTpl'), pin = $('#pinbox');
+      if (tpl && pin) { pin.parentNode.insertBefore(tpl.content.cloneNode(true), pin); form = $('#adminForm'); }
+    }
     if (!form) return;
     var urlBox = $('#adminUrl'), btn = $('#adminBtn'), msg = $('#adminMsg');
     function say(text, kind) { msg.textContent = text; msg.className = 'admin-msg ' + kind; }
