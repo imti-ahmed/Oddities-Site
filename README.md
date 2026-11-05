@@ -34,7 +34,7 @@ Each job in `data/jobs.json`:
 }
 ```
 
-Only those five are required. Optional extras:
+Only those five are required. You can write `location` in any format (for example `"San Francisco, CA • New York, NY"`, `"Bangalore, Karnataka"` or `"Remote UK"`): the page always shows just one place as **City, Country** (`lib/location.php` does the tidying, and knows the common cities, US states and Indian states). If it can't tell the country, only the city is shown. Optional extras:
 
 | Field | What it does |
 |---|---|

@@ -3,6 +3,7 @@
 // which tab it belongs to, its tags, whether it is NEW / UPDATED, and whether it is in the Dead zone.
 
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/location.php';
 
 // Remote / Hybrid / In-office. Uses the job's "mode" if it has one, otherwise guesses from the text.
 function mode_of(array $j): string
@@ -75,7 +76,7 @@ function load_jobs(array $settings): array
 
         $jobs[] = [
             'id' => substr(sha1($j['url']), 0, 10), 'title' => no_em_dash($j['title']), 'company' => no_em_dash($j['company']),
-            'location' => no_em_dash((string)($j['location'] ?? '')), 'url' => $j['url'],
+            'location' => no_em_dash(format_location((string)($j['location'] ?? ''))), 'url' => $j['url'],   // always "City, Country"
             'region' => region_of($j), 'mode' => mode_of($j), 'tags' => tags_of($j),
             'posted' => $posted, 'added' => $added, 'updated' => $updated, 'closed' => $closed,
             'dead' => $dead, 'dead_note' => no_em_dash((string)($j['closed_reason'] ?? '')), 'badge' => $badge,

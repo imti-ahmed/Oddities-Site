@@ -49,9 +49,9 @@ function job_row(array $j, bool $isDead, int $staleDays): string
           <span class="blinkie <?= h($j['badge']) ?>" data-t="<?= h($j['badge']) ?>"><?= h($j['badge']) ?></span>
         <?php endif; ?>
         <a class="jt" href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><?= h($j['title']) ?></a>
-        <div class="m-only meta"><span class="co"><?= h($j['company']) ?></span><br><?php if (!$isDead): ?><?= pills($j['tags']) ?><br><?php endif; ?><?= h(trim($j['location'] . ($j['location'] && $dateCell ? ' · ' : '') . ($isDead && $dateCell ? 'Removed ' : '') . $dateCell)) ?></div>
+        <div class="m-only meta"><span class="co"><?= h($j['company']) ?></span><?php if ($j['location']): ?> (<?= h($j['location']) ?>)<?php endif; ?><br><?php if (!$isDead): ?><?= pills($j['tags']) ?><br><?php endif; ?><?= h(trim(($isDead && $dateCell ? 'Removed ' : '') . $dateCell)) ?></div>
       </td>
-      <td class="company"><span class="cn"><?= h($j['company']) ?></span><?php if ($j['location']): ?><small class="cloc"><?= h($j['location']) ?></small><?php endif; ?></td>
+      <td class="company"><span class="cn"><?= h($j['company']) ?></span><?php if ($j['location']): ?> <span class="cloc">(<?= h($j['location']) ?>)</span><?php endif; ?></td>
       <?php if (!$isDead): ?><td class="tags"><?= pills($j['tags']) ?></td><?php endif; ?>
       <td class="posted"><?= h($dateCell) ?></td>
       <?php if (!$isDead): ?><td class="pin"><button type="button" class="pinbtn" title="Pin this job" aria-label="Pin this job">&#9734;</button></td><?php endif; ?>
@@ -59,10 +59,10 @@ function job_row(array $j, bool $isDead, int $staleDays): string
     <?php return ob_get_clean();
 }
 
-// The little Mac-window strip on every card: three dots and a faint "x" (decoration only, no title).
+// The little Mac-window strip on every card: just three dots (decoration only, no title, no x).
 function winbar(): string
 {
-    return '<div class="winbar" aria-hidden="true"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i><span class="wx">x</span></div>';
+    return '<div class="winbar" aria-hidden="true"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i></div>';
 }
 
 function table_head(bool $dead = false): string

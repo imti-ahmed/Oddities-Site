@@ -55,7 +55,6 @@ button, select, input { font: inherit; color: inherit; }
 .dot.r { background: #ff5f57; border-color: #df4740; }
 .dot.y { background: #febc2e; border-color: #dba024; }
 .dot.g { background: #28c840; border-color: #1ca832; }
-.winbar .wx { margin-left: auto; color: #a1b1c9; font-size: 13px; line-height: 1; }
 .winbody { padding: 14px 18px 16px; }
 
 /* ---------- glossy buttons ---------- */
@@ -88,14 +87,16 @@ table.jobs th { text-align: left; font-size: 12.5px; font-weight: 500; color: va
 table.jobs td { padding: 8px 14px; vertical-align: middle; }
 table.jobs tbody tr.z { background: var(--zebra); }
 table.jobs tbody tr:hover { background: #e7efff; }
-td.rank, th.rank { width: 48px; color: var(--faint); text-align: right; font-size: 13px; padding-right: 6px; }
-td.pin, th.pin { width: 44px; text-align: center; padding-left: 4px; padding-right: 8px; }
-td.posted, th.posted { width: 112px; color: var(--muted); font-size: 13px; white-space: nowrap; }
-td.tags, th.tags { width: 170px; }
-td.company, th.company { width: 200px; }
-table.dead td.company, table.dead th.company { width: 320px; }   /* Dead zone: narrower job names, wider company column */
+td.rank, th.rank { width: 44px; color: var(--faint); text-align: right; font-size: 13px; }
+table.jobs td.rank, table.jobs th.rank { padding-left: 8px; padding-right: 6px; }      /* (the table.jobs prefix makes these win over the general padding) */
+td.pin, th.pin { width: 44px; text-align: center; }
+table.jobs td.pin, table.jobs th.pin { padding-left: 4px; padding-right: 8px; }
+td.posted, th.posted { width: 108px; color: var(--muted); font-size: 13px; white-space: nowrap; }
+td.tags, th.tags { width: 150px; }
+td.company, th.company { width: 300px; }
+table.dead td.company, table.dead th.company { width: 340px; }   /* Dead zone: narrower job names, wider company column */
 
-.jt { font-weight: 600; font-size: 15.5px; color: var(--ink); }
+.jt { font-weight: 600; font-size: 14px; color: var(--ink); }   /* same size as the company name, still bold */
 .jt:visited { color: #6b7280; }
 .meta { font-size: 13px; color: var(--muted); margin-top: 3px; }
 .meta .co { font-weight: 600; color: #334155; }
@@ -103,7 +104,7 @@ table.dead td.company, table.dead th.company { width: 320px; }   /* Dead zone: n
 
 td.company { font-size: 14px; line-height: 1.3; color: #334155; }
 .cn { font-weight: 500; }
-.cloc { display: block; margin: 1px 0 0 0; font-size: 12.5px; color: var(--muted); }
+.cloc { margin-left: 2px; font-size: 13px; color: var(--muted); }   /* "(City, Country)" right after the company name */
 
 /* tag stickers: one per job, same comic style as NEW! / UPDATED! */
 .tag {
@@ -136,8 +137,6 @@ td.company { font-size: 14px; line-height: 1.3; color: #334155; }
 .blinkie.updated { --rainbow: linear-gradient(165deg, #00a8ff 0%, #17c964 34%, #e3bf00 60%, #ff6a1a 80%, #ec2f7c 100%); transform: rotate(-4deg); }
 
 /* ---------- dead zone ---------- */
-table.dead .jt { color: #8b95a5; }
-table.dead td { color: #8b95a5; }
 .stamp { display: inline-block; margin-right: 9px; padding: 0 7px; vertical-align: 1px; transform: rotate(-3deg); font: 400 14px/17px var(--comic); letter-spacing: .06em; text-transform: uppercase; color: #6b7280; background: #fff; border: 2px solid #9aa3b2; border-radius: 4px; }
 
 /* ---------- pinned window ---------- */
@@ -150,7 +149,7 @@ table.dead td { color: #8b95a5; }
 #pinbox li.gone a { color: #8b95a5; }
 #pinbox .x { border: 0; background: none; color: var(--faint); cursor: pointer; font-size: 17px; line-height: 1; margin-left: auto; padding: 0 2px; }
 #pinbox .x:hover { color: #b91c1c; }
-#pinbox .hint { padding: 6px 14px 12px; color: var(--muted); font-size: 13px; }
+#pinbox .hint { padding: 12px 18px 16px; color: #8b95a5; font-size: 14.5px; line-height: 1.55; }   /* same size as the welcome card, light grey: it is only a temporary hint */
 
 .more { padding: 18px 0 4px; text-align: center; }
 .empty { padding: 32px 16px; text-align: center; color: var(--muted); }
