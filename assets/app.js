@@ -176,6 +176,37 @@
       .catch(function () { /* the counter service is down: leave the dash, nothing else is affected */ });
   })();
 
+  // admin card (only present on /admin): send the pasted link to the server, show what the AI decided
+  (function () {
+    var form = $('#adminForm');
+    if (!form) return;
+    var urlBox = $('#adminUrl'), passBox = $('#adminPass'), btn = $('#adminBtn'), msg = $('#adminMsg');
+    try { passBox.value = sessionStorage.getItem('dj_admin') || ''; } catch (e) { /* storage blocked */ }
+    function say(text, kind) { msg.textContent = text; msg.className = 'admin-msg ' + kind; }
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var url = urlBox.value.trim();
+      if (!url) { say('Paste a job link first.', 'bad'); return; }
+      btn.disabled = true;
+      say('Reading the page and asking the AI. This takes a few seconds...', 'wait');
+      fetch('/api/add-job.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': passBox.value },
+        body: JSON.stringify({ url: url })
+      })
+        .then(function (r) { return r.json().catch(function () { return { status: 'error', message: 'The server gave an answer we could not read. Try again in a moment.' }; }).then(function (d) { return { code: r.status, d: d }; }); })
+        .then(function (x) {
+          var d = x.d || {};
+          if (x.code !== 401) { try { sessionStorage.setItem('dj_admin', passBox.value); } catch (e) { /* ignore */ } }
+          if (d.status === 'added') { say(d.message, 'good'); urlBox.value = ''; }
+          else if (d.status === 'duplicate') say(d.message, 'wait');
+          else say(d.message || 'Something went wrong.', 'bad');
+        })
+        .catch(function () { say('Could not reach the server. Check your internet and try again.', 'bad'); })
+        .then(function () { btn.disabled = false; });
+    });
+  })();
+
   renderPins();
   var first = parse(location.hash.slice(1));                     // opening the site: honour an old #link once, then show the plain address
   show(first.v, first.p);

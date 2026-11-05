@@ -1,11 +1,15 @@
 {
   "functions": {
-    "api/index.php": { "runtime": "vercel-php@0.9.0", "includeFiles": "{index.php,style.css,assets/app.js,lib/**,config/**,data/**}" },
-    "api/icon.php":  { "runtime": "vercel-php@0.9.0", "includeFiles": "assets/icons/**" }
+    "api/index.php":   { "runtime": "vercel-php@0.9.0", "includeFiles": "{index.php,style.css,assets/app.js,lib/**,config/**,data/**}" },
+    "api/admin.php":   { "runtime": "vercel-php@0.9.0", "includeFiles": "{index.php,style.css,assets/app.js,lib/**,config/**,data/**}" },
+    "api/add-job.php": { "runtime": "vercel-php@0.9.0", "includeFiles": "{lib/**,config/**}", "maxDuration": 60 },
+    "api/icon.php":    { "runtime": "vercel-php@0.9.0", "includeFiles": "assets/icons/**" }
   },
   "routes": [
     { "src": "/favicon\\.ico", "dest": "/api/icon.php?f=favicon.ico" },
     { "src": "/assets/icons/(favicon\\.ico|favicon-32\\.png|apple-touch-icon\\.png)", "dest": "/api/icon.php?f=$1" },
+    { "src": "/admin/?", "dest": "/api/admin.php" },
+    { "src": "/api/add-job(\\.php)?", "dest": "/api/add-job.php" },
     { "src": "/(.*)", "dest": "/api/index.php" }
   ]
 }

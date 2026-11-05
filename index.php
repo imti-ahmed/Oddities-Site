@@ -12,6 +12,7 @@ $n = ['all' => count($live), 'india' => 0, 'abroad' => 0, 'remote' => 0, 'hybrid
 foreach ($live as $j) { $n[$j['region']]++; $n[$j['mode']]++; }
 
 $lastUpdate = $all ? max(array_column($all, 'change')) : 0;   // date of the most recent added/updated job
+$isAdmin = defined('IS_ADMIN') && IS_ADMIN;                    // true only when the page is opened at /admin (see api/admin.php)
 
 $tabs = [['all', 'All'], ['india', 'India'], ['abroad', 'Abroad'], ['remote', 'Remote']];
 if ($n['hybrid'] > 0) $tabs[] = ['hybrid', 'Hybrid'];
@@ -138,13 +139,31 @@ function table_head(bool $dead = false): string
         <nav class="pager" id="pager" aria-label="Pages" hidden></nav>
       </div>
 
-      <aside id="pinbox" class="win orange" aria-label="Pinned jobs">
-        <?= winbar() ?>
-        <div class="winbody">
-          <ul id="pinList"></ul>
-          <div class="hint" id="pinHint">Tap the &#9734; on any job to pin it here. Pins are saved in this browser only.</div>
+      <div class="side">
+        <?php if ($isAdmin): ?>
+        <!-- Admin card: only on /admin. Paste a job link; the AI checks it against our roles and lists it. -->
+        <div class="win" id="adminCard">
+          <?= winbar() ?>
+          <div class="winbody">
+            <p>Paste a job link. The AI checks it against our roles and lists it.</p>
+            <form id="adminForm" autocomplete="off">
+              <input type="url" id="adminUrl" placeholder="https://..." aria-label="Job link" required>
+              <input type="password" id="adminPass" placeholder="Admin password" aria-label="Admin password" autocomplete="current-password">
+              <button type="submit" id="adminBtn">Add job</button>
+            </form>
+            <p id="adminMsg" class="admin-msg" role="status"></p>
+          </div>
         </div>
-      </aside>
+        <?php endif; ?>
+
+        <aside id="pinbox" class="win orange" aria-label="Pinned jobs">
+          <?= winbar() ?>
+          <div class="winbody">
+            <ul id="pinList"></ul>
+            <div class="hint" id="pinHint">Tap the &#9734; on any job to pin it here. Pins are saved in this browser only.</div>
+          </div>
+        </aside>
+      </div>
     </div>
   </section>
 

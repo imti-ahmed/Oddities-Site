@@ -18,7 +18,12 @@ Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards
 - `index.php` – the page. `style.css` – the look (change colours at the top). `assets/app.js` – tabs, page numbers, pins.
 - `lib/jobs.php` – works out each job's tab, tags, badge and Dead-zone status.
 - `config/settings.php` – site name, tagline, rows per page, `new_days` (badge window), `stale_days` (inactive after).
-- `data/jobs.json` – the jobs. No database, no admin page.
+- `data/jobs.json` – the jobs. No database.
+- `config/roles.php` – the list of roles we accept (UI/UX Designer ... Internship) and the rules (`min_confidence`, whether worldwide remote counts as India). **Edit this to add or remove a role.**
+- `config/groq_prompt.txt` – the instructions given to the Groq AI, in plain English. Read and edit freely; `{{TAGS}}` is filled in from `config/roles.php`.
+- `config/sources.php` – the websites the automatic collector will read (not built yet). `config/companies.php` – companies with job boards we can read (Figma, Canva, ...).
+- `lib/pagefetch.php`, `lib/groq.php`, `lib/github_store.php`, `lib/intake.php` – the engine: read a job page, ask the AI, double-check its answer in code, save.
+- `api/add-job.php` – the endpoint behind the `/admin` card. `api/admin.php` – the home page plus the admin card.
 
 ## The jobs file
 
@@ -61,6 +66,20 @@ Then open http://localhost:8000
 - **Favicon:** the smiley icon lives in `assets/icons/` (`favicon.ico`, `favicon-32.png`, `apple-touch-icon.png`). Vercel doesn't serve plain files by itself, so `api/icon.php` hands out exactly those three files (and nothing else) through the routes in `vercel.json`.
 - **Site name:** change `site_name` in `config/settings.php` (top-left header and browser tab title).
 
+## Adding jobs with the AI (the /admin card)
+
+Open `/admin` on your site. Above the Pinned box you get a card: paste a job link, type your admin password, press **Add job**. The page is read, Groq decides whether it is one of our roles (and whether it is an internship), India or Abroad (by the job's own location, not the company's home city), and remote / hybrid / in-office. The answer is double-checked in code (the AI's quotes must really be on the page, doubtful jobs are refused, jobs older than `stale_days` are refused, duplicates are skipped). If it passes, the job is saved to `data/jobs.json` and the site updates about a minute later.
+
+Set these in Vercel, Settings, Environment Variables (Preview and Production), then redeploy:
+
+| Name | What it is |
+|---|---|
+| `GROQ_API_KEY` | Your Groq key. Never put it in code. |
+| `ADMIN_PASSWORD` | A password you invent. Without it the card does nothing. |
+| `JOBS_GITHUB_TOKEN` | A GitHub token with **Contents: Read and write** on this repository. Needed because Vercel cannot save files, so each new job is saved by committing `data/jobs.json`. |
+
+Optional: `GROQ_MODEL` (default `llama-3.3-70b-versatile`). On your own computer (no token) the local file is edited directly; open `http://localhost:8000/admin.php`.
+
 ## Coming next
 
-Use the Groq AI API to read job links, understand the posts (remote/hybrid, level, tags), and generate the job data automatically.
+The automatic collector (cron) that visits the sources in `config/sources.php` and the companies in `config/companies.php`, and sends every link through the same `intake_job()` check. The Update log and the About page's "added manually" line will need rewording once that exists.

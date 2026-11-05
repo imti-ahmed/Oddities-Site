@@ -1,6 +1,14 @@
 <?php
 // Small shared tools used by the website.
 
+// Reads a setting from the environment (Vercel "Environment Variables", or your computer). Empty text when it is not set.
+function env(string $name): string
+{
+    $v = getenv($name);
+    if ($v === false || $v === '') $v = $_ENV[$name] ?? $_SERVER[$name] ?? '';
+    return (string)$v;
+}
+
 function h(?string $s): string   // makes text safe to show on a web page
 {
     return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');

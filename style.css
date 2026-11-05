@@ -143,7 +143,30 @@ td.company { font-size: 14px; line-height: 1.3; color: #334155; }
 @media (prefers-reduced-motion: reduce) { .pill { animation: none; } }   /* people who turned motion off just see a still pill */
 
 /* ---------- pinned window ---------- */
-#pinbox { grid-area: pin; position: sticky; top: 66px; }
+/* right column: (admin card on /admin only) then the pinned box, stacked and sticky together */
+.side { grid-area: pin; position: sticky; top: 66px; display: flex; flex-direction: column; gap: 20px; }
+
+/* admin card (only exists on /admin) */
+#adminCard .winbody { padding: 16px 18px 18px; }
+#adminCard p { margin: 0 0 12px; font-size: 14.5px; line-height: 1.55; color: #333; }
+#adminForm { display: grid; gap: 8px; }
+#adminForm input { width: 100%; height: 36px; padding: 0 12px; border: 1px solid #a5abb5; border-radius: 8px; background: #fff; font-size: 14px; }
+#adminForm input:focus { outline: 2px solid #99cbf8; outline-offset: 1px; }
+#adminBtn {
+  height: 36px; border-radius: 999px; font-size: 14px; font-weight: 600; color: #071a3f; cursor: pointer; border: 1px solid #2b3fa6;
+  background: linear-gradient(#edf4ff 0%, #d6e7ff 18%, #a2c7ff 50%, #99cbf8 80%, #a2d2f7 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 6px 14px rgba(30,60,140,.16);
+}
+#adminBtn:hover { filter: brightness(1.04); }
+#adminBtn:active { transform: translateY(1px); }
+#adminBtn:disabled { opacity: .55; cursor: wait; }
+.admin-msg { margin: 12px 0 0 !important; font-size: 14px !important; }
+.admin-msg:empty { display: none; }
+#adminCard .admin-msg.good { color: #17803f; }
+#adminCard .admin-msg.bad { color: #b02a2a; }
+#adminCard .admin-msg.wait { color: var(--muted); }
+
+#pinbox { position: static; }
 #pinbox .winbody { padding: 8px 0 4px; }
 #pinbox ul { list-style: none; margin: 0; padding: 0; max-height: 55vh; overflow: auto; }
 #pinbox li { display: flex; gap: 6px; padding: 7px 14px; align-items: flex-start; }
@@ -188,7 +211,8 @@ td.company { font-size: 14px; line-height: 1.3; color: #334155; }
 @media (max-width: 1100px) {
   /* narrower screens: one column, in this order: welcome card, pinned box, table */
   .layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "intro" "pin" "main"; }
-  #pinbox { position: static; margin-bottom: 20px; }
+  .side { position: static; display: block; }
+  .side > .win { margin-bottom: 20px; }
   #pinbox.nopins { display: none; }
 }
 @media (max-width: 760px) {
