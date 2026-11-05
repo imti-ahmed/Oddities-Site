@@ -30,7 +30,7 @@
     var list = $('#pinList'); list.innerHTML = '';
     pins.forEach(function (p) {
       var row = $('tr[data-id="' + p.id + '"]');
-      var gone = row && row.closest('table') === deadTable;
+      var gone = !row || row.closest('table') === deadTable;   // not on the page any more (or in the Dead zone) = no longer a live job
       var li = document.createElement('li'); if (gone) li.className = 'gone';
       var box = document.createElement('div');
       var a = document.createElement('a'); a.href = p.url; a.target = '_blank'; a.rel = 'nofollow noopener'; a.textContent = p.title;

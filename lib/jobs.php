@@ -80,6 +80,8 @@ function load_jobs(array $settings): array
             'posted' => $posted, 'added' => $added, 'updated' => $updated, 'closed' => $closed,
             'dead' => $dead, 'dead_note' => no_em_dash((string)($j['closed_reason'] ?? '')), 'badge' => $badge,
             'change' => max($added, $updated),
+            // The date it left the live list: the closed date, or for inactive jobs the day the "inactive" rule moved it to the Dead zone.
+            'removed' => $dead === 'closed' ? ($closed ?: max($added, $updated)) : ($dead === 'inactive' ? $fresh + $settings['stale_days'] * 86400 : 0),
         ];
     }
     return $jobs;
@@ -95,13 +97,10 @@ function sort_live(array $jobs): array
     return $jobs;
 }
 
-// Dead zone: closed ones first (most recently closed first), then inactive ones (newest first).
+// Dead zone: most recently removed first (closed and inactive jobs mixed together, by the date they left the live list).
 function sort_dead(array $jobs): array
 {
-    usort($jobs, function ($a, $b) {
-        if ($a['dead'] !== $b['dead']) return $a['dead'] === 'closed' ? -1 : 1;
-        return $a['dead'] === 'closed' ? $b['closed'] <=> $a['closed'] : $b['posted'] <=> $a['posted'];
-    });
+    usort($jobs, fn($a, $b) => $b['removed'] <=> $a['removed']);   // most recently removed first
     return $jobs;
 }
 
@@ -115,7 +114,7 @@ function build_log(array $jobs, array $settings, int $limit = 200): array
         if ($j['updated'] && $j['updated'] > $j['added']) $events[] = ['ts' => $j['updated'], 'type' => 'updated', 'job' => $j];
         if ($j['dead'] === 'closed' && $j['closed']) $events[] = ['ts' => $j['closed'], 'type' => 'closed', 'job' => $j];
         if ($j['dead'] === 'inactive') {
-            $when = max($j['posted'], $j['updated']) + $settings['stale_days'] * 86400;
+            $when = $j['removed'];
             if ($when <= $now) $events[] = ['ts' => $when, 'type' => 'inactive', 'job' => $j];
         }
     }

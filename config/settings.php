@@ -8,6 +8,7 @@ return [
 
     'new_days'   => 3,         // a job added/updated within this many days gets a glowing NEW / UPDATED badge and sits at the top
     'stale_days' => 90,        // a job not posted or updated for this many days moves to the Dead zone as "inactive"
+    'dead_limit' => 20,        // the Dead zone shows only this many entries (the most recently removed); older ones drop off the list
 
     'contact_email' => 'designer.imtiyaz@gmail.com',   // shown on the About page
 

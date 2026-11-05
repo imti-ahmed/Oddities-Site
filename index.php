@@ -4,7 +4,7 @@ require_once __DIR__ . '/lib/jobs.php';
 $settings = require __DIR__ . '/config/settings.php';
 $all  = load_jobs($settings);
 $live = sort_live(array_values(array_filter($all, fn($j) => !$j['dead'])));
-$dead = sort_dead(array_values(array_filter($all, fn($j) => $j['dead'])));
+$dead = array_slice(sort_dead(array_values(array_filter($all, fn($j) => $j['dead']))), 0, (int)$settings['dead_limit']);   // only the latest few
 $log  = build_log($all, $settings);
 
 // Numbers shown on the tabs
@@ -38,8 +38,8 @@ function pills(array $tags): string
 function job_row(array $j, bool $isDead, int $staleDays): string
 {
     $posted = $j['posted'] ? time_ago($j['posted']) : '';
-    // Dead zone rows show the date it was removed: the closed date, or for inactive jobs the day the "inactive" rule moved it here.
-    $removedAt = !$isDead ? 0 : ($j['dead'] === 'closed' ? ($j['closed'] ?: $j['change']) : max($j['posted'], $j['updated']) + $staleDays * 86400);
+    // Dead zone rows show the date it was removed (worked out in lib/jobs.php).
+    $removedAt = $isDead ? $j['removed'] : 0;
     $dateCell  = $isDead ? ($removedAt ? date('M j, Y', $removedAt) : '') : $posted;
     ob_start(); ?>
     <tr data-id="<?= h($j['id']) ?>" data-region="<?= h($j['region']) ?>" data-mode="<?= h($j['mode']) ?>" data-co="<?= h($j['company']) ?>" data-title="<?= h($j['title']) ?>" data-url="<?= h($j['url']) ?>">
@@ -119,7 +119,7 @@ function table_head(bool $dead = false): string
       <div class="intro win" id="deadNote" hidden>
         <?= winbar() ?>
         <div class="winbody">
-          <p>Jobs that are closed, or inactive (not posted or updated in over <?= (int)$settings['stale_days'] ?> days, so probably not hiring any more). Kept here for reference.</p>
+          <p>Jobs that are closed, or inactive (not posted or updated in over <?= (int)$settings['stale_days'] ?> days, so probably not hiring any more). Kept here for reference.<br>Any entries more than <?= (int)$settings['dead_limit'] ?> will be removed from here.</p>
         </div>
       </div>
 
