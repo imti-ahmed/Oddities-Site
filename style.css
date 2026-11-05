@@ -84,8 +84,8 @@ button, select, input { font: inherit; color: inherit; }
 .main { grid-area: main; min-width: 0; }
 
 table.jobs { width: 100%; border-collapse: collapse; }
-table.jobs th { text-align: left; font-size: 12.5px; font-weight: 500; color: var(--faint); padding: 11px 14px; background: #fafbfe; border-bottom: 1px solid #e6ecf5; }
-table.jobs td { padding: 13px 14px; vertical-align: middle; }
+table.jobs th { text-align: left; font-size: 12.5px; font-weight: 500; color: var(--faint); padding: 9px 14px; background: #fafbfe; border-bottom: 1px solid #e6ecf5; }
+table.jobs td { padding: 8px 14px; vertical-align: middle; }
 table.jobs tbody tr.z { background: var(--zebra); }
 table.jobs tbody tr:hover { background: #e7efff; }
 td.rank, th.rank { width: 48px; color: var(--faint); text-align: right; font-size: 13px; padding-right: 6px; }
@@ -100,13 +100,13 @@ td.company, th.company { width: 200px; }
 .meta .co { font-weight: 600; color: #334155; }
 .m-only { display: none; }
 
-td.company { font-size: 14px; color: #334155; }
+td.company { font-size: 14px; line-height: 1.3; color: #334155; }
 .cn { font-weight: 500; }
 .cloc { display: block; margin: 1px 0 0 0; font-size: 12.5px; color: var(--muted); }
 
 /* tag stickers: one per job, same comic style as NEW! / UPDATED! */
 .tag {
-  display: inline-block; margin: 2px 6px 2px 0; padding: 0 8px; white-space: nowrap;
+  display: inline-block; margin: 1px 6px 1px 0; padding: 0 8px; white-space: nowrap;
   font: 400 14px/17px var(--comic); letter-spacing: .06em; text-transform: uppercase; color: #111;
   background: var(--c, #e3e6ea); border: 2px solid #111; border-radius: 6px; box-shadow: 2px 2px 0 #111;
   transform: rotate(var(--r, 0deg));
@@ -118,7 +118,7 @@ td.company { font-size: 14px; color: #334155; }
 
 /* ---------- NEW / UPDATED stickers: rainbow script lettering with a white die-cut outline (still, no glow) ---------- */
 .blinkie {
-  position: relative; display: inline-block; vertical-align: -2px; margin-right: 10px; padding: 1px 5px 5px;
+  position: relative; display: inline-block; vertical-align: -2px; margin-right: 10px; padding: 0 5px 3px;
   font: italic 700 21px/1.1 "Playfair Display", "Palatino Linotype", Georgia, "Times New Roman", serif; letter-spacing: -.01em; text-transform: none;
   transform: rotate(-6deg);
   /* bottom layer: the word in white with a thick white edge = the die-cut sticker outline */
@@ -199,5 +199,5 @@ table.dead td { color: #8b95a5; }
   th.company, td.company, th.posted, td.posted, th.tags, td.tags { display: none; }
   .m-only { display: block; }
   td.rank, th.rank { width: 30px; padding-left: 6px; padding-right: 2px; }
-  table.jobs td { padding: 11px 8px; }
+  table.jobs td { padding: 8px; }
 }

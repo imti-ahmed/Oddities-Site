@@ -44,6 +44,7 @@
     $('#pinbox').classList.toggle('nopins', pins.length === 0);
     $$('tr[data-id]').forEach(function (r) {
       var b = $('.pinbtn', r), on = isPinned(r.dataset.id);
+      if (!b) return;                                   // Dead zone rows have no star
       b.classList.toggle('on', on); b.innerHTML = on ? '&#9733;' : '&#9734;';
       b.title = on ? 'Unpin this job' : 'Pin this job';
     });

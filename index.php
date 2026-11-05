@@ -54,7 +54,7 @@ function job_row(array $j, bool $isDead, int $staleDays): string
       <td class="company"><span class="cn"><?= h($j['company']) ?></span><?php if ($j['location']): ?><small class="cloc"><?= h($j['location']) ?></small><?php endif; ?></td>
       <?php if (!$isDead): ?><td class="tags"><?= pills($j['tags']) ?></td><?php endif; ?>
       <td class="posted"><?= h($dateCell) ?></td>
-      <td class="pin"><button type="button" class="pinbtn" title="Pin this job" aria-label="Pin this job">&#9734;</button></td>
+      <?php if (!$isDead): ?><td class="pin"><button type="button" class="pinbtn" title="Pin this job" aria-label="Pin this job">&#9734;</button></td><?php endif; ?>
     </tr>
     <?php return ob_get_clean();
 }
@@ -70,7 +70,7 @@ function table_head(bool $dead = false): string
     // The Dead zone is kept simple: no Tag column, and "Removed On" instead of "Posted".
     return '<thead><tr><th class="rank">#</th><th>Job</th><th class="company">Company &amp; location</th>'
          . ($dead ? '' : '<th class="tags">Tag</th>')
-         . '<th class="posted">' . ($dead ? 'Removed On' : 'Posted') . '</th><th class="pin"></th></tr></thead>';
+         . '<th class="posted">' . ($dead ? 'Removed On' : 'Posted') . '</th>' . ($dead ? '' : '<th class="pin"></th>') . '</tr></thead>';
 }
 ?>
 <!DOCTYPE html>
