@@ -23,7 +23,7 @@ Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards
 - `config/groq_prompt.txt` – the instructions given to the Groq AI, in plain English. Read and edit freely; `{{TAGS}}` is filled in from `config/roles.php`.
 - `config/sources.php` – the websites the automatic collector will read (not built yet). `config/companies.php` – companies with job boards we can read (Figma, Canva, ...).
 - `lib/pagefetch.php`, `lib/groq.php`, `lib/github_store.php`, `lib/intake.php` – the engine: read a job page, ask the AI, double-check its answer in code, save.
-- `api/add-job.php` – the endpoint behind the `/admin` card. ``api/index.php` shows the admin card when the address is `/admin`.
+- `api/add-job.php` – the endpoint behind the `/admin` card. `api/index.php` shows the admin card when the address is `/admin`.
 
 ## The jobs file
 
