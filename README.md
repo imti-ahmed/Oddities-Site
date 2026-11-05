@@ -89,7 +89,7 @@ Optional: `GROQ_MODEL` (default `llama-3.3-70b-versatile`). If Groq says that mo
 
 ## Keeping the board filled and clean (two jobs)
 
-**1. Finding NEW jobs, every 3 days** (the **Collect jobs** button on `/admin`, or `scripts/collect.php`, or the GitHub job at 04:00 India time):
+**1. Finding NEW jobs, every 3 days** (the scheduled GitHub job at 04:00 India time, or `scripts/collect.php` by hand; there is no button for this on the site, on purpose, so nobody can use up the Groq allowance from the browser). To run it right now: GitHub, Actions, "Collect jobs", Run workflow:
 1. **Gather (no AI):** it reads the public job boards of the companies in `config/companies.php` (Greenhouse, Lever, Ashby, SmartRecruiters) and the sites in `config/sources.php`. Every opening whose *title* could fit one of our roles is put in a queue (the `job_queue` table). Titles like "Software Engineer" are dropped here.
 2. **Settle, with as few AI calls as possible.** For every queued job, in this order:
    - the link, or the same title + company + place, is already listed: skipped (no AI);

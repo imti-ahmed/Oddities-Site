@@ -35,7 +35,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') reply(405, ['status' => 'erro
 $in = json_decode((string)file_get_contents('php://input'), true);
 $in = is_array($in) ? $in : [];
 
-// the "Collect jobs" button on the card: read our company list and job sites, then check the jobs one at a time
+// buttons on the /admin card (highlight star, delete, check open jobs)
 $action = (string)($in['action'] ?? '');
 if ($action === 'highlight') {                       // the star on /admin: highlight a job for everyone (the Highlighted tab)
     $u = trim((string)($in['url'] ?? ''));
@@ -51,10 +51,10 @@ if ($action === 'delete') {                          // the delete button on /ad
     catch (Throwable $e) { reply(200, ['status' => 'error', 'message' => $e->getMessage()]); }
     reply(200, $found ? ['status' => 'ok'] : ['status' => 'error', 'message' => 'That job is not in the list any more.']);
 }
-if ($action !== '') {
+if ($action !== '') {                                // the "Check open jobs" button (no AI). Collecting new jobs is NOT possible from here: only the scheduled GitHub job does that.
     set_time_limit(55); ini_set('memory_limit', '256M');
-    require_once __DIR__ . '/collector.php';
-    reply(200, collector_action($action, $in));
+    require_once __DIR__ . '/liveness.php';
+    reply(200, liveness_action($action, $in));
 }
 
 $url = trim((string)($in['url'] ?? ''));

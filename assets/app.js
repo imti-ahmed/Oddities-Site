@@ -293,9 +293,8 @@
         .then(function () { btn.disabled = false; });
     });
 
-    // "Collect jobs": read our company list and job sites into a queue, then check the queued jobs one at a time.
-    // Every step is a short request, so nothing runs into Vercel's time limit, and it can be stopped and resumed at any moment.
-    var colBtn = $('#colBtn'), colStop = $('#colStop'), colMsg = $('#colMsg'), colLog = $('#colLog'), stopNow = false;
+    // "Check open jobs": is every listed job still open? No AI: just web requests. Closed jobs move to the Dead Zone.
+    var liveBtn = $('#liveBtn'), colStop = $('#colStop'), colMsg = $('#colMsg'), colLog = $('#colLog'), stopNow = false;
     function colSay(text, kind) { colMsg.textContent = text; colMsg.className = 'admin-msg ' + kind; }
     function colLine(text, kind) { var li = document.createElement('li'); li.className = kind; li.textContent = text; colLog.appendChild(li); colLog.scrollTop = colLog.scrollHeight; }
     function act(action, extra) {
@@ -315,61 +314,8 @@
       return once().then(function (d) { return d.status === 'unreadable' ? wait(3000).then(once) : d; })
         .then(function (d) { if (d.status === 'unreadable') d.status = 'stop'; return d; });
     }
-    async function collect() {
-      stopNow = false; colBtn.disabled = true; if (liveBtn) liveBtn.disabled = true; colStop.hidden = false; colLog.innerHTML = '';
-      var added = 0, notAdded = 0, failed = 0, ended = 'Done.';
-      try {
-        var plan = await act('plan');
-        if (plan.status !== 'ok') { colSay(plan.message || 'Could not start.', 'bad'); return; }
-        if (plan.pending > 0) {
-          colSay('Continuing where we left off: ' + plan.pending + ' jobs are waiting to be checked.', 'wait');
-        } else {
-          var queued = 0, from = 0;
-          while (from < plan.companies && !stopNow) {
-            var g = await act('gather_companies', { from: from });
-            if (g.status !== 'ok') { colSay(g.message || 'Problem while reading company job boards.', 'bad'); return; }
-            queued += g.queued; from = g.next;
-            colSay('Reading company job boards: ' + Math.min(from, plan.companies) + ' of ' + plan.companies + ' (' + queued + ' jobs to check so far)...', 'wait');
-            if (g.finished) break;
-          }
-          for (var i = 0; i < plan.sources && !stopNow; i++) {
-            var s = await act('gather_source', { index: i });
-            if (s.status === 'stop') { colSay(s.message, 'bad'); return; }
-            if (s.status === 'wait') { colSay(s.message + ' Waiting ' + s.seconds + ' seconds...', 'wait'); await wait(Math.min(120, s.seconds || 30) * 1000); i--; continue; }
-            queued += s.queued || 0;
-            colLine(s.message, 'skip');
-            colSay('Reading job sites: ' + (i + 1) + ' of ' + plan.sources + ' (' + queued + ' jobs to check so far)...', 'wait');
-          }
-        }
-        var aiCalls = 0, noAi = 0;
-        while (!stopNow) {
-          var r = await act('next');
-          if (r.status === 'empty') break;
-          var results = r.results || [];
-          aiCalls += r.ai_calls || 0;
-          results.forEach(function (x) {
-            if (x.result === 'added') { added++; if (!x.ai) noAi++; colLine(x.message.replace(/ It is saved\..*$/, ''), 'ok'); }
-            else if (x.result === 'error') failed++;
-            else notAdded++;
-          });
-          if (r.status === 'wait') { colSay('Groq asked us to slow down. Waiting ' + r.seconds + ' seconds...', 'wait'); await wait(r.seconds * 1000); continue; }
-          if (r.status === 'stop') { colSay(r.message + ' So far: ' + added + ' added.', 'bad'); return; }
-          if (r.status !== 'checked') break;
-          colSay('Checking jobs: ' + added + ' added, ' + notAdded + ' not added, ' + r.remaining + ' waiting (AI calls used: ' + aiCalls + ')...', 'wait');
-        }
-        ended = 'Done.';
-        if (stopNow) ended = 'Stopped. Press Collect jobs again to continue where it left off.';
-        colSay(ended + ' Added ' + added + ' (' + noAi + ' without the AI), not added ' + notAdded + (failed ? ', could not check ' + failed : '') + '. AI calls used: ' + aiCalls + '. The site shows new jobs within a minute.', added ? 'good' : 'wait');
-      } catch (e) {
-        colSay('Lost the connection to the server. Press Collect jobs again to continue where it left off.', 'bad');
-      } finally {
-        colBtn.disabled = false; if (liveBtn) liveBtn.disabled = false; colStop.hidden = true;
-      }
-    }
-    // "Check open jobs": is every listed job still open? No AI: just web requests. Closed jobs move to the Dead Zone.
-    var liveBtn = $('#liveBtn');
     async function checkOpen() {
-      stopNow = false; liveBtn.disabled = true; colBtn.disabled = true; colStop.hidden = false; colLog.innerHTML = '';
+      stopNow = false; liveBtn.disabled = true; colStop.hidden = false; colLog.innerHTML = '';
       var checked = 0, open = 0, closed = 0, unknown = 0;
       try {
         var plan = await act('live_plan');
@@ -388,11 +334,10 @@
       } catch (e) {
         colSay('Lost the connection to the server. Press the button again to continue.', 'bad');
       } finally {
-        liveBtn.disabled = false; colBtn.disabled = false; colStop.hidden = true;
+        liveBtn.disabled = false; colStop.hidden = true;
       }
     }
-    if (liveBtn) liveBtn.addEventListener('click', checkOpen);
-    if (colBtn) { colBtn.addEventListener('click', collect); colStop.addEventListener('click', function () { stopNow = true; colSay('Stopping after the current job...', 'wait'); }); }
+    if (liveBtn) { liveBtn.addEventListener('click', checkOpen); colStop.addEventListener('click', function () { stopNow = true; colSay('Stopping after this round...', 'wait'); }); }
   })();
 
   renderPins();

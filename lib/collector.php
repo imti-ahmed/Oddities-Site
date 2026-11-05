@@ -254,22 +254,4 @@ function collector_unclaim(array $rows): void
     foreach ($rows as $r) $st->execute([':k' => $r['url_key']]);
 }
 
-// ---------- the actions the /admin card asks for ----------
-function collector_action(string $action, array $in): array
-{
-    if (str_starts_with($action, 'live_')) { require_once __DIR__ . '/liveness.php'; return liveness_action($action, $in); }
-    try {
-        switch ($action) {
-            case 'plan':
-                $s = collector_stats();
-                return ['status' => 'ok', 'companies' => count(collector_companies()), 'sources' => count(collector_sources()), 'pending' => $s['pending'], 'jobs' => $s['jobs']];
-            case 'gather_companies': return collector_gather_companies((int)($in['from'] ?? 0));
-            case 'gather_source':    return collector_gather_source((int)($in['index'] ?? 0));
-            case 'next':             return collector_next();
-            case 'stats':            return ['status' => 'ok'] + collector_stats();
-        }
-    } catch (Throwable $e) {
-        return ['status' => 'stop', 'message' => $e instanceof PDOException ? 'Database problem: ' . db_error_hint($e) : $e->getMessage()];
-    }
-    return ['status' => 'stop', 'message' => 'Unknown request.'];
-}
+// (The collector has no web door any more: it only runs from scripts/collect.php, started by the scheduled GitHub job.)
