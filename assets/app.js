@@ -48,6 +48,10 @@
       var b = $('.pinbtn', r);
       if (!b) return;                                   // Dead Zone rows have no star
       var admin = isAdmin(), on = admin ? r.dataset.hl === '1' : isPinned(r.dataset.id);   // on /admin the star means "highlight for everyone"
+      if (admin && !$('.delbtn', r)) {                  // admin mode: a small delete button beside the star
+        var d = document.createElement('button'); d.type = 'button'; d.className = 'delbtn'; d.title = 'Delete this job'; d.setAttribute('aria-label', 'Delete this job'); d.textContent = '×';
+        b.parentNode.appendChild(d);
+      }
       b.classList.toggle('on', on); b.innerHTML = on ? '&#9733;' : '&#9734;';
       b.title = admin ? (on ? 'Remove this highlight' : 'Highlight this job for everyone') : (on ? 'Unpin this job' : 'Pin this job');
     });
@@ -59,6 +63,31 @@
     var tab = $('#tabs a[data-view="highlighted"]'); if (!tab) return;
     $('.n', tab).textContent = $$('#liveTable tbody tr').filter(function (r) { return r.dataset.hl === '1'; }).length;
     if (isAdmin()) tab.hidden = false;
+  }
+  // The numbers on the tabs (and "N jobs" at the top right), counted again from the rows that are on the page.
+  function recountTabs() {
+    var rows = $$('#liveTable tbody tr');
+    $$('#tabs a').forEach(function (a) {
+      var v = a.dataset.view; if (v === 'dead' || !JOB_VIEWS.hasOwnProperty(v)) return;
+      $('.n', a).textContent = rows.filter(JOB_VIEWS[v]).length;
+    });
+    var jn = $('.jobsn'); if (jn) jn.textContent = rows.length + ' jobs';
+  }
+  function adminSay(text, kind) { var m = $('#adminMsg'); if (m) { m.textContent = text; m.className = 'admin-msg ' + kind; } }
+  // Admin mode: delete a job for good (asks first). It also disappears from the database, and the collector will not bring it back.
+  function deleteJob(row) {
+    var title = row.dataset.title, co = row.dataset.co;
+    if (!window.confirm('Delete "' + title + '" at ' + co + '?\n\nThis removes it from the site for good.')) return;
+    var btn = $('.delbtn', row); if (btn) btn.disabled = true;
+    fetch('/api/index.php?add=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', url: row.dataset.url }) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.status !== 'ok') throw new Error(d.message || 'Could not delete.');
+        row.parentNode.removeChild(row);
+        recountTabs(); render(); renderPins();
+        adminSay('Deleted: ' + title + ' at ' + co + '.', 'good');
+      })
+      .catch(function (e) { if (btn) btn.disabled = false; adminSay('Not deleted: ' + e.message, 'bad'); });
   }
   function toggleHighlight(row) {
     var on = row.dataset.hl !== '1';
@@ -164,6 +193,8 @@
   });
   document.addEventListener('click', function (e) {
     var pin = e.target.closest('.pinbtn');
+    var del = e.target.closest('.delbtn');
+    if (del) { deleteJob(del.closest('tr')); return; }
     if (pin) { var prow = pin.closest('tr'); if (isAdmin()) toggleHighlight(prow); else togglePin(prow.dataset.id); }
     var link = e.target.closest('a[href^="#"]');                 // our tab and page buttons
     if (link && e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) {

@@ -44,6 +44,13 @@ if ($action === 'highlight') {                       // the star on /admin: high
     catch (Throwable $e) { reply(200, ['status' => 'error', 'message' => $e->getMessage()]); }
     reply(200, $found ? ['status' => 'ok'] : ['status' => 'error', 'message' => 'That job is not in the list any more.']);
 }
+if ($action === 'delete') {                          // the delete button on /admin
+    $u = trim((string)($in['url'] ?? ''));
+    if ($u === '') reply(400, ['status' => 'error', 'message' => 'No job given.']);
+    try { $found = jobs_delete($u); }
+    catch (Throwable $e) { reply(200, ['status' => 'error', 'message' => $e->getMessage()]); }
+    reply(200, $found ? ['status' => 'ok'] : ['status' => 'error', 'message' => 'That job is not in the list any more.']);
+}
 if ($action !== '') {
     set_time_limit(55); ini_set('memory_limit', '256M');
     require_once __DIR__ . '/collector.php';

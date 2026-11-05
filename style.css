@@ -128,6 +128,11 @@ td.company { font-size: 14px; line-height: 1.3; color: #334155; }
 
 .pinbtn { border: 0; background: none; cursor: pointer; font-size: 19px; line-height: 1; color: #c3cad6; padding: 2px 4px; }
 .pinbtn:hover { color: #f59e0b; }
+/* admin mode only: a small delete button beside the star (and a wider column to fit it) */
+.delbtn { border: 0; background: none; cursor: pointer; font-size: 19px; line-height: 1; color: #c3cad6; padding: 2px 5px; }
+.delbtn:hover { color: #b91c1c; }
+.delbtn:disabled { opacity: .4; cursor: wait; }
+table.jobs:has(.delbtn) td.pin, table.jobs:has(.delbtn) th.pin { width: 76px; white-space: nowrap; }
 .pinbtn.on { color: #f59e0b; }
 
 /* ---------- NEW / UPDATED pills: small ovals right after the role name, capitals, black text, a thick border, comic halftone-dot fill, blinking ---------- */

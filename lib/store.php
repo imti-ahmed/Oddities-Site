@@ -77,6 +77,31 @@ function jobs_append(array $job, callable $isDuplicate, string $message = ''): s
     return 'added';
 }
 
+// Deletes one job for good (admin only). Returns true if the job was found.
+function jobs_delete(string $url): bool
+{
+    require_once __DIR__ . '/pagefetch.php';
+    $mode = jobs_store_mode();
+    if ($mode === 'none') throw new RuntimeException('Saving is not set up. Add DATABASE_URL in Vercel (the Neon connection string), then redeploy.');
+    if ($mode === 'db') {
+        try {
+            require_once __DIR__ . '/collector.php';
+            collector_ready();                                   // makes sure the queue table exists, so the deletion can be remembered there
+            return db_delete_job($url);
+        } catch (Throwable $e) { throw new RuntimeException('Could not delete from the database: ' . db_error_hint($e)); }
+    }
+    $fp = fopen(JOBS_FILE_PATH, 'c+');
+    if (!$fp || !flock($fp, LOCK_EX)) throw new RuntimeException('Could not open data/jobs.json for writing.');
+    $list = json_decode((string)stream_get_contents($fp), true);
+    $list = is_array($list) ? $list : [];
+    $key = normalize_job_url($url);
+    $kept = array_values(array_filter($list, fn($j) => normalize_job_url((string)($j['url'] ?? '')) !== $key));
+    $found = count($kept) !== count($list);
+    if ($found) { ftruncate($fp, 0); rewind($fp); fwrite($fp, json_encode($kept, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"); }
+    flock($fp, LOCK_UN); fclose($fp);
+    return $found;
+}
+
 // Highlight (or un-highlight) one job for everyone (the Highlighted tab). Returns true if the job was found.
 function jobs_set_highlight(string $url, bool $on): bool
 {

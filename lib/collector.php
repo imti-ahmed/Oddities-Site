@@ -42,7 +42,7 @@ function collector_ready(): void
     db()->exec("ALTER TABLE job_queue ADD COLUMN IF NOT EXISTS mode TEXT NOT NULL DEFAULT 'url'");
     // housekeeping: a claim nobody finished (closed tab, crash) goes back in line after 10 minutes; old refusals are looked at again
     db()->exec("UPDATE job_queue SET state = 'pending' WHERE state = 'working' AND claimed_at < now() - interval '10 minutes'");
-    db()->exec("DELETE FROM job_queue WHERE state = 'done' AND result <> 'added' AND done_at < now() - interval '" . COLLECTOR_RECHECK_DAYS . " days'");
+    db()->exec("DELETE FROM job_queue WHERE state = 'done' AND result NOT IN ('added', 'deleted') AND done_at < now() - interval '" . COLLECTOR_RECHECK_DAYS . " days'");
     $done = true;
 }
 

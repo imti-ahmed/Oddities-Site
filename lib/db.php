@@ -146,6 +146,23 @@ function db_set_highlight(string $url, bool $on): bool
     return $st->rowCount() > 0;
 }
 
+// Deletes one job for good. The deletion is also written in the collector's queue (result "deleted"), so a later scan never brings the job back.
+// Returns true if a job was found.
+function db_delete_job(string $url): bool
+{
+    require_once __DIR__ . '/pagefetch.php';
+    $key = normalize_job_url($url);
+    $pdo = db();
+    $st = $pdo->prepare('DELETE FROM jobs WHERE url_key = :k');
+    $st->execute([':k' => $key]);
+    $found = $st->rowCount() > 0;
+    $pdo->prepare("INSERT INTO job_queue (url_key, url, source, payload, state, result, reason, done_at)
+        VALUES (:k, :u, 'admin', '{}', 'done', 'deleted', 'Deleted by admin', now())
+        ON CONFLICT (url_key) DO UPDATE SET state = 'done', result = 'deleted', reason = 'Deleted by admin', done_at = now()")
+        ->execute([':k' => $key, ':u' => $url]);
+    return $found;
+}
+
 // Older databases get the columns the "still open?" check and the highlight star need (safe to run again and again).
 function db_add_check_columns(): void
 {
