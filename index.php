@@ -1,20 +1,41 @@
 <?php
-require_once __DIR__ . '/lib/helpers.php';
+require_once __DIR__ . '/lib/store.php';
 
 $settings = require __DIR__ . '/config/settings.php';
 $perPage  = (int)$settings['jobs_per_page'];
-$page     = max(1, (int)($_GET['p'] ?? 1));
-$offset   = ($page - 1) * $perPage;
 
-// All jobs live in one simple file: data/jobs.json
-$all = json_decode((string)@file_get_contents(__DIR__ . '/data/jobs.json'), true);
-$all = is_array($all) ? array_values(array_filter($all, fn($j) => !empty($j['title']) && is_safe_url($j['url'] ?? ''))) : [];
+// Which tab (India or Abroad) and what was searched for
+$tab    = ($_GET['tab'] ?? 'india') === 'abroad' ? 'abroad' : 'india';
+$q      = trim((string)($_GET['q'] ?? ''));
+$page   = max(1, (int)($_GET['p'] ?? 1));
+$offset = ($page - 1) * $perPage;
 
-// Newest first
-usort($all, fn($a, $b) => strcmp($b['posted_at'] ?? '', $a['posted_at'] ?? ''));
+$all = array_values(array_filter(load_jobs(), fn($j) => !empty($j['title']) && is_safe_url($j['url'] ?? '')));
 
-$total = count($all);
-$jobs  = array_slice($all, $offset, $perPage);
+// Count jobs in each tab (for the numbers in the top bar)
+$counts = ['india' => 0, 'abroad' => 0];
+foreach ($all as $j) $counts[region_of($j)]++;
+
+// Only this tab's jobs, optionally narrowed by the search words
+$list = array_values(array_filter($all, function ($j) use ($tab, $q) {
+    if (region_of($j) !== $tab) return false;
+    if ($q === '') return true;
+    foreach (preg_split('/\s+/', $q) as $word) {   // every search word must appear somewhere
+        if (mb_stripos(($j['title'] ?? '') . ' ' . ($j['company'] ?? '') . ' ' . ($j['location'] ?? ''), $word) === false) return false;
+    }
+    return true;
+}));
+usort($list, fn($a, $b) => strcmp($b['posted_at'] ?? '', $a['posted_at'] ?? ''));   // newest first
+
+$total = count($list);
+$jobs  = array_slice($list, $offset, $perPage);
+
+// Builds a link that keeps the current tab and search
+function link_to(array $extra, string $tab, string $q): string
+{
+    $params = array_filter(['tab' => $tab, 'q' => $q] + $extra, fn($v) => $v !== '' && $v !== null);
+    return '?' . http_build_query($params);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -28,13 +49,21 @@ $jobs  = array_slice($all, $offset, $perPage);
 <div id="page">
   <div id="topbar">
     <span class="logo">D</span><span class="name"><?= h($settings['site_name']) ?></span>
-    <a href="./">jobs</a>
+    <a href="<?= h(link_to([], 'india', $q)) ?>" class="<?= $tab === 'india' ? 'on' : '' ?>">india <span class="count">(<?= $counts['india'] ?>)</span></a>
+    |
+    <a href="<?= h(link_to([], 'abroad', $q)) ?>" class="<?= $tab === 'abroad' ? 'on' : '' ?>">abroad <span class="count">(<?= $counts['abroad'] ?>)</span></a>
   </div>
 
-  <div id="intro">Creative jobs from around the web. <?= number_format($total) ?> jobs listed.</div>
+  <div id="intro">Creative jobs <?= $tab === 'india' ? 'in India' : 'abroad' ?>.</div>
+  <form id="search" method="get">
+    <input type="hidden" name="tab" value="<?= h($tab) ?>">
+    <input type="text" name="q" value="<?= h($q) ?>" placeholder="Search title, company, city">
+    <button type="submit">Search</button>
+    <?php if ($q !== ''): ?><a class="clear" href="<?= h(link_to([], $tab, '')) ?>">clear</a><?php endif; ?>
+  </form>
 
   <?php if (!$jobs): ?>
-    <div class="empty">No jobs yet. Add some to <code>data/jobs.json</code>.</div>
+    <div class="empty"><?= $q !== '' ? 'No jobs match your search.' : 'No jobs here yet.' ?></div>
   <?php else: ?>
   <ol class="jobs">
     <?php foreach ($jobs as $i => $j): ?>
@@ -54,7 +83,7 @@ $jobs  = array_slice($all, $offset, $perPage);
     <?php endforeach; ?>
   </ol>
   <?php if ($offset + $perPage < $total): ?>
-    <div class="more"><a href="?p=<?= $page + 1 ?>">More</a></div>
+    <div class="more"><a href="<?= h(link_to(['p' => $page + 1], $tab, $q)) ?>">More</a></div>
   <?php endif; ?>
   <?php endif; ?>
 

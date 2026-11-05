@@ -26,3 +26,18 @@ function is_safe_url(string $url): bool   // only allow normal web links
 {
     return (bool)preg_match('#^https?://#i', $url);
 }
+
+// India or Abroad? Uses the job's "region" if it has one; otherwise guesses from the location text.
+function region_of(array $job): string
+{
+    $r = strtolower((string)($job['region'] ?? ''));
+    if ($r === 'india' || $r === 'abroad') return $r;
+    $india = '/\b(india|bengaluru|bangalore|mumbai|delhi|gurgaon|gurugram|noida|hyderabad|pune|chennai|kolkata|ahmedabad|jaipur|kochi|chandigarh|indore)\b/i';
+    return preg_match($india, (string)($job['location'] ?? '')) ? 'india' : 'abroad';
+}
+
+// A short stable id for a job (made from its link), used by the admin page to delete one.
+function job_key(array $job): string
+{
+    return substr(sha1((string)($job['url'] ?? '')), 0, 10);
+}
