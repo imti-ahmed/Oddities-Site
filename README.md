@@ -68,7 +68,7 @@ Then open http://localhost:8000
 
 ## Adding jobs with the AI (the /admin card)
 
-Open `/admin` on your site. Above the Pinned box you get a card: paste a job link and press **Add job**. The page is read, Groq decides whether it is one of our roles (and whether it is an internship), India or Abroad (by the job's own location, not the company's home city), and remote / hybrid / in-office. The answer is double-checked in code (the AI's quotes must really be on the page, doubtful jobs are refused, jobs older than `stale_days` are refused, duplicates are skipped). If it passes, the job is saved to `data/jobs.json` and the site updates about a minute later.
+Open `/admin` on your site (for example `creativejobs.vercel.app/admin`). Above the Pinned box you get a card: paste a job link and press **Add job**. The page is read, Groq decides whether it is one of our roles (and whether it is an internship), India or Abroad (by the job's own location, not the company's home city), and remote / hybrid / in-office. The answer is double-checked in code (the AI's quotes must really be on the page, doubtful jobs are refused, jobs older than `stale_days` are refused, duplicates are skipped). If it passes, the job is saved to `data/jobs.json` and the site updates about a minute later.
 
 There is no password: anyone who knows the `/admin` address can add jobs, so keep that address to yourself. The AI still only lists real design jobs that pass the rules.
 
