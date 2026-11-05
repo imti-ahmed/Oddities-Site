@@ -106,9 +106,7 @@ function table_head(): string
         <?= winbar() ?>
         <div class="winbody">
           <p>Hand-picked creative jobs. No noise.</p>
-          <p>A simple list of design and creative jobs from companies around the internet.<br>No accounts. No applications here. No bullshit. Just the job and a link to where you can apply.</p>
-          <p>&#9734; Pin jobs you want to come back to. Pins are saved in this browser.</p>
-        </div>
+          <p>A simple list of design and creative jobs from companies around the internet.<br>No accounts. No applications here. No bullshit. Just the job and a link to where you can apply.</p>        </div>
       </div>
 
       <div class="main">
