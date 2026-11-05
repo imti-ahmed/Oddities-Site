@@ -19,7 +19,7 @@ Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards
 
 - `index.php` – the page. `style.css` – the look (change colours at the top). `assets/app.js` – tabs, page numbers, pins.
 - `lib/jobs.php` – works out each job's tab, tags, badge and Dead Zone status.
-- `config/settings.php` – site name, tagline, rows per page, `new_days` (badge window), `new_badge_from` (jobs added before this date never get a NEW pill, so the first big fill is not all NEW; later jobs do), `stale_days` (inactive after).
+- `config/settings.php` – site name, tagline, rows per page, `new_days` (badge window), `new_badge_from` (an exact moment: jobs saved in the database before it never get a NEW pill, so the jobs that were already on the site are not all NEW; jobs saved after it do), `stale_days` (inactive after).
 - **The jobs live in a Neon (Postgres) database**, in a table called `jobs` that the site creates by itself the first time it runs. `data/jobs.json` is only the starting list (copied into the database once, when the table is first created) and the fallback when there is no database (your own computer, or the database being down).
 - `lib/db.php` – talks to Neon. `lib/store.php` – decides where jobs are read and saved.
 - `config/roles.php` – the list of roles we accept (UI/UX Designer ... Internship) and the rules (`min_confidence`, whether worldwide remote counts as India). **Edit this to add or remove a role.**

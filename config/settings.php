@@ -10,7 +10,7 @@ return [
     // While they are on, recently added/updated jobs also move to the top of the list.
     'show_badges' => true,
     'new_days'   => 3,         // a job added/updated within this many days gets a NEW / UPDATED pill
-    'new_badge_from' => '2026-11-06',   // jobs added BEFORE this date never get a NEW pill (so the first big fill is not all "NEW"). Later jobs do. Use '' to switch this off.
+    'new_badge_from' => '2026-11-05 20:30:00 UTC',   // jobs saved BEFORE this exact moment never get a NEW pill (the jobs that were already on the site). Jobs saved after it do. Use '' to switch this off.
     'stale_days' => 90,        // a job not posted or updated for this many days moves to the Dead Zone as "inactive"
 
     'contact_email' => 'designer.imtiyaz@gmail.com',   // shown on the About page

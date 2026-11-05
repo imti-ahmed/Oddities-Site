@@ -85,7 +85,9 @@ function load_jobs(array $settings): array
 
         $badge = null;     // 'new' or 'updated' for the glowing badge
         if (!$dead) {
-            if ($added >= $newCut && $added >= $badgeFrom) $badge = 'new';
+            // NEW: added within the last few days AND saved after the cutoff moment (the exact time when the database has it, else the day)
+            $savedAt = !empty($j['created_at']) ? (strtotime((string)$j['created_at']) ?: 0) : 0;
+            if ($added >= $newCut && ($savedAt ? $savedAt >= $badgeFrom : $added >= $badgeFrom)) $badge = 'new';
             elseif ($updated >= $newCut)  $badge = 'updated';
         }
         if (empty($settings['show_badges'])) $badge = null;   // stickers are switched off in config/settings.php: no sticker, and no jumping to the top

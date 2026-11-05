@@ -128,7 +128,7 @@ function db_all_jobs(): array
     foreach ($rows as $r) {
         $j = ['title' => $r['title'], 'company' => $r['company'], 'location' => $r['location'], 'url' => $r['url'], 'posted_at' => $r['posted_at'],
               'added_at' => $r['added_at'], 'updated_at' => $r['updated_at'], 'region' => $r['region'], 'mode' => $r['mode'],
-              'role' => $r['role'], 'highlighted' => !empty($r['highlighted']) ? true : null, 'status' => $r['status'], 'closed_at' => $r['closed_at'], 'closed_reason' => $r['closed_reason'], 'source' => $r['source']];
+              'role' => $r['role'], 'highlighted' => !empty($r['highlighted']) ? true : null, 'status' => $r['status'], 'closed_at' => $r['closed_at'], 'closed_reason' => $r['closed_reason'], 'source' => $r['source'], 'created_at' => $r['created_at'] ?? null];   // created_at = the exact moment the job was saved
         if (!empty($r['tag'])) $j['tags'] = [$r['tag']];
         $jobs[] = array_filter($j, fn($v) => $v !== null && $v !== '');
     }
