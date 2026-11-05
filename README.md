@@ -1,7 +1,7 @@
 # Design Jobs
 
 A very simple website (HTML + CSS + PHP) that lists creative jobs, styled like the Hacker News jobs page, in blue.
-Two tabs: **India** and **Abroad**, plus a search box.
+Two tabs on the same page, **India** and **Abroad**, plus a live search box. Switching tabs never reloads the page.
 
 ## How it works
 
