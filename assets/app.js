@@ -43,7 +43,7 @@
     });
     $('#pinCount').textContent = pins.length;
     $('#pinHint').hidden = pins.length > 0;
-    $('#pinbox').classList.toggle('empty', pins.length === 0);
+    $('#pinbox').classList.toggle('nopins', pins.length === 0);
     $$('tr[data-id]').forEach(function (r) {
       var b = $('.pinbtn', r), on = isPinned(r.dataset.id);
       b.classList.toggle('on', on); b.innerHTML = on ? '&#9733;' : '&#9734;';
@@ -68,6 +68,8 @@
     $$('#tabs a').forEach(function (a) { a.classList.toggle('on', a.dataset.view === view); });
     if (!isList) { window.scrollTo(0, 0); return; }
 
+    var TITLES = { 'all': 'all jobs', 'india': 'india jobs', 'abroad': 'abroad jobs', 'remote': 'remote jobs', 'hybrid': 'hybrid jobs', 'in-office': 'in-office jobs', 'dead': 'dead zone' };
+    $('#cardTitle').textContent = TITLES[view] || 'jobs';
     var isDead = view === 'dead';
     liveTable.hidden = isDead; deadTable.hidden = !isDead;
     $('#deadNote').hidden = !isDead;
@@ -122,6 +124,10 @@
     var tag = e.target.closest('.tag');        // click a tag to filter by it (click again to undo)
     if (tag) { fTag.value = fTag.value === tag.dataset.tag ? '' : tag.dataset.tag; shown = PER_PAGE; render(); }
   });
+
+  // little clock in the menu bar (the visitor's own time)
+  function tick() { var c = $('#clock'); if (c) c.textContent = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+  tick(); setInterval(tick, 20000);
 
   renderPins();
   go(location.hash.slice(1));

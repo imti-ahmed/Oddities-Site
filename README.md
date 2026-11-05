@@ -1,11 +1,11 @@
 # Design Jobs
 
 A simple website (HTML + CSS + PHP + a little JavaScript) that lists creative jobs in a clean table.
-Style: a clean, rounded table with soft blue tones, pill tabs and tags, and comic-style NEW!/UPDATED! stickers.
+Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards with traffic-light dots, glossy blue pill buttons, faint dotted background) and comic-style NEW!/UPDATED! stickers.
 
 ## What's on the page
 
-- **Tabs** (all on the same page, no reloading): All, India, Abroad, Remote, In-office (Hybrid appears automatically if any job is hybrid), **Dead zone**, **Update log**, **About**.
+- **Menu bar** at the top with the **tabs** (all on the same page, no reloading): All, India, Abroad, Remote, In-office (Hybrid appears automatically if any job is hybrid), **Dead zone**, **Update log**, **About**.
 - **Table** with # / Job / Company & location / Tags / Posted / pin star. Search box + Tag and Company filters. Click a tag to filter by it.
 - **Pinned box** at the side: click the star on a job to pin it. Pins are saved in the visitor's own browser (localStorage), nothing is stored on a server.
 - **Comic-style NEW! / UPDATED! stickers**: jobs added or updated in the last few days sit at the top (static, no blinking).

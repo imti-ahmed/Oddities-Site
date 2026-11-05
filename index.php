@@ -52,6 +52,13 @@ function job_row(array $j, bool $isDead, int $staleDays): string
     <?php return ob_get_clean();
 }
 
+// The little Mac-window title strip used on every card: three dots, a centred title, a faint "x" (decoration only).
+function winbar(string $titleHtml, string $id = ''): string
+{
+    return '<div class="winbar" aria-hidden="true"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i>'
+         . '<span class="wt"' . ($id ? ' id="' . $id . '"' : '') . '>' . $titleHtml . '</span><span class="wx">x</span></div>';
+}
+
 function table_head(): string
 {
     return '<thead><tr><th class="rank">#</th><th>Job</th><th class="company">Company &amp; location</th><th class="tags">Tags</th><th class="posted">Posted</th><th class="pin"></th></tr></thead>';
@@ -66,40 +73,39 @@ function table_head(): string
   <meta name="description" content="<?= h($settings['tagline']) ?>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bangers&display=swap">
   <style><?= file_get_contents(__DIR__ . '/style.css') ?></style>
 </head>
 <body>
 
 <header id="top">
-  <div class="wrap">
-    <a class="brand" href="#all"><span class="mark">&#127912;</span><?= h($settings['site_name']) ?></a>
-    <span class="check">&#9989; Hand-picked creative jobs</span>
-    <span class="check">&#9989; India &amp; abroad</span>
+  <div class="bar wrap">
+    <a class="brand" href="#all"><?= h(mb_strtolower($settings['site_name'])) ?></a>
+    <nav id="tabs">
+      <?php foreach ($tabs as [$key, $label]): ?>
+        <a href="#<?= $key ?>" data-view="<?= $key ?>"><?= h($label) ?> <span class="n"><?= $n[$key] ?></span></a>
+      <?php endforeach; ?>
+      <span class="gap"></span>
+      <a href="#dead" data-view="dead">Dead zone <span class="n"><?= count($dead) ?></span></a>
+      <a href="#log" data-view="log">Update log</a>
+      <a href="#about" data-view="about">About</a>
+    </nav>
+    <div class="sys"><span class="jobsn"><?= $n['all'] ?> jobs</span><span id="clock"></span></div>
   </div>
 </header>
 
 <main class="wrap">
-  <nav id="tabs">
-      <?php foreach ($tabs as [$key, $label]): ?>
-        <a href="#<?= $key ?>" data-view="<?= $key ?>"><?= h($label) ?> <span class="n">(<?= $n[$key] ?>)</span></a>
-      <?php endforeach; ?>
-      <span class="gap"></span>
-      <a href="#dead" data-view="dead">Dead zone <span class="n">(<?= count($dead) ?>)</span></a>
-      <a href="#log" data-view="log">Update log</a>
-      <a href="#about" data-view="about">About</a>
-    </nav>
-
 
   <!-- ===== Jobs + Dead zone ===== -->
   <section id="listView">
-    <div class="intro" id="intro">
-      <b><?= h($settings['tagline']) ?></b> Every job links to the company's own page.
+    <div class="intro win" id="intro">
+      <?= winbar('welcome') ?>
+      <div class="winbody"><b><?= h($settings['tagline']) ?></b> Every job links to the company's own page.
       <div class="legend">
         <span class="blinkie new">new</span> added in the last <?= (int)$settings['new_days'] ?> days &nbsp;
         <span class="blinkie updated">updated</span> recently changed &nbsp; &middot; &nbsp;
         &#9734; pin jobs to keep them in the box (saved in this browser)
-      </div>
+      </div></div>
     </div>
 
     <div class="toolbar">
@@ -108,14 +114,15 @@ function table_head(): string
         <?php foreach ($allTags as $t => $_): ?><option><?= h($t) ?></option><?php endforeach; ?></select>
       <select id="fCo" aria-label="Filter by company"><option value="">Company</option>
         <?php foreach ($allCompanies as $c => $_): ?><option><?= h($c) ?></option><?php endforeach; ?></select>
-      <a href="#" class="clear" id="clear" hidden>clear filters</a>
+      <a href="#" class="clear btn-glass" id="clear" hidden>clear filters</a>
       <span class="count" id="count"></span>
     </div>
 
     <div class="layout">
       <div class="main">
         <p class="dead-note" id="deadNote" hidden>Jobs that are <b>closed</b>, or <b>inactive</b> (not posted or updated in over <?= (int)$settings['stale_days'] ?> days, so probably not hiring any more). Kept here for reference.</p>
-        <div class="card">
+        <div class="card win">
+          <?= winbar('all jobs', 'cardTitle') ?>
           <table class="jobs" id="liveTable"><?= table_head() ?><tbody>
             <?php foreach ($live as $j) echo job_row($j, false, (int)$settings['stale_days']); ?>
           </tbody></table>
@@ -124,19 +131,23 @@ function table_head(): string
           </tbody></table>
           <div class="empty" id="empty" hidden></div>
         </div>
-        <div class="more" id="more" hidden><button type="button" id="moreBtn">Show more</button></div>
+        <div class="more" id="more" hidden><button type="button" class="btn-aqua" id="moreBtn">Show more</button></div>
       </div>
 
-      <aside id="pinbox" aria-label="Pinned jobs">
-        <h3>&#128204; Pinned <span id="pinCount">0</span></h3>
-        <ul id="pinList"></ul>
-        <div class="hint" id="pinHint">Tap the &#9734; on any job to pin it here. Pins are saved in this browser only.</div>
+      <aside id="pinbox" class="win" aria-label="Pinned jobs">
+        <?= winbar('pinned (<span id="pinCount">0</span>)') ?>
+        <div class="winbody">
+          <ul id="pinList"></ul>
+          <div class="hint" id="pinHint">Tap the &#9734; on any job to pin it here. Pins are saved in this browser only.</div>
+        </div>
       </aside>
     </div>
   </section>
 
   <!-- ===== Update log ===== -->
-  <section id="logView" class="panel" hidden>
+  <section id="logView" class="panel win" hidden>
+    <?= winbar('update log') ?>
+    <div class="winbody">
     <h2>Update log</h2>
     <p>Everything that was added, updated, closed or went inactive, newest first.</p>
     <?php $day = ''; foreach ($log as $e):
@@ -148,17 +159,21 @@ function table_head(): string
           <?php if ($e['job']['location']): ?><small>&middot; <?= h($e['job']['location']) ?></small><?php endif; ?></span>
       </div>
     <?php endforeach; ?>
+    </div>
   </section>
 
   <!-- ===== About ===== -->
-  <section id="aboutView" class="panel" hidden>
+  <section id="aboutView" class="panel win" hidden>
+    <?= winbar('about') ?>
+    <div class="winbody">
     <h2>About</h2>
     <p><?= h($settings['site_name']) ?> is a simple, hand-picked list of creative jobs: design, brand, motion, illustration, video, content and more. It's built to be one clean page you can scan quickly and click through to apply.</p>
     <p><b>How it works.</b> Every row links straight to the company's own job page. We don't host applications. Jobs are split into tabs: <b>India</b>, <b>Abroad</b>, <b>Remote</b> and <b>In-office</b>.</p>
-    <p><b>New and updated.</b> Jobs that were just added or changed move to the top and glow with a little <span class="blinkie new">new</span> or <span class="blinkie updated">updated</span> badge.</p>
+    <p><b>New and updated.</b> Jobs that were just added or changed move to the top and get a little <span class="blinkie new">new</span> or <span class="blinkie updated">updated</span> sticker.</p>
     <p><b>Dead zone.</b> Jobs that have closed, or haven't been posted or updated in a long time, move to the Dead zone so the main list stays fresh. Nothing is deleted.</p>
     <p><b>Pins.</b> Click the &#9734; on a job to pin it to the box at the side. Your pins are saved in your own browser, not on any server, so they're private to you (and clearing your browser data clears them).</p>
     <p><b>Tags.</b> The small coloured tags describe the kind of role, the level and whether it's remote. They're a first draft and will get better over time.</p>
+    </div>
   </section>
 
 </main>
