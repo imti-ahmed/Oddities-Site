@@ -20,10 +20,21 @@ $tabs = [['all', 'All'], ['india', 'India'], ['abroad', 'Abroad'], ['remote', 'R
 if ($n['hybrid'] > 0) $tabs[] = ['hybrid', 'Hybrid'];
 $tabs[] = ['in-office', 'In-office'];
 
+// Sticker colour for each kind of job (anything new gets a colour picked from its name)
+function tag_style(string $name): string
+{
+    $colors = ['Product Design' => '#b9d3ff', 'Brand' => '#ffd6a5', 'Graphic' => '#ffb3cf', 'Motion' => '#d9bfff', 'Video' => '#ffb8b0',
+               'Illustration' => '#c4f0bd', 'Content' => '#b5ece0', 'Research' => '#d8d8f6', 'Learning' => '#ffe6a8', 'Creative' => '#ffc4e6',
+               'Design' => '#e3e6ea', 'Other' => '#e3e6ea'];
+    $h = crc32($name);
+    $c = $colors[$name] ?? 'hsl(' . ($h % 360) . ' 85% 82%)';
+    return '--c:' . $c . ';--r:' . (($h % 5) - 2) . 'deg';
+}
+
 function pills(array $tags): string
 {
     $out = '';
-    foreach ($tags as [$name, $kind]) $out .= '<button type="button" class="tag ' . h($kind) . '" data-tag="' . h($name) . '">' . h($name) . '</button>';
+    foreach ($tags as [$name]) $out .= '<button type="button" class="tag" style="' . h(tag_style($name)) . '" data-tag="' . h($name) . '">' . h($name) . '</button>';
     return $out;
 }
 
@@ -52,16 +63,15 @@ function job_row(array $j, bool $isDead, int $staleDays): string
     <?php return ob_get_clean();
 }
 
-// The little Mac-window title strip used on every card: three dots, a centred title, a faint "x" (decoration only).
-function winbar(string $titleHtml, string $id = ''): string
+// The little Mac-window strip on every card: three dots and a faint "x" (decoration only, no title).
+function winbar(): string
 {
-    return '<div class="winbar" aria-hidden="true"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i>'
-         . '<span class="wt"' . ($id ? ' id="' . $id . '"' : '') . '>' . $titleHtml . '</span><span class="wx">x</span></div>';
+    return '<div class="winbar" aria-hidden="true"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i><span class="wx">x</span></div>';
 }
 
 function table_head(): string
 {
-    return '<thead><tr><th class="rank">#</th><th>Job</th><th class="company">Company &amp; location</th><th class="tags">Tags</th><th class="posted">Posted</th><th class="pin"></th></tr></thead>';
+    return '<thead><tr><th class="rank">#</th><th>Job</th><th class="company">Company &amp; location</th><th class="tags">Tag</th><th class="posted">Posted</th><th class="pin"></th></tr></thead>';
 }
 ?>
 <!DOCTYPE html>
@@ -99,13 +109,9 @@ function table_head(): string
   <!-- ===== Jobs + Dead zone ===== -->
   <section id="listView">
     <div class="intro win" id="intro">
-      <?= winbar('welcome') ?>
+      <?= winbar() ?>
       <div class="winbody"><b><?= h($settings['tagline']) ?></b> Every job links to the company's own page.
-      <div class="legend">
-        <span class="blinkie new">new</span> added in the last <?= (int)$settings['new_days'] ?> days &nbsp;
-        <span class="blinkie updated">updated</span> recently changed &nbsp; &middot; &nbsp;
-        &#9734; pin jobs to keep them in the box (saved in this browser)
-      </div></div>
+      <div class="legend">&#9734; Pin jobs to keep them in the box on the side (saved in this browser).</div></div>
     </div>
 
     <div class="toolbar">
@@ -122,7 +128,7 @@ function table_head(): string
       <div class="main">
         <p class="dead-note" id="deadNote" hidden>Jobs that are <b>closed</b>, or <b>inactive</b> (not posted or updated in over <?= (int)$settings['stale_days'] ?> days, so probably not hiring any more). Kept here for reference.</p>
         <div class="card win">
-          <?= winbar('all jobs', 'cardTitle') ?>
+          <?= winbar() ?>
           <table class="jobs" id="liveTable"><?= table_head() ?><tbody>
             <?php foreach ($live as $j) echo job_row($j, false, (int)$settings['stale_days']); ?>
           </tbody></table>
@@ -135,7 +141,7 @@ function table_head(): string
       </div>
 
       <aside id="pinbox" class="win" aria-label="Pinned jobs">
-        <?= winbar('pinned (<span id="pinCount">0</span>)') ?>
+        <?= winbar() ?>
         <div class="winbody">
           <ul id="pinList"></ul>
           <div class="hint" id="pinHint">Tap the &#9734; on any job to pin it here. Pins are saved in this browser only.</div>
@@ -146,7 +152,7 @@ function table_head(): string
 
   <!-- ===== Update log ===== -->
   <section id="logView" class="panel win" hidden>
-    <?= winbar('update log') ?>
+    <?= winbar() ?>
     <div class="winbody">
     <h2>Update log</h2>
     <p>Everything that was added, updated, closed or went inactive, newest first.</p>
@@ -164,7 +170,7 @@ function table_head(): string
 
   <!-- ===== About ===== -->
   <section id="aboutView" class="panel win" hidden>
-    <?= winbar('about') ?>
+    <?= winbar() ?>
     <div class="winbody">
     <h2>About</h2>
     <p><?= h($settings['site_name']) ?> is a simple, hand-picked list of creative jobs: design, brand, motion, illustration, video, content and more. It's built to be one clean page you can scan quickly and click through to apply.</p>
@@ -172,7 +178,7 @@ function table_head(): string
     <p><b>New and updated.</b> Jobs that were just added or changed move to the top and get a little <span class="blinkie new">new</span> or <span class="blinkie updated">updated</span> sticker.</p>
     <p><b>Dead zone.</b> Jobs that have closed, or haven't been posted or updated in a long time, move to the Dead zone so the main list stays fresh. Nothing is deleted.</p>
     <p><b>Pins.</b> Click the &#9734; on a job to pin it to the box at the side. Your pins are saved in your own browser, not on any server, so they're private to you (and clearing your browser data clears them).</p>
-    <p><b>Tags.</b> The small coloured tags describe the kind of role, the level and whether it's remote. They're a first draft and will get better over time.</p>
+    <p><b>Tags.</b> Each job gets one sticker that says what kind of job it is, like Product Design, Brand or Motion. Click a sticker to see only that kind of job.</p>
     </div>
   </section>
 

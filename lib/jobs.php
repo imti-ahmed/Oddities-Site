@@ -15,42 +15,27 @@ function mode_of(array $j): string
     return 'in-office';
 }
 
-// Simple tags for a row. Uses the job's own "tags" list if it has one, otherwise guesses from the title.
-// Each tag is [name, kind] where kind is role / level / mode (kinds only change the colour).
+// ONE tag per job: the kind of job. Uses the job's own "tags" (first one) if it has them, otherwise guesses from the title.
+// Returned as a list with a single [name, kind] pair so the page code stays simple.
 function tags_of(array $j): array
 {
-    if (!empty($j['tags']) && is_array($j['tags'])) {
-        return array_map(fn($t) => [(string)$t, 'role'], $j['tags']);
-    }
-    $t = strtolower($j['title'] ?? '');
-    $tags = [];
+    if (!empty($j['tags']) && is_array($j['tags'])) return [[(string)$j['tags'][0], 'role']];
 
-    $roles = [   // checked in this order, the first two that match are used
-        'Product Design' => '/product design|\bux\b|\bui\b|interaction|design system|design engineer|experience design/',
-        'Brand'          => '/\bbrand/',
-        'Graphic'        => '/graphic|visual|communication design/',
+    $t = strtolower($j['title'] ?? '');
+    $kinds = [   // checked in this order, the first match wins
+        'Research'       => '/research/',
+        'Learning'       => '/instructional|learning/',
         'Motion'         => '/motion|animat/',
         'Video'          => '/video|film|producer/',
         'Illustration'   => '/illustrat/',
+        'Brand'          => '/\bbrand/',
+        'Graphic'        => '/graphic|visual|communication design/',
         'Content'        => '/content|copywrit|writer|editorial|\beditor\b/',
-        'Research'       => '/research/',
-        'Learning'       => '/instructional|learning/',
+        'Product Design' => '/product design|\bux\b|\bui\b|interaction|design system|design engineer|experience design/',
         'Creative'       => '/creative/',
     ];
-    foreach ($roles as $name => $re) {
-        if (preg_match($re, $t)) $tags[] = [$name, 'role'];
-        if (count($tags) === 2) break;
-    }
-    if (!$tags && str_contains($t, 'design')) $tags[] = ['Design', 'role'];
-
-    if (preg_match('/\bintern(ship)?\b/', $t))                                   $tags[] = ['Intern', 'level'];
-    elseif (preg_match('/\b(manager|director|head|vp|vice president)\b/', $t))   $tags[] = ['Leadership', 'level'];
-    elseif (preg_match('/\b(senior|sr\.?|staff|principal|lead)\b/', $t))         $tags[] = ['Senior', 'level'];
-    elseif (preg_match('/\b(junior|associate|early career|graduate)\b/', $t))    $tags[] = ['Junior', 'level'];
-
-    $mode = mode_of($j);
-    if ($mode !== 'in-office') $tags[] = [ucfirst($mode), 'mode'];
-    return $tags;
+    foreach ($kinds as $name => $re) if (preg_match($re, $t)) return [[$name, 'role']];
+    return [[str_contains($t, 'design') ? 'Design' : 'Other', 'role']];
 }
 
 // Loads every job from the file and adds the extra information.

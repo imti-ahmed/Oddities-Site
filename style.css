@@ -48,14 +48,13 @@ button, select, input { font: inherit; color: inherit; }
 /* ---------- mini-window cards (traffic-light dots + soft title strip) ---------- */
 .win { background: #fff; border: 1px solid var(--win-line); border-radius: 10px; box-shadow: 0 10px 28px rgba(20,40,80,.09); overflow: hidden; }
 .winbar {
-  position: relative; display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px;
+  position: relative; display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 11px;
   background: linear-gradient(var(--strip-a), var(--strip-b)); border-bottom: 1px solid #b7c8e4;
 }
 .winbar .dot { width: 11px; height: 11px; border-radius: 50%; border: 1px solid; box-shadow: inset 0 1px 0 rgba(255,255,255,.45); }
 .dot.r { background: #ff5f57; border-color: #df4740; }
 .dot.y { background: #febc2e; border-color: #dba024; }
 .dot.g { background: #28c840; border-color: #1ca832; }
-.winbar .wt { position: absolute; left: 0; right: 0; text-align: center; font-size: 12.5px; color: #5b6b83; pointer-events: none; text-transform: lowercase; }
 .winbar .wx { margin-left: auto; color: #a1b1c9; font-size: 13px; line-height: 1; }
 .winbody { padding: 14px 18px 16px; }
 
@@ -109,7 +108,7 @@ table.jobs tbody tr:hover { background: #e7efff; }
 td.rank, th.rank { width: 48px; color: var(--faint); text-align: right; font-size: 13px; padding-right: 6px; }
 td.pin, th.pin { width: 44px; text-align: center; padding-left: 4px; padding-right: 8px; }
 td.posted, th.posted { width: 112px; color: var(--muted); font-size: 13px; white-space: nowrap; }
-td.tags, th.tags { width: 190px; }
+td.tags, th.tags { width: 170px; }
 td.company, th.company { width: 200px; }
 
 .jt { font-weight: 600; font-size: 15.5px; color: var(--ink); }
@@ -123,13 +122,16 @@ td.company { font-size: 14px; color: #334155; }
 .cn { vertical-align: middle; font-weight: 500; }
 .cloc { display: block; margin: 1px 0 0 32px; font-size: 12.5px; color: var(--muted); }
 
-/* tag pills (click one to filter) */
-.tag { display: inline-block; font-size: 12px; line-height: 1.55; padding: 0 9px; margin: 2px 4px 2px 0; border-radius: 999px; border: 1px solid; cursor: pointer; background: none; white-space: nowrap; }
-.tag.role  { background: #fff4ea; border-color: #fcd5b5; color: #9a4b12; }
-.tag.level { background: #eef2ff; border-color: #c7d2fe; color: #3b4cb8; }
-.tag.mode  { background: #e8f7ee; border-color: #b7e4c7; color: #1b6b3a; }
-.tag:hover { filter: brightness(.95); }
-.tag.active { outline: 2px solid var(--blue); }
+/* tag stickers: one per job, same comic style as NEW! / UPDATED! (click one to filter) */
+.tag {
+  display: inline-block; margin: 2px 6px 2px 0; padding: 0 8px; cursor: pointer; white-space: nowrap;
+  font: 400 14px/17px var(--comic); letter-spacing: .06em; text-transform: uppercase; color: #111;
+  background: var(--c, #e3e6ea); border: 2px solid #111; border-radius: 6px; box-shadow: 2px 2px 0 #111;
+  transform: rotate(var(--r, 0deg));
+}
+.tag:hover { transform: rotate(var(--r, 0deg)) translateY(-1px); }
+.tag:active { box-shadow: none; transform: rotate(var(--r, 0deg)) translate(2px, 2px); }
+.tag.active { outline: 2px solid var(--blue); outline-offset: 2px; }
 
 .pinbtn { border: 0; background: none; cursor: pointer; font-size: 19px; line-height: 1; color: #c3cad6; padding: 2px 4px; }
 .pinbtn:hover { color: #f59e0b; }
@@ -168,7 +170,7 @@ table.dead .av { filter: grayscale(1); opacity: .7; }
 .empty { padding: 32px 16px; text-align: center; color: var(--muted); }
 
 /* ---------- update log + about ---------- */
-.panel { max-width: 780px; margin-top: 22px; }
+.panel { margin-top: 22px; }   /* full width */
 .panel .winbody { padding: 18px 22px 22px; }
 .panel h2 { font-size: 22px; margin: 0 0 6px; letter-spacing: -.01em; }
 .panel p, .panel li { color: #334155; line-height: 1.65; }

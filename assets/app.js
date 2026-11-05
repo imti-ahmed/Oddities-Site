@@ -41,7 +41,6 @@
       x.addEventListener('click', function () { togglePin(p.id); });
       li.appendChild(box); li.appendChild(x); list.appendChild(li);
     });
-    $('#pinCount').textContent = pins.length;
     $('#pinHint').hidden = pins.length > 0;
     $('#pinbox').classList.toggle('nopins', pins.length === 0);
     $$('tr[data-id]').forEach(function (r) {
@@ -68,8 +67,6 @@
     $$('#tabs a').forEach(function (a) { a.classList.toggle('on', a.dataset.view === view); });
     if (!isList) { window.scrollTo(0, 0); return; }
 
-    var TITLES = { 'all': 'all jobs', 'india': 'india jobs', 'abroad': 'abroad jobs', 'remote': 'remote jobs', 'hybrid': 'hybrid jobs', 'in-office': 'in-office jobs', 'dead': 'dead zone' };
-    $('#cardTitle').textContent = TITLES[view] || 'jobs';
     var isDead = view === 'dead';
     liveTable.hidden = isDead; deadTable.hidden = !isDead;
     $('#deadNote').hidden = !isDead;
