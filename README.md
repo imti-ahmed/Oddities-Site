@@ -41,7 +41,28 @@ The three entries in the file now are **examples** – replace them with your ow
 `config/settings.php` has two word lists: `creative_keywords` (a job title must contain one)
 and `exclude_keywords` (a job title must NOT contain any). Edit them any time.
 
-## Keeping it updated automatically
+## Running it on Vercel
+
+Vercel doesn't run PHP or keep files by default, so this project is set up for it in `vercel.json`
+(PHP add-on `vercel-php`) and uses an online Postgres database instead of the local file.
+
+One-time setup in the Vercel dashboard:
+
+1. **Add a database:** project > **Storage** > create/connect a **Postgres** database (e.g. Neon).
+   Make sure it's connected to the **Preview** environment too. This sets `DATABASE_URL` for you.
+2. **Add a password for the finder/tester:** project > Settings > **Environment Variables** >
+   add `CRON_SECRET` with any long random text (enable it for Production *and* Preview).
+3. **Redeploy** (push a new commit, or "Redeploy" on the latest deployment).
+4. **Fill the list** by opening these in your browser (replace the domain and secret):
+   - `https://YOUR-PREVIEW-DOMAIN/api/fetch?key=YOUR_CRON_SECRET`  (finds jobs)
+   - `https://YOUR-PREVIEW-DOMAIN/api/check?key=YOUR_CRON_SECRET`  (tests the links)
+
+Good to know:
+- Each run stops after ~40 seconds (Vercel's limit) and picks up where it left off next time.
+- Vercel's automatic schedule (`crons` in `vercel.json`) only runs on the **production** site, not on previews,
+  so on a preview you open the two links above yourself. Free (Hobby) accounts can schedule once a day.
+
+## Keeping it updated automatically (regular web host)
 
 On your web host, set up two scheduled tasks ("cron jobs") that run the scripts:
 

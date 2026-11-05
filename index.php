@@ -7,6 +7,12 @@ $perPage  = (int)$settings['jobs_per_page'];
 $page     = max(1, (int)($_GET['p'] ?? 1));
 $offset   = ($page - 1) * $perPage;
 
+$jobs = [];
+$total = 0;
+$lastCheck = 0;
+$problem = null;   // filled in if the database can't be reached, so we show a friendly message
+
+try {
 $pdo   = db();
 $total = (int)$pdo->query("SELECT COUNT(*) FROM jobs WHERE status = 'open'")->fetchColumn();
 
@@ -21,6 +27,9 @@ $stmt->execute();
 $jobs = $stmt->fetchAll();
 
 $lastCheck = (int)$pdo->query("SELECT MAX(last_checked) FROM jobs")->fetchColumn();
+} catch (Throwable $e) {
+    $problem = $e->getMessage();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -28,7 +37,7 @@ $lastCheck = (int)$pdo->query("SELECT MAX(last_checked) FROM jobs")->fetchColumn
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= h($settings['site_name']) ?></title>
-  <link rel="stylesheet" href="style.css">
+  <style><?= file_get_contents(__DIR__ . '/style.css') ?></style>
 </head>
 <body>
 <div id="page">
@@ -39,8 +48,10 @@ $lastCheck = (int)$pdo->query("SELECT MAX(last_checked) FROM jobs")->fetchColumn
 
   <div id="intro">Creative jobs from around the web. <?= number_format($total) ?> open right now, and every link is re-checked automatically.</div>
 
-  <?php if (!$jobs): ?>
-    <div class="empty">No jobs yet. Run <code>php cron/fetch.php</code> to fill the list.</div>
+  <?php if ($problem): ?>
+    <div class="empty"><b>The site can't reach its database yet.</b><br><?= h($problem) ?></div>
+  <?php elseif (!$jobs): ?>
+    <div class="empty">No jobs yet. Run the finder to fill the list (locally: <code>php cron/fetch.php</code>, on Vercel: open <code>/api/fetch?key=YOUR_CRON_SECRET</code>).</div>
   <?php else: ?>
   <ol class="jobs">
     <?php foreach ($jobs as $i => $j): ?>

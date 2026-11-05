@@ -47,7 +47,6 @@ function http_get(string $url, int $timeout = 20): array
     $err    = $body === false ? curl_error($ch) : null;
     $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
     $final  = (string)curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
-    curl_close($ch);
 
     return ['status' => $status, 'body' => (string)$body, 'final_url' => $final, 'error' => $err];
 }

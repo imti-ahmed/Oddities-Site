@@ -1,0 +1,15 @@
+{
+  "functions": {
+    "api/index.php": { "runtime": "vercel-php@0.9.0", "includeFiles": "{index.php,style.css,lib/**,config/**}" },
+    "api/fetch.php": { "runtime": "vercel-php@0.9.0", "includeFiles": "{lib/**,config/**}", "maxDuration": 60 },
+    "api/check.php": { "runtime": "vercel-php@0.9.0", "includeFiles": "{lib/**,config/**}", "maxDuration": 60 }
+  },
+  "routes": [
+    { "src": "/api/(fetch|check)", "dest": "/api/$1.php" },
+    { "src": "/(.*)", "dest": "/api/index.php" }
+  ],
+  "crons": [
+    { "path": "/api/fetch", "schedule": "0 6 * * *" },
+    { "path": "/api/check", "schedule": "30 6 * * *" }
+  ]
+}
