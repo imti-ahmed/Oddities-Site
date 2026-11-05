@@ -40,14 +40,22 @@ function intake_job(string $url, string $source = 'admin', bool $allowList = tru
     // 2. read the page
     $page = read_job_page($url, (int)$roles['rules']['max_page_chars'], $strict);
     if (!$page['ok']) return ['status' => 'error', 'message' => $page['error']];
-    if (mb_strlen(trim($page['text'])) < 120 && !$page['structured']) return ['status' => 'rejected', 'message' => 'Not enough readable text on that page. Some sites only show the job after JavaScript runs; try the link of the same job on the company\'s own careers page.'];
+    if (mb_strlen(trim($page['text'])) < 120 && !$page['structured']) {
+        if ($allowList) { $list = intake_list($page, $existing, $roles); if ($list['status'] !== 'rejected') return $list; }   // maybe it is a page of links to jobs
+        return ['status' => 'rejected', 'message' => 'Not enough readable text on that page. Some sites only show the job after JavaScript runs; try the link of the same job on the company\'s own careers page.'];
+    }
 
     // 3. ask the AI
     $ask = groq_ask($page, $url, $source, $roles);
     if (!$ask['ok']) return ['status' => 'error', 'message' => $ask['error']];
 
     // 3b. a page that lists many jobs: find the job links on it (each one is then checked on its own)
-    if ($allowList && ($ask['answer']['accept'] ?? false) !== true && ($ask['answer']['page_type'] ?? '') === 'job_list') return intake_list($page, $existing, $roles);
+    // (Also when the AI is unsure what kind of page it is: a careers page with little text but links to job pages is a list too.)
+    if ($allowList && ($ask['answer']['accept'] ?? false) !== true && ($ask['answer']['page_type'] ?? '') !== 'single_job') {
+        $isList = ($ask['answer']['page_type'] ?? '') === 'job_list';
+        $list = intake_list($page, $existing, $roles);
+        if ($list['status'] !== 'rejected' || $isList) return $list;   // otherwise fall through to the AI's own reason below
+    }
 
     // 4. double-check the AI's answer
     $check = validate_answer($ask['answer'], $roles, $page['text'] . "\n" . json_encode($page['structured'], JSON_UNESCAPED_UNICODE), $url, $settings);
