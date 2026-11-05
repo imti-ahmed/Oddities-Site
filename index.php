@@ -17,21 +17,11 @@ $tabs = [['all', 'All'], ['india', 'India'], ['abroad', 'Abroad'], ['remote', 'R
 if ($n['hybrid'] > 0) $tabs[] = ['hybrid', 'Hybrid'];
 $tabs[] = ['in-office', 'In-office'];
 
-// Sticker colour for each kind of job (anything new gets a colour picked from its name)
-function tag_style(string $name): string
-{
-    $colors = ['Product Design' => '#b9d3ff', 'Brand' => '#ffd6a5', 'Graphic' => '#ffb3cf', 'Motion' => '#d9bfff', 'Video' => '#ffb8b0',
-               'Illustration' => '#c4f0bd', 'Content' => '#b5ece0', 'Research' => '#d8d8f6', 'Learning' => '#ffe6a8', 'Creative' => '#ffc4e6',
-               'Design' => '#e3e6ea', 'Other' => '#e3e6ea'];
-    $h = crc32($name);
-    $c = $colors[$name] ?? 'hsl(' . ($h % 360) . ' 85% 82%)';
-    return '--c:' . $c . ';--r:' . (($h % 5) - 2) . 'deg';
-}
-
+// The tag (the kind of job) is shown as plain text.
 function pills(array $tags): string
 {
     $out = '';
-    foreach ($tags as [$name]) $out .= '<span class="tag" style="' . h(tag_style($name)) . '">' . h($name) . '</span>';
+    foreach ($tags as [$name]) $out .= '<span class="tag">' . h($name) . '</span>';
     return $out;
 }
 
