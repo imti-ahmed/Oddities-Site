@@ -144,15 +144,19 @@ table.jobs:has(.delbtn) td.pin, table.jobs:has(.delbtn) th.pin { width: 76px; wh
   background-color: var(--tint);
   background-image: radial-gradient(circle, var(--dot) 0.6px, transparent 0.95px), radial-gradient(circle, var(--dot) 0.6px, transparent 0.95px);
   background-size: 3px 3px; background-position: 0 0, 1.5px 1.5px;
-  animation: pill-blink 1.3s ease-in-out infinite;
+  opacity: var(--blink);                                  /* every pill reads the ONE shared blink value below, so they always blink together */
 }
 .pill.new, .pill.added { --tint: #c9f7d8; --dot: #2fbf68; --edge: #17803f; }   /* green (the Update log's "ADDED" pill matches NEW) */
 .pill.updated          { --tint: #ffeaad; --dot: #ffb21e; --edge: #a36b00; }   /* amber */
 .pill.closed           { --tint: #ffdada; --dot: #f06a6a; --edge: #b02a2a; }   /* red (Update log only) */
 .pill.inactive         { --tint: #eceff4; --dot: #a9b2c1; --edge: #66738a; }   /* grey (Update log only) */
 .nw { white-space: nowrap; }                              /* keeps the last word of the role name and its pill together */
-@keyframes pill-blink { 0%, 55%, 100% { opacity: 1; } 78% { opacity: .3; } }
-@media (prefers-reduced-motion: reduce) { .pill { animation: none; } }   /* people who turned motion off just see a still pill */
+/* ONE blink timer for the whole page (instead of one per pill, which drifted apart for pills lower down the table): it moves the
+   value --blink between 1 and 0.3, and every pill uses that value as its opacity. */
+@property --blink { syntax: '<number>'; inherits: true; initial-value: 1; }
+@keyframes blink-all { 0%, 55%, 100% { --blink: 1; } 78% { --blink: .3; } }
+html { animation: blink-all 1.3s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { html { animation: none; } }   /* people who turned motion off just see a still pill */
 
 /* ---------- pinned window ---------- */
 /* right column: (admin card on /admin only) then the pinned box, stacked and sticky together */
