@@ -40,7 +40,7 @@ function date_only($v): ?string
 }
 
 // Several web requests at the same time. $reqs = [key => url]. Returns [key => ['code' => int, 'body' => string]]
-function fetch_many(array $reqs, int $timeout = 25): array
+function fetch_many(array $reqs, int $timeout = 12): array
 {
     $mh = curl_multi_init(); $hs = [];
     foreach ($reqs as $k => $url) {
@@ -53,9 +53,9 @@ function fetch_many(array $reqs, int $timeout = 25): array
     $out = [];
     foreach ($hs as $k => $ch) {
         $out[$k] = ['code' => (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE), 'body' => (string)curl_multi_getcontent($ch)];
-        curl_multi_remove_handle($mh, $ch); curl_close($ch);
+        curl_multi_remove_handle($mh, $ch);          // (no curl_close: it does nothing since PHP 8.0 and PHP 8.5 complains about it)
     }
-    curl_multi_close($mh);
+    @curl_multi_close($mh);
     return $out;
 }
 

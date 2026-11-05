@@ -2,6 +2,21 @@
 // The door the /admin card knocks on (reached through api/index.php?add=1): "here is a job link, please check it and list it".
 // No password: anyone who knows the /admin address can use it (by choice).
 
+// Only JSON may leave this file. A PHP notice or "deprecated" warning (newer PHP versions have more of them) must never be
+// printed in front of the answer, because the card could not read it. So: no error display, anything printed is thrown away,
+// and a crash (out of time, out of memory) is turned into a readable message instead of a blank page.
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+ob_start();
+register_shutdown_function(function () {
+    $e = error_get_last();
+    if (!$e || !in_array($e['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_PARSE], true)) return;
+    while (ob_get_level()) ob_end_clean();
+    if (!headers_sent()) { http_response_code(200); header('Content-Type: application/json; charset=utf-8'); }
+    $why = preg_match('/memory|time/i', $e['message']) ? 'the server ran out of ' . (stripos($e['message'], 'memory') !== false ? 'memory' : 'time') : 'a server error';
+    echo json_encode(['status' => 'stop', 'message' => 'Stopped because ' . $why . ' (' . mb_substr(preg_replace('/\s+/', ' ', $e['message']), 0, 140) . '). Press the button again to continue.']);
+});
+
 require_once __DIR__ . '/intake.php';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -9,6 +24,7 @@ header('Cache-Control: no-store');
 
 function reply(int $code, array $data): never
 {
+    while (ob_get_level()) ob_end_clean();      // throw away anything that was printed by accident
     http_response_code($code);
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;

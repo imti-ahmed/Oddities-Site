@@ -13,7 +13,7 @@ require_once __DIR__ . '/pagefetch.php';
 require_once __DIR__ . '/groq.php';
 require_once __DIR__ . '/intake.php';
 
-const COLLECTOR_COMPANIES_PER_STEP = 8;      // company job boards read per request
+const COLLECTOR_COMPANIES_PER_STEP = 5;      // company job boards read per request
 const COLLECTOR_RECHECK_DAYS = 30;           // a job the AI refused is looked at again after this many days
 
 function collector_ready(): void

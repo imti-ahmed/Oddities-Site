@@ -246,8 +246,21 @@
     function colSay(text, kind) { colMsg.textContent = text; colMsg.className = 'admin-msg ' + kind; }
     function colLine(text, kind) { var li = document.createElement('li'); li.className = kind; li.textContent = text; colLog.appendChild(li); colLog.scrollTop = colLog.scrollHeight; }
     function act(action, extra) {
-      return fetch('/api/index.php?add=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ action: action }, extra || {})) })
-        .then(function (r) { return r.json().catch(function () { return { status: 'stop', message: 'The server gave an answer we could not read. Try again in a moment.' }; }); });
+      var body = JSON.stringify(Object.assign({ action: action }, extra || {}));
+      function once() {
+        return fetch('/api/index.php?add=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body })
+          .then(function (r) {
+            return r.text().then(function (t) {
+              try { return JSON.parse(t); } catch (e) {
+                var snippet = t.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+                return { status: 'unreadable', message: 'The server gave an answer we could not read (HTTP ' + r.status + (snippet ? ': ' + snippet : '') + ').' };
+              }
+            });
+          });
+      }
+      // a hiccup (the server was busy or timed out) gets one more try before we give up
+      return once().then(function (d) { return d.status === 'unreadable' ? wait(3000).then(once) : d; })
+        .then(function (d) { if (d.status === 'unreadable') d.status = 'stop'; return d; });
     }
     async function collect() {
       stopNow = false; colBtn.disabled = true; colStop.hidden = false; colLog.innerHTML = '';
