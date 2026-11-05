@@ -7,6 +7,7 @@
 //   php scripts/collect.php --gather        read the boards again even if jobs are still waiting from an earlier run
 //   php scripts/collect.php --dry-run       only read the boards and show how many jobs would be checked
 //   php scripts/collect.php --fresh --yes   FIRST delete every listed job and the queue (the board starts empty)
+//   php scripts/collect.php --prune --yes   FIRST hide every job (and drop every queued job) that came from a company or site that is no longer on our lists
 //
 // If Groq's limits are reached the run stops by itself. Nothing is lost: the next run continues from the same place.
 
@@ -16,7 +17,7 @@ ini_set('memory_limit', '512M');
 set_time_limit(0);
 require __DIR__ . '/../lib/collector.php';
 
-$opt = getopt('', ['max::', 'gather', 'dry-run', 'fresh', 'yes']);
+$opt = getopt('', ['max::', 'gather', 'dry-run', 'fresh', 'yes', 'prune']);
 $max = isset($opt['max']) ? max(1, (int)$opt['max']) : 400;
 function say(string $m): void { echo '[' . date('H:i:s') . '] ' . $m . "\n"; }
 
@@ -28,6 +29,12 @@ if (isset($opt['fresh'])) {
     db()->exec('TRUNCATE TABLE jobs RESTART IDENTITY');
     db()->exec('TRUNCATE TABLE job_queue');
     say('Deleted every job and emptied the queue. The board is empty.');
+}
+
+if (isset($opt['prune'])) {
+    if (!isset($opt['yes'])) { say('--prune hides every job that came from a company or job site no longer on our lists. Add --yes to confirm.'); exit(1); }
+    $p = collector_prune();
+    say("Cleaned up after the list change: {$p['jobs']} listed jobs hidden, {$p['queue']} waiting jobs dropped from the queue. (Jobs added by hand are untouched.)");
 }
 
 $s = collector_stats();

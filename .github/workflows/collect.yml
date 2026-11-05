@@ -15,6 +15,10 @@ on:
         description: 'FIRST delete every listed job (the board starts empty)'
         type: boolean
         default: false
+      prune_old:
+        description: 'FIRST hide every job that came from a company or site no longer on our lists (jobs added by hand are kept)'
+        type: boolean
+        default: false
       max_checks:
         description: 'How many new jobs may be settled in this run'
         default: '400'
@@ -41,5 +45,9 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           MAX_CHECKS: ${{ inputs.max_checks || '400' }}
           START_FRESH: ${{ inputs.start_fresh && 'yes' || 'no' }}
+          PRUNE_OLD: ${{ inputs.prune_old && 'yes' || 'no' }}
         run: |
-          if [ "$START_FRESH" = "yes" ]; then php scripts/collect.php --fresh --yes --max="$MAX_CHECKS"; else php scripts/collect.php --max="$MAX_CHECKS"; fi
+          ARGS="--max=$MAX_CHECKS"
+          if [ "$START_FRESH" = "yes" ]; then ARGS="--fresh --yes $ARGS"; fi
+          if [ "$PRUNE_OLD" = "yes" ]; then ARGS="--prune --yes $ARGS"; fi
+          php scripts/collect.php $ARGS

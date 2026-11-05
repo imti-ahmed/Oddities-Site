@@ -24,7 +24,7 @@ Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards
 - `lib/db.php` – talks to Neon. `lib/store.php` – decides where jobs are read and saved.
 - `config/roles.php` – the list of roles we accept (UI/UX Designer ... Internship) and the rules (`min_confidence`, whether worldwide remote counts as India). **Edit this to add or remove a role.**
 - `config/groq_prompt.txt` – the instructions given to the Groq AI, in plain English. Read and edit freely; `{{TAGS}}` is filled in from `config/roles.php`.
-- `config/sources.php` – the job sites the collector reads. `config/companies.php` – companies with job boards we can read (Figma, Canva, ...).
+- `config/companies.php` – the companies the collector watches (right now 7: Figma, Notion, Vercel, Cursor, Lovable, Mistral AI, Zomato; each must have a job board we can read). `config/sources.php` – job sites the collector can also read (all paused right now, so the board is fed only by the companies).
 - `lib/pagefetch.php`, `lib/groq.php`, `lib/intake.php` – the engine: read a job page, ask the AI, double-check its answer in code, save.
 - `lib/ats.php`, `lib/collector.php`, `scripts/collect.php` – the collector (reads company boards and job sites into a queue, then settles the jobs in batches).
 - `lib/liveness.php`, `scripts/check_live.php` – the nightly "is it still open?" check (no AI).

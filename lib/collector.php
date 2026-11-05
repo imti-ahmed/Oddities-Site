@@ -50,6 +50,23 @@ function collector_ready(): void
 function collector_companies(): array { $c = require __DIR__ . '/../config/companies.php'; return $c['readable']; }
 function collector_sources(): array   { $s = require __DIR__ . '/../config/sources.php'; return $s['use']; }
 
+// Cleans up after the lists changed (config/companies.php, config/sources.php): everything that came from a company or job site that is
+// NO LONGER on the lists goes away from the board.
+//   * jobs waiting in the queue from them are dropped from the queue
+//   * jobs already listed from them are HIDDEN (kept in the database, so they are remembered and never added again)
+// Jobs added by hand (source "admin") and jobs with no known source are never touched.
+// Returns ['queue' => n dropped, 'jobs' => n hidden].
+function collector_prune(): array
+{
+    collector_ready();
+    $pdo = db();
+    $keep = array_merge(array_map(fn($c) => 'company: ' . $c['name'], collector_companies()), array_map(fn($s) => 'source: ' . $s['name'], collector_sources()));
+    $notKept = "(source LIKE 'company: %' OR source LIKE 'source: %')" . ($keep ? ' AND source NOT IN (' . implode(',', array_map([$pdo, 'quote'], $keep)) . ')' : '');
+    $queue = (int)$pdo->exec("DELETE FROM job_queue WHERE state = 'pending' AND $notKept");
+    $jobs  = (int)$pdo->exec("UPDATE jobs SET deleted_at = now(), highlighted = false WHERE deleted_at IS NULL AND $notKept");
+    return ['queue' => $queue, 'jobs' => $jobs];
+}
+
 function collector_stats(): array
 {
     collector_ready();
