@@ -147,7 +147,7 @@ function table_head(): string
         if ($d !== $day): $day = $d; ?><div class="log-day"><?= h($d) ?></div><?php endif; ?>
       <div class="log-row">
         <span class="stamp <?= h($e['type']) ?>"><?= h($e['type']) ?></span>
-        <span><a href="<?= h($e['job']['url']) ?>" target="_blank" rel="nofollow noopener"><b><?= h($e['job']['company']) ?></b> &mdash; <?= h($e['job']['title']) ?></a>
+        <span><a href="<?= h($e['job']['url']) ?>" target="_blank" rel="nofollow noopener"><b><?= h($e['job']['company']) ?></b>: <?= h($e['job']['title']) ?></a>
           <?php if ($e['job']['location']): ?><small>&middot; <?= h($e['job']['location']) ?></small><?php endif; ?></span>
       </div>
     <?php endforeach; ?>

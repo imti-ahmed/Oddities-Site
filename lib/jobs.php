@@ -19,7 +19,7 @@ function mode_of(array $j): string
 // Returned as a list with a single [name, kind] pair so the page code stays simple.
 function tags_of(array $j): array
 {
-    if (!empty($j['tags']) && is_array($j['tags'])) return [[(string)$j['tags'][0], 'role']];
+    if (!empty($j['tags']) && is_array($j['tags'])) return [[no_em_dash((string)$j['tags'][0]), 'role']];
 
     $t = strtolower($j['title'] ?? '');
     $kinds = [   // checked in this order, the first match wins
@@ -36,6 +36,13 @@ function tags_of(array $j): array
     ];
     foreach ($kinds as $name => $re) if (preg_match($re, $t)) return [[$name, 'role']];
     return [[str_contains($t, 'design') ? 'Design' : 'Other', 'role']];
+}
+
+// The site never shows em dashes. If a job's text has one (from a job board, or typed by hand), it becomes a plain hyphen.
+// (\x{2014} is the em dash character, written as a code so it does not appear in this file.)
+function no_em_dash(string $s): string
+{
+    return preg_replace('/\s*\x{2014}\s*/u', ' - ', $s) ?? $s;
 }
 
 // Loads every job from the file and adds the extra information.
@@ -67,11 +74,11 @@ function load_jobs(array $settings): array
         }
 
         $jobs[] = [
-            'id' => substr(sha1($j['url']), 0, 10), 'title' => $j['title'], 'company' => $j['company'],
-            'location' => $j['location'] ?? '', 'url' => $j['url'],
+            'id' => substr(sha1($j['url']), 0, 10), 'title' => no_em_dash($j['title']), 'company' => no_em_dash($j['company']),
+            'location' => no_em_dash((string)($j['location'] ?? '')), 'url' => $j['url'],
             'region' => region_of($j), 'mode' => mode_of($j), 'tags' => tags_of($j),
             'posted' => $posted, 'added' => $added, 'updated' => $updated, 'closed' => $closed,
-            'dead' => $dead, 'dead_note' => (string)($j['closed_reason'] ?? ''), 'badge' => $badge,
+            'dead' => $dead, 'dead_note' => no_em_dash((string)($j['closed_reason'] ?? '')), 'badge' => $badge,
             'change' => max($added, $updated),
         ];
     }
