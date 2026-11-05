@@ -263,7 +263,7 @@
         .then(function (d) { if (d.status === 'unreadable') d.status = 'stop'; return d; });
     }
     async function collect() {
-      stopNow = false; colBtn.disabled = true; colStop.hidden = false; colLog.innerHTML = '';
+      stopNow = false; colBtn.disabled = true; if (liveBtn) liveBtn.disabled = true; colStop.hidden = false; colLog.innerHTML = '';
       var added = 0, notAdded = 0, failed = 0, ended = 'Done.';
       try {
         var plan = await act('plan');
@@ -288,25 +288,57 @@
             colSay('Reading job sites: ' + (i + 1) + ' of ' + plan.sources + ' (' + queued + ' jobs to check so far)...', 'wait');
           }
         }
+        var aiCalls = 0, noAi = 0;
         while (!stopNow) {
           var r = await act('next');
           if (r.status === 'empty') break;
+          var results = r.results || [];
+          aiCalls += r.ai_calls || 0;
+          results.forEach(function (x) {
+            if (x.result === 'added') { added++; if (!x.ai) noAi++; colLine(x.message.replace(/ It is saved\..*$/, ''), 'ok'); }
+            else if (x.result === 'error') failed++;
+            else notAdded++;
+          });
           if (r.status === 'wait') { colSay('Groq asked us to slow down. Waiting ' + r.seconds + ' seconds...', 'wait'); await wait(r.seconds * 1000); continue; }
           if (r.status === 'stop') { colSay(r.message + ' So far: ' + added + ' added.', 'bad'); return; }
           if (r.status !== 'checked') break;
-          if (r.result === 'added') { added++; colLine(r.message.replace(/ It is saved\..*$/, ''), 'ok'); }
-          else if (r.result === 'error') failed++;
-          else notAdded++;
-          colSay('Checking jobs: ' + added + ' added, ' + notAdded + ' not added, ' + r.remaining + ' waiting...', 'wait');
+          colSay('Checking jobs: ' + added + ' added, ' + notAdded + ' not added, ' + r.remaining + ' waiting (AI calls used: ' + aiCalls + ')...', 'wait');
         }
+        ended = 'Done.';
         if (stopNow) ended = 'Stopped. Press Collect jobs again to continue where it left off.';
-        colSay(ended + ' Added ' + added + ', not added ' + notAdded + (failed ? ', could not check ' + failed : '') + '. The site shows new jobs within a minute.', added ? 'good' : 'wait');
+        colSay(ended + ' Added ' + added + ' (' + noAi + ' without the AI), not added ' + notAdded + (failed ? ', could not check ' + failed : '') + '. AI calls used: ' + aiCalls + '. The site shows new jobs within a minute.', added ? 'good' : 'wait');
       } catch (e) {
         colSay('Lost the connection to the server. Press Collect jobs again to continue where it left off.', 'bad');
       } finally {
-        colBtn.disabled = false; colStop.hidden = true;
+        colBtn.disabled = false; if (liveBtn) liveBtn.disabled = false; colStop.hidden = true;
       }
     }
+    // "Check open jobs": is every listed job still open? No AI: just web requests. Closed jobs move to the Dead Zone.
+    var liveBtn = $('#liveBtn');
+    async function checkOpen() {
+      stopNow = false; liveBtn.disabled = true; colBtn.disabled = true; colStop.hidden = false; colLog.innerHTML = '';
+      var checked = 0, open = 0, closed = 0, unknown = 0;
+      try {
+        var plan = await act('live_plan');
+        if (plan.status !== 'ok') { colSay(plan.message || 'Could not start.', 'bad'); return; }
+        var due = plan.due;
+        if (due === 0) { colSay('Every listed job was checked in the last day. Nothing to do.', 'wait'); return; }
+        while (!stopNow) {
+          var r = await act('live_batch', { size: 40 });
+          if (r.status !== 'ok') { colSay(r.message || 'Problem while checking.', 'bad'); return; }
+          checked += r.checked; open += r.alive; closed += r.closed; unknown += r.unknown;
+          (r.closed_jobs || []).forEach(function (c) { colLine('Closed: ' + c.title + ' at ' + c.company + ' (' + c.reason + ')', 'skip'); });
+          colSay('Checking that jobs are still open: ' + checked + ' of ' + due + ' (' + closed + ' closed so far)...', 'wait');
+          if (!r.checked || !r.remaining) break;
+        }
+        colSay((stopNow ? 'Stopped. ' : 'Done. ') + checked + ' jobs checked: ' + open + ' still open, ' + closed + ' closed, ' + unknown + ' could not be reached (tried again next time). A job only closes when it is gone two nights in a row.', closed ? 'good' : 'wait');
+      } catch (e) {
+        colSay('Lost the connection to the server. Press the button again to continue.', 'bad');
+      } finally {
+        liveBtn.disabled = false; colBtn.disabled = false; colStop.hidden = true;
+      }
+    }
+    if (liveBtn) liveBtn.addEventListener('click', checkOpen);
     if (colBtn) { colBtn.addEventListener('click', collect); colStop.addEventListener('click', function () { stopNow = true; colSay('Stopping after the current job...', 'wait'); }); }
   })();
 

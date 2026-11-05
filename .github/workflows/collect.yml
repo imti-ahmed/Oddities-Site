@@ -1,5 +1,6 @@
 # Fills the board from our list of companies and job sites, using the Groq AI, and saves into the Neon database.
-# Runs by itself every 6 hours, and you can run it by hand: GitHub > Actions > "Collect jobs" > Run workflow.
+# Looks for NEW jobs every 3 days at 04:00 India time (22:30 UTC the evening before), and you can run it by hand: GitHub > Actions > "Collect jobs" > Run workflow.
+# Reading the company boards costs no AI. The AI only sees jobs it has not seen before, about 8 jobs per call.
 #
 # It needs two secrets (GitHub > Settings > Secrets and variables > Actions > New repository secret):
 #   GROQ_API_KEY   your Groq key
@@ -15,10 +16,10 @@ on:
         type: boolean
         default: false
       max_checks:
-        description: 'How many jobs the AI may check in this run'
-        default: '150'
+        description: 'How many new jobs may be settled in this run'
+        default: '400'
   schedule:
-    - cron: '17 */6 * * *'
+    - cron: '30 22 */3 * *'      # 22:30 UTC = 04:00 IST the next morning (GitHub uses UTC)
 
 concurrency:
   group: collect-jobs
@@ -38,7 +39,7 @@ jobs:
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          MAX_CHECKS: ${{ inputs.max_checks || '150' }}
+          MAX_CHECKS: ${{ inputs.max_checks || '400' }}
           START_FRESH: ${{ inputs.start_fresh && 'yes' || 'no' }}
         run: |
           if [ "$START_FRESH" = "yes" ]; then php scripts/collect.php --fresh --yes --max="$MAX_CHECKS"; else php scripts/collect.php --max="$MAX_CHECKS"; fi

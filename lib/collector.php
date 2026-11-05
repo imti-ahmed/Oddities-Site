@@ -33,11 +33,13 @@ function collector_ready(): void
         result     TEXT,                              -- added | rejected | duplicate | error
         reason     TEXT,
         queued_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        mode       TEXT NOT NULL DEFAULT 'url',                    -- ats = we already hold the text, url = the page must be opened
         priority   SMALLINT NOT NULL DEFAULT 1,           -- 0 = looks like an India job (checked first), 1 = everything else
         claimed_at TIMESTAMPTZ,
         done_at    TIMESTAMPTZ
     )");
     db()->exec('ALTER TABLE job_queue ADD COLUMN IF NOT EXISTS priority SMALLINT NOT NULL DEFAULT 1');
+    db()->exec("ALTER TABLE job_queue ADD COLUMN IF NOT EXISTS mode TEXT NOT NULL DEFAULT 'url'");
     // housekeeping: a claim nobody finished (closed tab, crash) goes back in line after 10 minutes; old refusals are looked at again
     db()->exec("UPDATE job_queue SET state = 'pending' WHERE state = 'working' AND claimed_at < now() - interval '10 minutes'");
     db()->exec("DELETE FROM job_queue WHERE state = 'done' AND result <> 'added' AND done_at < now() - interval '" . COLLECTOR_RECHECK_DAYS . " days'");
@@ -65,7 +67,7 @@ function collector_queue(array $cands): int
     if (!$cands) return 0;
     $known = [];
     foreach (db()->query('SELECT url_key FROM jobs') as $r) $known[$r['url_key']] = true;
-    $st = db()->prepare('INSERT INTO job_queue (url_key, url, source, payload, posted_at, priority) VALUES (:k, :u, :s, :p, :d, :pr) ON CONFLICT (url_key) DO NOTHING');
+    $st = db()->prepare('INSERT INTO job_queue (url_key, url, source, payload, posted_at, priority, mode) VALUES (:k, :u, :s, :p, :d, :pr, :m) ON CONFLICT (url_key) DO NOTHING');
     $new = 0;
     foreach ($cands as $c) {
         $url = trim((string)($c['url'] ?? ''));
@@ -74,7 +76,7 @@ function collector_queue(array $cands): int
         if (isset($known[$key])) continue;
         $c['url'] = $url;
         $c += ['mode' => 'url', 'posted_at' => null, 'source' => 'collector'];
-        $st->execute([':k' => $key, ':u' => $url, ':s' => $c['source'], ':p' => json_encode($c, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ':d' => db_date($c['posted_at']),
+        $st->execute([':k' => $key, ':u' => $url, ':s' => $c['source'], ':p' => json_encode($c, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ':d' => db_date($c['posted_at']), ':m' => ($c['mode'] ?? 'url') === 'ats' ? 'ats' : 'url',
             ':pr' => preg_match('/india|bengaluru|bangalore|mumbai|delhi|gurgaon|gurugram|noida|hyderabad|pune|chennai|kolkata|ahmedabad|jaipur|kochi|indore|chandigarh/i', ($c['location'] ?? '') . ' ' . ($c['title'] ?? '') . ' ' . ($c['source'] ?? '') . ' ' . $url) ? 0 : 1]);
         $new += $st->rowCount();
     }
@@ -148,36 +150,112 @@ function collector_gather_source(int $i): array
 }
 
 // ---------- 2. CHECK ----------
-// Takes the next job in the queue (newest first), lets the AI decide, saves it or refuses it.
-// Returns one of: ['status' => 'empty'] | ['status' => 'checked', 'result' => ..., ...] | ['status' => 'wait', 'seconds' => n] | ['status' => 'stop', 'message' => ...]
+// Takes the next BATCH of queued jobs (newest first, India first) and settles them with as few AI calls as possible:
+//   1. a link or a title+company+place that is already listed is skipped (no AI)
+//   2. a job with a plainly right title and a known place is listed by plain code (no AI), unless 'fast_path' is switched off
+//   3. everything else goes to the AI together, up to 'batch_size' jobs in ONE call
+// Returns one of: ['status' => 'empty'] | ['status' => 'checked', 'results' => [...], 'ai_calls' => n, 'remaining' => n]
+//   | ['status' => 'wait', 'seconds' => n, 'results' => [...]] | ['status' => 'stop', 'message' => ..., 'results' => [...]]
 function collector_next(): array
 {
     collector_ready();
     $pdo = db();
-    $row = $pdo->query("UPDATE job_queue SET state = 'working', claimed_at = now()
-        WHERE url_key = (SELECT url_key FROM job_queue WHERE state = 'pending' ORDER BY priority, posted_at DESC NULLS LAST, queued_at LIMIT 1 FOR UPDATE SKIP LOCKED)
-        RETURNING *")->fetch();
-    if (!$row) return ['status' => 'empty', 'remaining' => 0];
+    $roles = require __DIR__ . '/../config/roles.php';
+    $settings = require __DIR__ . '/../config/settings.php';
+    $size = max(1, (int)($roles['rules']['batch_size'] ?? 8));
+    $order = 'priority, posted_at DESC NULLS LAST, queued_at';
 
-    $c = json_decode($row['payload'], true) ?: ['url' => $row['url'], 'mode' => 'url', 'source' => $row['source']];
-    $res = ($c['mode'] ?? 'url') === 'ats' ? intake_candidate($c) : intake_job($c['url'], (string)($c['source'] ?? 'collector'), false);
+    $mode = $pdo->query("SELECT mode FROM job_queue WHERE state = 'pending' ORDER BY $order LIMIT 1")->fetchColumn();
+    if ($mode === false) return ['status' => 'empty', 'remaining' => 0];
+    $n = $mode === 'ats' ? $size : min($size, 4);            // pages that must be opened one by one are taken in smaller groups
+    $rows = $pdo->query("UPDATE job_queue SET state = 'working', claimed_at = now()
+        WHERE url_key IN (SELECT url_key FROM job_queue WHERE state = 'pending' AND mode = " . $pdo->quote($mode) . " ORDER BY $order LIMIT $n FOR UPDATE SKIP LOCKED)
+        RETURNING url_key, url, source, payload, mode")->fetchAll();
+    if (!$rows) return ['status' => 'empty', 'remaining' => 0];
 
-    if (!empty($res['service_error'])) {                                              // Groq or the database had a problem: put the job back, do not blame the job
-        $pdo->prepare("UPDATE job_queue SET state = 'pending' WHERE url_key = :k")->execute([':k' => $row['url_key']]);
-        if (!empty($res['rate_limited']) && empty($res['daily_limit'])) return ['status' => 'wait', 'seconds' => min(120, (int)($res['retry_after'] ?? 30)), 'message' => 'Groq asked us to slow down.'];
-        return ['status' => 'stop', 'message' => $res['message'] . (!empty($res['daily_limit']) ? ' Progress is saved: run it again later and it continues from here.' : '')];
+    try { $existing = jobs_read_fresh(); }
+    catch (Throwable $e) { collector_unclaim($rows); return ['status' => 'stop', 'message' => $e->getMessage(), 'results' => []]; }
+
+    $results = []; $ai = [];       // $ai = jobs that need the AI: id => ['row' =>, 'c' =>, 'page' =>]
+    $finish = function (array $row, array $c, array $res, bool $usedAi) use ($pdo, &$results) {
+        $result = in_array($res['status'], ['added', 'rejected', 'duplicate'], true) ? $res['status'] : 'error';
+        $pdo->prepare("UPDATE job_queue SET state = 'done', result = :r, reason = :m, done_at = now() WHERE url_key = :k")
+            ->execute([':r' => $result, ':m' => mb_substr((string)($res['message'] ?? ''), 0, 300), ':k' => $row['url_key']]);
+        $results[] = ['result' => $result, 'title' => (string)($c['title'] ?? ''), 'company' => (string)($c['company'] ?? ''), 'message' => (string)($res['message'] ?? ''), 'ai' => $usedAi];
+    };
+    $strict = env('VERCEL') !== '';
+
+    foreach ($rows as $i => $row) {
+        $c = json_decode($row['payload'], true) ?: ['url' => $row['url'], 'mode' => 'url', 'source' => $row['source']];
+        $c['url'] = $c['url'] ?? $row['url'];
+        if (($c['mode'] ?? 'url') === 'ats') {
+            if (job_already_listed($existing, ['url' => $c['url'], 'title' => "\0", 'company' => "\0", 'location' => "\0"])) { $finish($row, $c, ['status' => 'duplicate', 'message' => 'That link is already in the list.'], false); continue; }
+            if (job_pre_duplicate($existing, $c)) { $finish($row, $c, ['status' => 'duplicate', 'message' => 'Same title, company and place are already in the list.'], false); continue; }
+            $fast = fast_path_job($c, $roles, $settings);
+            if ($fast) { $res = intake_save($fast, $existing); if (!empty($res['service_error'])) { collector_unclaim([$row]); continue; } $finish($row, $c, $res, false); continue; }
+            $structured = array_filter(['title' => $c['title'], 'company' => $c['company'], 'locations' => ($c['location'] ?? '') !== '' ? [$c['location']] : null, 'workplace_type' => $c['workplace'] ?? null,
+                'date_posted' => $c['posted_at'] ?? null, 'employment_type' => $c['employment_type'] ?? null], fn($v) => $v !== null && $v !== '' && $v !== []);
+            $page = ['ok' => true, 'final_url' => $c['url'], 'page_title' => (string)$c['title'], 'description' => '', 'structured' => $structured, 'text' => mb_substr((string)($c['description'] ?? ''), 0, (int)$roles['rules']['max_page_chars']), 'html' => ''];
+        } else {
+            [$okUrl, $why] = check_public_url($c['url'], $strict);
+            if (!$okUrl) { $finish($row, $c, ['status' => 'error', 'message' => $why], false); continue; }
+            if (job_already_listed($existing, ['url' => $c['url'], 'title' => "\0", 'company' => "\0", 'location' => "\0"])) { $finish($row, $c, ['status' => 'duplicate', 'message' => 'That link is already in the list.'], false); continue; }
+            $page = read_job_page($c['url'], (int)$roles['rules']['max_page_chars'], $strict);
+            if (!$page['ok']) { $finish($row, $c, ['status' => 'error', 'message' => $page['error']], false); continue; }
+            if (mb_strlen(trim($page['text'])) < 120 && !$page['structured']) { $finish($row, $c, ['status' => 'rejected', 'message' => 'Not enough readable text on that page.'], false); continue; }
+        }
+        $ai[$i] = ['row' => $row, 'c' => $c, 'page' => $page];
     }
 
-    $result = in_array($res['status'], ['added', 'rejected', 'duplicate'], true) ? $res['status'] : 'error';
-    $pdo->prepare("UPDATE job_queue SET state = 'done', result = :r, reason = :m, done_at = now() WHERE url_key = :k")
-        ->execute([':r' => $result, ':m' => mb_substr((string)($res['message'] ?? ''), 0, 300), ':k' => $row['url_key']]);
+    $calls = 0;
+    if ($ai) {
+        $max = (int)($roles['rules']['batch_page_chars'] ?? 1800);
+        $items = [];
+        foreach ($ai as $id => $x) { $x['page']['text'] = mb_substr($x['page']['text'], 0, $max); $ai[$id]['page'] = $x['page']; $items[] = ['id' => $id, 'url' => $x['c']['url'], 'source' => (string)($x['c']['source'] ?? 'collector'), 'page' => $x['page']]; }
+        $calls++;
+        $r = groq_check_batch($items, $roles);
+        if (!$r['ok']) {
+            if (!empty($r['soft'])) { foreach ($ai as $x) $finish($x['row'], $x['c'], ['status' => 'error', 'message' => $r['error']], true); }
+            else {                                                                    // Groq itself has a problem: put these jobs back, do not blame them
+                collector_unclaim(array_column($ai, 'row'));
+                $out = ['results' => $results, 'ai_calls' => $calls];
+                if (!empty($r['rate_limited']) && empty($r['daily_limit'])) return ['status' => 'wait', 'seconds' => min(120, (int)($r['retry_after'] ?? 30)), 'message' => 'Groq asked us to slow down.'] + $out;
+                return ['status' => 'stop', 'message' => $r['error'] . (!empty($r['daily_limit']) ? ' Progress is saved: run it again later and it continues from here.' : '')] + $out;
+            }
+        } else {
+            foreach ($ai as $id => $x) {
+                $answer = $r['answers'][$id] ?? null;
+                if ($answer === null) {                                               // the AI skipped this one: ask about it alone
+                    $calls++;
+                    $one = groq_ask($x['page'], $x['c']['url'], (string)($x['c']['source'] ?? 'collector'), $roles);
+                    if (!$one['ok']) {
+                        if (empty($one['soft'])) { collector_unclaim([$x['row']]); continue; }
+                        $finish($x['row'], $x['c'], ['status' => 'error', 'message' => $one['error']], true); continue;
+                    }
+                    $answer = $one['answer'];
+                }
+                $res = intake_apply_answer($answer, $x['page'], $x['c']['url'], (string)($x['c']['source'] ?? 'collector'), $existing, $roles, $settings, ['posted_at' => $x['c']['posted_at'] ?? null]);
+                if (!empty($res['service_error'])) { collector_unclaim([$x['row']]); continue; }
+                $finish($x['row'], $x['c'], $res, true);
+            }
+        }
+    }
     $left = (int)$pdo->query("SELECT count(*) FROM job_queue WHERE state = 'pending'")->fetchColumn();
-    return ['status' => 'checked', 'result' => $result, 'title' => (string)($c['title'] ?? ''), 'company' => (string)($c['company'] ?? ''), 'message' => (string)($res['message'] ?? ''), 'remaining' => $left];
+    return ['status' => 'checked', 'results' => $results, 'ai_calls' => $calls, 'remaining' => $left];
+}
+
+// Puts claimed jobs back in line (used when Groq or the database had a problem, so the job itself is not blamed).
+function collector_unclaim(array $rows): void
+{
+    if (!$rows) return;
+    $st = db()->prepare("UPDATE job_queue SET state = 'pending' WHERE url_key = :k");
+    foreach ($rows as $r) $st->execute([':k' => $r['url_key']]);
 }
 
 // ---------- the actions the /admin card asks for ----------
 function collector_action(string $action, array $in): array
 {
+    if (str_starts_with($action, 'live_')) { require_once __DIR__ . '/liveness.php'; return liveness_action($action, $in); }
     try {
         switch ($action) {
             case 'plan':

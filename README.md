@@ -24,7 +24,8 @@ Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards
 - `config/groq_prompt.txt` – the instructions given to the Groq AI, in plain English. Read and edit freely; `{{TAGS}}` is filled in from `config/roles.php`.
 - `config/sources.php` – the job sites the collector reads. `config/companies.php` – companies with job boards we can read (Figma, Canva, ...).
 - `lib/pagefetch.php`, `lib/groq.php`, `lib/intake.php` – the engine: read a job page, ask the AI, double-check its answer in code, save.
-- `lib/ats.php`, `lib/collector.php`, `scripts/collect.php` – the collector (reads company boards and job sites into a queue, then checks each job).
+- `lib/ats.php`, `lib/collector.php`, `scripts/collect.php` – the collector (reads company boards and job sites into a queue, then settles the jobs in batches).
+- `lib/liveness.php`, `scripts/check_live.php` – the nightly "is it still open?" check (no AI).
 - `lib/add_job_endpoint.php` – the endpoint behind the `/admin` card (reached through `api/index.php?add=1`). `api/index.php` shows the admin card when the address is `/admin`.
 
 ## The jobs file
@@ -84,21 +85,30 @@ Set these in Vercel, Settings, Environment Variables (Preview and Production), t
 
 Optional: `GROQ_MODEL` (default `llama-3.3-70b-versatile`). If Groq says that model is gone, the app asks Groq which models your key can use and picks one from the list in `lib/groq.php` by itself; if none fit, the error message lists what is available so you can set `GROQ_MODEL`. On your own computer (no `DATABASE_URL`) the local file `data/jobs.json` is edited directly; open `http://localhost:8000/admin.php`.
 
-## Filling the board automatically (the collector)
+## Keeping the board filled and clean (two jobs)
 
-The **Collect jobs** button on `/admin` (and the same thing as a command, see below) fills the board from our own lists, using the AI:
+**1. Finding NEW jobs, every 3 days** (the **Collect jobs** button on `/admin`, or `scripts/collect.php`, or the GitHub job at 04:00 India time):
+1. **Gather (no AI):** it reads the public job boards of the companies in `config/companies.php` (Greenhouse, Lever, Ashby, SmartRecruiters) and the sites in `config/sources.php`. Every opening whose *title* could fit one of our roles is put in a queue (the `job_queue` table). Titles like "Software Engineer" are dropped here.
+2. **Settle, with as few AI calls as possible.** For every queued job, in this order:
+   - the link, or the same title + company + place, is already listed: skipped (no AI);
+   - the title is plainly one of our roles ("Senior Product Designer, Payments") and the board gives the place: listed by plain code (no AI). Switch this off with `'fast_path' => false` in `config/roles.php` to make the AI check everything;
+   - everything else goes to the AI **together**, 8 jobs in one call (`'batch_size'` in `config/roles.php`), with the rules in `config/groq_prompt.txt`. The answer is double-checked in code like before.
+   In a test on real company boards, 160 jobs were settled with 20 AI calls instead of 160.
 
-1. **Gather:** it reads the public job boards of the companies in `config/companies.php` (Greenhouse, Lever, Ashby, SmartRecruiters) and the sites in `config/sources.php`. Every opening whose *title* could fit one of our roles is put in a queue (a database table called `job_queue`). Titles like "Software Engineer" are dropped here, without using the AI.
-2. **Check:** one queued job at a time goes to Groq with the rules in `config/groq_prompt.txt`, the answer is double-checked in code (same strict checks as the single-link card), and the job is listed or refused. Jobs that look like India jobs are checked first, then the newest.
+The queue remembers every job it has settled, so a run can be **stopped and continued** at any time and never asks about the same job twice (a refused job is looked at again after 30 days). If Groq's limit is reached the run pauses or stops by itself, and the jobs stay queued. Jobs that look like India jobs are settled first, then the newest.
 
-The queue remembers every job it has checked, so a run can be **stopped and continued** at any time and never asks the AI about the same job twice (a refused job is looked at again after 30 days). If Groq's limit is reached the run pauses or stops by itself; press the button again later.
+**2. Checking that listed jobs are still open, every night at 02:00 India time** (the **Check open jobs** button, `scripts/check_live.php`, or the GitHub job). No AI, only web requests:
+- a job from a company board: if it is no longer on the company's current list of openings, it is gone;
+- any other job: its link is opened. A "not found" page, a page that says "no longer available / position filled", or a redirect to the general job list means it is gone;
+- only clear signals count. A blocked, slow or broken page changes nothing (tried again next night). A job is closed (moves to the Dead Zone) only after it is gone **two nights in a row**;
+- jobs older than 90 days are not checked: they move to the Dead Zone by age, even if still open.
 
-**Groq's free limits matter.** Each check costs a few thousand AI "tokens", and the first run queues several hundred jobs. On Groq's free plan a daily token limit may mean the first fill takes several days of runs; a paid Groq plan removes that. Nothing breaks: it simply continues the next time.
+**Groq's limits.** On Groq's free plan a daily token limit may still slow the very first fill, because the first run queues several hundred jobs. Nothing breaks: it continues the next time.
 
-**As a command / on a schedule:** `php scripts/collect.php` (options at the top of that file). `.github/workflows/collect.yml` runs it every 6 hours on GitHub, and you can run it by hand under GitHub, Actions, "Collect jobs". It needs two GitHub secrets, `GROQ_API_KEY` and `DATABASE_URL` (the same values as in Vercel). The schedule and the Run button only work once the file is on your `main` branch.
+**The schedules** are the two files in `.github/workflows/` (`collect.yml` every 3 days, `check-live.yml` every night). GitHub uses UTC, so the files say 22:30 UTC and 20:30 UTC. They need the secrets `GROQ_API_KEY` and `DATABASE_URL` (the second only for the nightly check) under GitHub, Settings, Secrets and variables, Actions, and they only run once the files are on your `main` branch. You can also run each by hand under GitHub, Actions.
 
 **Starting from an empty board:** `data/jobs.json` is empty, so a new database starts empty. To empty an existing Neon database, run this once in Neon's SQL Editor: `TRUNCATE TABLE jobs RESTART IDENTITY;` (the Update log is built from the jobs, so it empties too).
 
 ## Coming next
 
-Rewording the About page line "hand picked and added manually", a way to close or remove a job from the site, and tuning the rules after we see real results.
+More company boards (Workable, Recruitee, Personio and similar), a "maybe" list for jobs the AI is unsure about, and tuning the rules after we see real results.

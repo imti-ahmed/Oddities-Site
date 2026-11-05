@@ -39,20 +39,28 @@ function date_only($v): ?string
     return $ts ? date('Y-m-d', $ts) : null;
 }
 
-// Several web requests at the same time. $reqs = [key => url]. Returns [key => ['code' => int, 'body' => string]]
-function fetch_many(array $reqs, int $timeout = 12): array
+// Several web requests at the same time. $reqs = [key => url]. Returns [key => ['code' => int, 'body' => string, 'url' => final address after redirects]]
+// $maxBytes > 0 stops reading a page after that many bytes (enough to see whether a job page says "closed").
+function fetch_many(array $reqs, int $timeout = 12, int $maxBytes = 0): array
 {
-    $mh = curl_multi_init(); $hs = [];
+    $mh = curl_multi_init(); $hs = []; $bufs = [];
     foreach ($reqs as $k => $url) {
         $ch = curl_init($url);
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => $timeout, CURLOPT_CONNECTTIMEOUT => 8, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 3,
-            CURLOPT_ENCODING => '', CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; JobBoardBot/1.0)', CURLOPT_HTTPHEADER => ['Accept: application/json, application/xml, text/html;q=0.8']]);
+        $bufs[$k] = '';
+        $opts = [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => $timeout, CURLOPT_CONNECTTIMEOUT => 8, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 3,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS, CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            CURLOPT_ENCODING => '', CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; JobBoardBot/1.0)', CURLOPT_HTTPHEADER => ['Accept: application/json, application/xml, text/html;q=0.8']];
+        if ($maxBytes > 0) {
+            unset($opts[CURLOPT_RETURNTRANSFER]);
+            $opts[CURLOPT_WRITEFUNCTION] = function ($c, $chunk) use (&$bufs, $k, $maxBytes) { $bufs[$k] .= $chunk; return strlen($bufs[$k]) > $maxBytes ? 0 : strlen($chunk); };
+        }
+        curl_setopt_array($ch, $opts);
         curl_multi_add_handle($mh, $ch); $hs[$k] = $ch;
     }
     do { $st = curl_multi_exec($mh, $running); if ($running) curl_multi_select($mh, 1.0); } while ($running && $st === CURLM_OK);
     $out = [];
     foreach ($hs as $k => $ch) {
-        $out[$k] = ['code' => (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE), 'body' => (string)curl_multi_getcontent($ch)];
+        $out[$k] = ['code' => (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE), 'body' => $maxBytes > 0 ? $bufs[$k] : (string)curl_multi_getcontent($ch), 'url' => (string)curl_getinfo($ch, CURLINFO_EFFECTIVE_URL)];
         curl_multi_remove_handle($mh, $ch);          // (no curl_close: it does nothing since PHP 8.0 and PHP 8.5 complains about it)
     }
     @curl_multi_close($mh);
@@ -165,4 +173,49 @@ function ats_gather_many(array $companies, int $staleDays = 90): array
         }
     }
     return ['candidates' => $cands, 'errors' => $errors, 'seen' => $seen];
+}
+
+
+// ---------- "is this job still on the company's board?" ----------
+// A job is recognised by its link. SmartRecruiters links carry a long number; the board lists numbers, so we compare those.
+function job_board_key(string $url): string
+{
+    if (preg_match('#smartrecruiters\.com/[^/]+/(\d{6,})#i', $url, $m)) return 'sr:' . $m[1];
+    return normalize_job_url($url);
+}
+
+// Reads the current openings of several company boards (links only).
+// Returns [company name => ['ok' => bool, 'keys' => [key => true], 'count' => n]]. ok = false when the board could not be read completely.
+function ats_board_keys(array $companies): array
+{
+    $reqs = [];
+    foreach ($companies as $i => $c) {
+        $t = rawurlencode($c['token']);
+        $reqs[$i] = match ($c['ats']) {
+            'greenhouse'      => "https://boards-api.greenhouse.io/v1/boards/$t/jobs",
+            'lever'           => "https://api.lever.co/v0/postings/$t?mode=json",
+            'ashby'           => "https://api.ashbyhq.com/posting-api/job-board/$t",
+            'smartrecruiters' => "https://api.smartrecruiters.com/v1/companies/$t/postings?limit=100",
+            default           => '',
+        };
+        if ($reqs[$i] === '') unset($reqs[$i]);
+    }
+    $got = fetch_many($reqs, 15);
+    $out = [];
+    foreach ($companies as $i => $c) {
+        $d = isset($got[$i]) ? json_body($got[$i]) : null;
+        if ($d === null) { $out[$c['name']] = ['ok' => false, 'keys' => [], 'count' => 0]; continue; }
+        $keys = []; $complete = true;
+        switch ($c['ats']) {
+            case 'greenhouse': foreach ($d['jobs'] ?? [] as $j) $keys[job_board_key((string)$j['absolute_url'])] = true; break;
+            case 'lever':      foreach (is_array($d) ? $d : [] as $j) $keys[job_board_key((string)$j['hostedUrl'])] = true; break;
+            case 'ashby':      foreach ($d['jobs'] ?? [] as $j) $keys[job_board_key((string)$j['jobUrl'])] = true; break;
+            case 'smartrecruiters':
+                foreach ($d['content'] ?? [] as $j) $keys['sr:' . $j['id']] = true;
+                if ((int)($d['totalFound'] ?? 0) > count($d['content'] ?? [])) $complete = false;      // more openings than one page: we only saw part of the list
+                break;
+        }
+        $out[$c['name']] = ['ok' => $complete && count($keys) > 0, 'keys' => $keys, 'count' => count($keys)];   // an empty list is not trusted either
+    }
+    return $out;
 }

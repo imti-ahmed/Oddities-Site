@@ -72,6 +72,9 @@ function db_create_and_seed(): void
         closed_at     DATE,
         closed_reason TEXT,
         source        TEXT,
+        last_checked_at TIMESTAMPTZ,
+        last_seen_at    TIMESTAMPTZ,
+        check_fails     SMALLINT NOT NULL DEFAULT 0,
         created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
     )");
     $count = (int)$pdo->query('SELECT count(*) FROM jobs')->fetchColumn();
@@ -129,4 +132,16 @@ function db_all_jobs(): array
         $jobs[] = array_filter($j, fn($v) => $v !== null && $v !== '');
     }
     return $jobs;
+}
+
+
+// Older databases get the columns the "still open?" check needs (safe to run again and again).
+function db_add_check_columns(): void
+{
+    static $done = false;
+    if ($done) return;
+    db()->exec('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS last_checked_at TIMESTAMPTZ');
+    db()->exec('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ');
+    db()->exec('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS check_fails SMALLINT NOT NULL DEFAULT 0');
+    $done = true;
 }

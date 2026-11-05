@@ -1,0 +1,29 @@
+# Every night at 02:00 India time (20:30 UTC), checks that every listed job is still open. NO AI is used, only web requests.
+# A job that is gone two nights in a row moves to the Dead Zone. You can also run it by hand: GitHub > Actions > "Check open jobs" > Run workflow.
+#
+# It needs one secret (GitHub > Settings > Secrets and variables > Actions): DATABASE_URL (your Neon connection string).
+name: Check open jobs
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 20 * * *'      # 20:30 UTC = 02:00 IST (GitHub uses UTC)
+
+concurrency:
+  group: collect-jobs
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl, mbstring, dom, libxml, pdo_pgsql, simplexml
+      - name: Check open jobs
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: php scripts/check_live.php

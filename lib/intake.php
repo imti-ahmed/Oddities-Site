@@ -56,7 +56,6 @@ function intake_decide(array $page, string $url, string $source, array $existing
     $ask = groq_ask($page, $url, $source, $roles);
     if (!$ask['ok']) return ['status' => 'error', 'service_error' => empty($ask['soft']), 'message' => $ask['error'], 'rate_limited' => !empty($ask['rate_limited']),
                              'retry_after' => $ask['retry_after'] ?? null, 'daily_limit' => !empty($ask['daily_limit'])];
-    if (empty($ask['answer']['posted_at']) && !empty($hints['posted_at'])) $ask['answer']['posted_at'] = $hints['posted_at'];
 
     // 3b. a page that lists many jobs: find the job links on it (each one is then checked on its own)
     // (Also when the AI is unsure what kind of page it is: a careers page with little text but links to job pages is a list too.)
@@ -66,25 +65,97 @@ function intake_decide(array $page, string $url, string $source, array $existing
         if ($list['status'] !== 'rejected' || $isList) return $list;   // otherwise fall through to the AI's own reason below
     }
 
+    return intake_apply_answer($ask['answer'], $page, $url, $source, $existing, $roles, $settings, $hints);
+}
+
+// The plain sentence shown after a job was added.
+function intake_added_message(array $job): string
+{
+    $bits = [$job['tags'][0], $job['region'] === 'india' ? 'India' : 'Abroad'];
+    if (!empty($job['mode'])) $bits[] = ucfirst($job['mode']);
+    return 'Added: ' . $job['title'] . ' at ' . $job['company'] . ' (' . implode(', ', $bits) . ').' . (jobs_store_mode() === 'db' ? ' It is saved. The site shows it within a minute.' : '');
+}
+
+// Steps 4 to 6: double-check the AI's answer, look for duplicates, save. $existing is updated, so jobs of the same batch see each other.
+function intake_apply_answer(array $answer, array $page, string $url, string $source, array &$existing, array $roles, array $settings, array $hints = []): array
+{
+    if (empty($answer['posted_at']) && !empty($hints['posted_at'])) $answer['posted_at'] = $hints['posted_at'];
+
     // 4. double-check the AI's answer
-    $check = validate_answer($ask['answer'], $roles, $page['text'] . "\n" . json_encode($page['structured'], JSON_UNESCAPED_UNICODE), $url, $settings);
+    $check = validate_answer($answer, $roles, $page['text'] . "\n" . json_encode($page['structured'], JSON_UNESCAPED_UNICODE), $url, $settings);
     if (!$check['ok']) return ['status' => 'rejected', 'message' => 'Not added: ' . rtrim($check['reason'], '.') . '.', 'notes' => $check['notes']];
     $job = $check['job'];
     $job['source'] = $source;
+    return intake_save($job, $existing, $check['notes'] ?? [], $check['confidence'] ?? null);
+}
 
-    // 5. same job under a different link?
+// Steps 5 and 6: same job under a different link? Then save.
+function intake_save(array $job, array &$existing, array $notes = [], $confidence = null): array
+{
     if (job_already_listed($existing, $job)) return ['status' => 'duplicate', 'message' => 'That job (same title, company and place) is already in the list.'];
-
-    // 6. save
     try {
-        $result = jobs_append($job, fn($list) => job_already_listed($list, $job), 'Add job: ' . $job['company'] . ', ' . $job['title'] . ' (via ' . $source . ')');
+        $result = jobs_append($job, fn($list) => job_already_listed($list, $job), 'Add job: ' . $job['company'] . ', ' . $job['title'] . ' (via ' . $job['source'] . ')');
     } catch (Throwable $e) { return ['status' => 'error', 'service_error' => true, 'message' => $e->getMessage()]; }
     if ($result === 'duplicate') return ['status' => 'duplicate', 'message' => 'That job is already in the list.'];
+    $existing[] = $job;
+    return ['status' => 'added', 'message' => intake_added_message($job), 'job' => $job, 'notes' => $notes, 'confidence' => $confidence];
+}
 
-    $bits = [$job['tags'][0], $job['region'] === 'india' ? 'India' : 'Abroad'];
-    if (!empty($job['mode'])) $bits[] = ucfirst($job['mode']);
-    return ['status' => 'added', 'message' => 'Added: ' . $job['title'] . ' at ' . $job['company'] . ' (' . implode(', ', $bits) . ').' . (jobs_store_mode() === 'db' ? ' It is saved. The site shows it within a minute.' : ''),
-            'job' => $job, 'notes' => $check['notes'], 'confidence' => $check['confidence']];
+// ---------- fewer AI calls ----------
+// Same job (title + company + place) already listed? Uses what the company board gave us, so no AI time is spent on it.
+function job_pre_duplicate(array $existing, array $c): bool
+{
+    $probe = ['url' => (string)$c['url'], 'title' => trim((string)$c['title']), 'company' => trim((string)$c['company']), 'location' => format_location((string)($c['location'] ?? ''))];
+    foreach ($existing as $j) {
+        if (mb_strtolower(trim((string)($j['title'] ?? ''))) === mb_strtolower($probe['title']) && mb_strtolower(trim((string)($j['company'] ?? ''))) === mb_strtolower($probe['company'])
+            && format_location((string)($j['location'] ?? '')) === $probe['location']) return true;
+    }
+    return false;
+}
+
+// A job whose title is plainly one of our roles and whose board gives the place needs no AI. Returns the job, or null when the AI should look.
+// Switch it off with 'fast_path' => false in config/roles.php.
+function fast_path_job(array $c, array $roles, array $settings): ?array
+{
+    if (empty($roles['rules']['fast_path'])) return null;
+    $title = trim((string)($c['title'] ?? ''));
+    if ($title === '' || preg_match('/\b(intern|internship|trainee|apprentice)\b/i', $title)) return null;
+    if (mb_strlen((string)($c['description'] ?? '')) < 250 || trim((string)($c['location'] ?? '')) === '') return null;
+
+    // "Senior Product Designer, Payments (Contract)" -> "product designer"
+    $base = mb_strtolower($title);
+    $base = trim(preg_split('/\s+[-\x{2013}|]\s+|,\s*/u', preg_replace('/\s*[\(\[].*$/u', '', $base))[0]);
+    while (preg_match('/^(senior|sr\.?|staff|principal|lead|junior|jr\.?|associate|mid[- ]level|entry[- ]level|distinguished|founding)\s+/u', $base)) $base = preg_replace('/^\S+\s+/u', '', $base);
+    $base = trim(preg_replace('/\s+(i|ii|iii|iv|v|[1-5])$/u', '', $base));
+    $roleOf = [
+        'ui designer' => 'UI/UX Designer', 'ux designer' => 'UI/UX Designer', 'ui/ux designer' => 'UI/UX Designer', 'ux/ui designer' => 'UI/UX Designer', 'web designer' => 'UI/UX Designer',
+        'product designer' => 'Product Designer', 'ux researcher' => 'UX Researcher', 'user researcher' => 'UX Researcher', 'design researcher' => 'UX Researcher',
+        'design engineer' => 'Design Engineer', 'ux engineer' => 'Design Engineer', 'creative technologist' => 'Creative Technologist',
+        'visual designer' => 'Visual Designer', 'graphic designer' => 'Graphic Designer', 'illustrator' => 'Illustrator', 'interaction designer' => 'Interaction Designer',
+        'design system designer' => 'Design System Designer', 'design systems designer' => 'Design System Designer', 'art director' => 'Art Director',
+        'packaging designer' => 'Packaging Designer', 'brand designer' => 'Brand Designer', 'cmf designer' => 'CMF Designer', 'creative coder' => 'Creative Coder', 'vibe coder' => 'Vibe Coder',
+    ];
+    $role = $roleOf[$base] ?? null;
+    if ($role === null) return null;
+    $category = array_column($roles['tags'], 'category', 'tag')[$role] ?? null;
+    if ($category === null) return null;
+
+    $rawLoc = (string)$c['location'];
+    $location = format_location($rawLoc);
+    if ($location === '') return null;
+    $region = preg_match('/\b(india|bengaluru|bangalore|mumbai|delhi|gurgaon|gurugram|noida|hyderabad|pune|chennai|kolkata|ahmedabad|jaipur|kochi|chandigarh|indore)\b/i', $rawLoc) ? 'india' : 'abroad';
+
+    $wp = mb_strtolower((string)($c['workplace'] ?? ''));
+    $mode = str_contains($wp, 'remote') ? 'remote' : (str_contains($wp, 'hybrid') ? 'hybrid' : (preg_match('/on[- ]?site|office/', $wp) ? 'in-office' : (preg_match('/\bremote\b/i', $rawLoc) ? 'remote' : null)));
+
+    $today = date('Y-m-d');
+    $posted = (!empty($c['posted_at']) && $c['posted_at'] <= $today) ? $c['posted_at'] : $today;
+    if ((strtotime($today) - strtotime($posted)) / 86400 > (int)($settings['stale_days'] ?? 90)) return null;
+
+    $job = ['title' => no_em_dash(mb_substr($title, 0, 200)), 'company' => no_em_dash(trim((string)$c['company'])), 'location' => $location, 'url' => normalize_job_url((string)$c['url']),
+            'posted_at' => $posted, 'added_at' => $today, 'region' => $region, 'tags' => [$category], 'role' => $role, 'source' => (string)($c['source'] ?? 'collector')];
+    if ($mode) $job['mode'] = $mode;
+    return $job;
 }
 
 // A page that lists many jobs. Finds the links on it, asks the AI which look like our roles, and hands them back so the
