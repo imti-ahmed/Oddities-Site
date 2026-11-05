@@ -75,6 +75,7 @@ function db_create_and_seed(): void
         last_checked_at TIMESTAMPTZ,
         last_seen_at    TIMESTAMPTZ,
         check_fails     SMALLINT NOT NULL DEFAULT 0,
+        highlighted     BOOLEAN NOT NULL DEFAULT false,
         created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
     )");
     $count = (int)$pdo->query('SELECT count(*) FROM jobs')->fetchColumn();
@@ -127,7 +128,7 @@ function db_all_jobs(): array
     foreach ($rows as $r) {
         $j = ['title' => $r['title'], 'company' => $r['company'], 'location' => $r['location'], 'url' => $r['url'], 'posted_at' => $r['posted_at'],
               'added_at' => $r['added_at'], 'updated_at' => $r['updated_at'], 'region' => $r['region'], 'mode' => $r['mode'],
-              'role' => $r['role'], 'status' => $r['status'], 'closed_at' => $r['closed_at'], 'closed_reason' => $r['closed_reason'], 'source' => $r['source']];
+              'role' => $r['role'], 'highlighted' => !empty($r['highlighted']) ? true : null, 'status' => $r['status'], 'closed_at' => $r['closed_at'], 'closed_reason' => $r['closed_reason'], 'source' => $r['source']];
         if (!empty($r['tag'])) $j['tags'] = [$r['tag']];
         $jobs[] = array_filter($j, fn($v) => $v !== null && $v !== '');
     }
@@ -135,7 +136,17 @@ function db_all_jobs(): array
 }
 
 
-// Older databases get the columns the "still open?" check needs (safe to run again and again).
+// Highlight (or un-highlight) one job for everyone. Returns true if a job was found.
+function db_set_highlight(string $url, bool $on): bool
+{
+    require_once __DIR__ . '/pagefetch.php';
+    db_add_check_columns();
+    $st = db()->prepare('UPDATE jobs SET highlighted = :on WHERE url_key = :k');
+    $st->execute([':on' => $on ? 'true' : 'false', ':k' => normalize_job_url($url)]);
+    return $st->rowCount() > 0;
+}
+
+// Older databases get the columns the "still open?" check and the highlight star need (safe to run again and again).
 function db_add_check_columns(): void
 {
     static $done = false;
@@ -143,5 +154,6 @@ function db_add_check_columns(): void
     db()->exec('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS last_checked_at TIMESTAMPTZ');
     db()->exec('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ');
     db()->exec('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS check_fails SMALLINT NOT NULL DEFAULT 0');
+    db()->exec('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS highlighted BOOLEAN NOT NULL DEFAULT false');
     $done = true;
 }

@@ -92,7 +92,7 @@ function load_jobs(array $settings): array
         $jobs[] = [
             'id' => substr(sha1($j['url']), 0, 10), 'title' => no_em_dash(trim($j['title'])), 'company' => no_em_dash(trim($j['company'])),
             'location' => no_em_dash(format_location((string)($j['location'] ?? ''))), 'url' => $j['url'],   // always "City, Country"
-            'region' => region_of($j), 'mode' => mode_of($j), 'tags' => tags_of($j),
+            'region' => region_of($j), 'mode' => mode_of($j), 'tags' => tags_of($j), 'highlighted' => !empty($j['highlighted']),
             'posted' => $posted, 'added' => $added, 'updated' => $updated, 'closed' => $closed,
             'dead' => $dead, 'dead_note' => no_em_dash((string)($j['closed_reason'] ?? '')), 'badge' => $badge,
             'change' => max($added, $updated),

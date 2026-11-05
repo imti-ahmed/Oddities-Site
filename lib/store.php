@@ -76,3 +76,28 @@ function jobs_append(array $job, callable $isDuplicate, string $message = ''): s
     flock($fp, LOCK_UN); fclose($fp);
     return 'added';
 }
+
+// Highlight (or un-highlight) one job for everyone (the Highlighted tab). Returns true if the job was found.
+function jobs_set_highlight(string $url, bool $on): bool
+{
+    require_once __DIR__ . '/pagefetch.php';
+    $mode = jobs_store_mode();
+    if ($mode === 'none') throw new RuntimeException('Saving is not set up. Add DATABASE_URL in Vercel (the Neon connection string), then redeploy.');
+    if ($mode === 'db') {
+        try { return db_set_highlight($url, $on); }
+        catch (Throwable $e) { throw new RuntimeException('Could not save to the database: ' . db_error_hint($e)); }
+    }
+    $fp = fopen(JOBS_FILE_PATH, 'c+');
+    if (!$fp || !flock($fp, LOCK_EX)) throw new RuntimeException('Could not open data/jobs.json for writing.');
+    $list = json_decode((string)stream_get_contents($fp), true);
+    $list = is_array($list) ? $list : [];
+    $key = normalize_job_url($url); $found = false;
+    foreach ($list as $i => $j) {
+        if (normalize_job_url((string)($j['url'] ?? '')) !== $key) continue;
+        if ($on) $list[$i]['highlighted'] = true; else unset($list[$i]['highlighted']);
+        $found = true;
+    }
+    if ($found) { ftruncate($fp, 0); rewind($fp); fwrite($fp, json_encode(array_values($list), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"); }
+    flock($fp, LOCK_UN); fclose($fp);
+    return $found;
+}

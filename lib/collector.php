@@ -213,7 +213,8 @@ function collector_next(): array
         $items = [];
         foreach ($ai as $id => $x) { $x['page']['text'] = mb_substr($x['page']['text'], 0, $max); $ai[$id]['page'] = $x['page']; $items[] = ['id' => $id, 'url' => $x['c']['url'], 'source' => (string)($x['c']['source'] ?? 'collector'), 'page' => $x['page']]; }
         $calls++;
-        $r = groq_check_batch($items, $roles);
+        $r = groq_check_batch_safe($items, $roles);
+        if ($r['ok']) $calls += max(0, ($r['calls'] ?? 1) - 1);
         if (!$r['ok']) {
             if (!empty($r['soft'])) { foreach ($ai as $x) $finish($x['row'], $x['c'], ['status' => 'error', 'message' => $r['error']], true); }
             else {                                                                    // Groq itself has a problem: put these jobs back, do not blame them
@@ -224,6 +225,7 @@ function collector_next(): array
             }
         } else {
             foreach ($ai as $id => $x) {
+                if (isset($r['failed'][$id])) { $finish($x['row'], $x['c'], ['status' => 'error', 'message' => $r['failed'][$id]], true); continue; }   // this one job could not be answered
                 $answer = $r['answers'][$id] ?? null;
                 if ($answer === null) {                                               // the AI skipped this one: ask about it alone
                     $calls++;

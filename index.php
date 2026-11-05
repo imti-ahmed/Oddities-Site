@@ -8,16 +8,18 @@ $dead = sort_dead(array_values(array_filter($all, fn($j) => $j['dead'])));   // 
 $log  = build_log($all, $settings);
 
 // Numbers shown on the tabs
-$n = ['all' => count($live), 'india' => 0, 'abroad' => 0, 'remote' => 0, 'hybrid' => 0, 'in-office' => 0];
-foreach ($live as $j) { $n[$j['region']]++; $n[$j['mode']]++; }
+$n = ['all' => count($live), 'highlighted' => 0, 'india' => 0, 'abroad' => 0, 'remote' => 0, 'in-office' => 0];
+foreach ($live as $j) {
+    $n[$j['region']]++;
+    $n[$j['mode'] === 'hybrid' ? 'in-office' : $j['mode']]++;      // there is no Hybrid tab: partly in the office counts as in-office
+    if ($j['highlighted']) $n['highlighted']++;
+}
 
 $lastUpdate = $all ? max(array_column($all, 'change')) : 0;   // date of the most recent added/updated job
 $isAdmin = defined('IS_ADMIN') && IS_ADMIN;                    // true only when the page is opened at /admin (see api/admin.php)
 if (!$isAdmin) header('Cache-Control: public, s-maxage=60, stale-while-revalidate=300');   // Vercel keeps the page for a minute, so the database is not asked on every visit
 
-$tabs = [['all', 'All'], ['india', 'India'], ['abroad', 'Abroad'], ['remote', 'Remote']];
-if ($n['hybrid'] > 0) $tabs[] = ['hybrid', 'Hybrid'];
-$tabs[] = ['in-office', 'In-office'];
+$tabs = [['all', 'All'], ['highlighted', 'Highlighted'], ['india', 'India'], ['abroad', 'Abroad'], ['remote', 'Remote'], ['in-office', 'In-office']];
 
 // The tag (the kind of job) is shown as plain text.
 function pills(array $tags): string
@@ -45,7 +47,7 @@ function job_row(array $j, bool $isDead, int $staleDays): string
         $titleHtml = h($title);
     }
     ob_start(); ?>
-    <tr data-id="<?= h($j['id']) ?>" data-region="<?= h($j['region']) ?>" data-mode="<?= h($j['mode']) ?>" data-co="<?= h($j['company']) ?>" data-title="<?= h($j['title']) ?>" data-url="<?= h($j['url']) ?>">
+    <tr data-id="<?= h($j['id']) ?>" data-region="<?= h($j['region']) ?>" data-mode="<?= h($j['mode']) ?>" data-co="<?= h($j['company']) ?>" data-title="<?= h($j['title']) ?>" data-url="<?= h($j['url']) ?>" data-hl="<?= !$isDead && $j['highlighted'] ? '1' : '' ?>">
       <td class="rank"></td>
       <td class="job">
         <a class="jt" href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><?= $titleHtml ?></a>
@@ -95,7 +97,7 @@ function table_head(bool $dead = false): string
     <a class="brand" href="#all"><?= h($settings['site_name']) ?></a>
     <nav id="tabs">
       <?php foreach ($tabs as [$key, $label]): ?>
-        <a href="#<?= $key ?>" data-view="<?= $key ?>"><?= h($label) ?> <span class="n"><?= $n[$key] ?></span></a>
+        <a href="#<?= $key ?>" data-view="<?= $key ?>"<?= ($key === 'highlighted' && !$n['highlighted'] && !$isAdmin) ? ' hidden' : '' ?>><?= h($label) ?> <span class="n"><?= $n[$key] ?></span></a>
       <?php endforeach; ?>
       <span class="gap"></span>
       <a href="#dead" data-view="dead">Dead Zone <span class="n"><?= count($dead) ?></span></a>

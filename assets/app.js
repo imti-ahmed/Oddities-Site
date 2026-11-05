@@ -6,11 +6,11 @@
 
   var JOB_VIEWS = {
     'all':       function () { return true; },
+    'highlighted': function (r) { return r.dataset.hl === '1'; },
     'india':     function (r) { return r.dataset.region === 'india'; },
     'abroad':    function (r) { return r.dataset.region === 'abroad'; },
     'remote':    function (r) { return r.dataset.mode === 'remote'; },
-    'hybrid':    function (r) { return r.dataset.mode === 'hybrid'; },
-    'in-office': function (r) { return r.dataset.mode === 'in-office'; },
+    'in-office': function (r) { return r.dataset.mode === 'in-office' || r.dataset.mode === 'hybrid'; },   // partly in the office counts as in-office (there is no Hybrid tab)
     'dead':      function () { return true; }
   };
   var OTHER_VIEWS = ['log', 'about'];
@@ -40,14 +40,34 @@
       x.addEventListener('click', function () { togglePin(p.id); });
       li.appendChild(box); li.appendChild(x); list.appendChild(li);
     });
-    $('#pinHint').hidden = pins.length > 0;
-    $('#pinbox').classList.toggle('nopins', pins.length === 0);
+    var hint = $('#pinHint');
+    if (isAdmin()) { hint.textContent = 'Admin mode: the star highlights a job for everyone (see the Highlighted tab). Pinning for yourself is paused on this page.'; hint.hidden = false; }
+    else { hint.textContent = 'Tap the ☆ on any job to pin it here. Pins are saved in this browser only.'; hint.hidden = pins.length > 0; }
+    $('#pinbox').classList.toggle('nopins', pins.length === 0 && !isAdmin());
     $$('tr[data-id]').forEach(function (r) {
-      var b = $('.pinbtn', r), on = isPinned(r.dataset.id);
+      var b = $('.pinbtn', r);
       if (!b) return;                                   // Dead Zone rows have no star
+      var admin = isAdmin(), on = admin ? r.dataset.hl === '1' : isPinned(r.dataset.id);   // on /admin the star means "highlight for everyone"
       b.classList.toggle('on', on); b.innerHTML = on ? '&#9733;' : '&#9734;';
-      b.title = on ? 'Unpin this job' : 'Pin this job';
+      b.title = admin ? (on ? 'Remove this highlight' : 'Highlight this job for everyone') : (on ? 'Unpin this job' : 'Pin this job');
     });
+  }
+
+  // Admin mode (the /admin card is on the page): the star highlights the job for EVERYONE, saved in the database.
+  function isAdmin() { return !!$('#adminCard'); }
+  function updateHighlightTab() {
+    var tab = $('#tabs a[data-view="highlighted"]'); if (!tab) return;
+    $('.n', tab).textContent = $$('#liveTable tbody tr').filter(function (r) { return r.dataset.hl === '1'; }).length;
+    if (isAdmin()) tab.hidden = false;
+  }
+  function toggleHighlight(row) {
+    var on = row.dataset.hl !== '1';
+    function set(v) { row.dataset.hl = v ? '1' : ''; renderPins(); updateHighlightTab(); if (view === 'highlighted') render(); }
+    set(on);                                                       // shown at once; undone below if saving fails
+    fetch('/api/index.php?add=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'highlight', url: row.dataset.url, on: on }) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d.status !== 'ok') throw new Error(d.message || 'Could not save.'); })
+      .catch(function (e) { set(!on); var m = $('#adminMsg'); if (m) { m.textContent = 'Highlight not saved: ' + e.message; m.className = 'admin-msg bad'; } });
   }
   function togglePin(id) {
     if (isPinned(id)) pins = pins.filter(function (p) { return p.id !== id; });
@@ -88,7 +108,7 @@
     });
 
     emptyEl.hidden = total > 0;
-    emptyEl.textContent = isDead ? 'Nothing in the Dead Zone yet.' : 'No jobs here yet.';
+    emptyEl.textContent = isDead ? 'Nothing in the Dead Zone yet.' : (view === 'highlighted' ? 'Nothing is highlighted yet.' : 'No jobs here yet.');
     table.hidden = total === 0;
     renderPager(pages);
   }
@@ -144,7 +164,7 @@
   });
   document.addEventListener('click', function (e) {
     var pin = e.target.closest('.pinbtn');
-    if (pin) togglePin(pin.closest('tr').dataset.id);
+    if (pin) { var prow = pin.closest('tr'); if (isAdmin()) toggleHighlight(prow); else togglePin(prow.dataset.id); }
     var link = e.target.closest('a[href^="#"]');                 // our tab and page buttons
     if (link && e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) {
       e.preventDefault();

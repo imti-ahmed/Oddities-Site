@@ -37,6 +37,13 @@ $in = is_array($in) ? $in : [];
 
 // the "Collect jobs" button on the card: read our company list and job sites, then check the jobs one at a time
 $action = (string)($in['action'] ?? '');
+if ($action === 'highlight') {                       // the star on /admin: highlight a job for everyone (the Highlighted tab)
+    $u = trim((string)($in['url'] ?? ''));
+    if ($u === '') reply(400, ['status' => 'error', 'message' => 'No job given.']);
+    try { $found = jobs_set_highlight($u, !empty($in['on'])); }
+    catch (Throwable $e) { reply(200, ['status' => 'error', 'message' => $e->getMessage()]); }
+    reply(200, $found ? ['status' => 'ok'] : ['status' => 'error', 'message' => 'That job is not in the list any more.']);
+}
 if ($action !== '') {
     set_time_limit(55); ini_set('memory_limit', '256M');
     require_once __DIR__ . '/collector.php';
