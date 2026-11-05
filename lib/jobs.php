@@ -1,9 +1,10 @@
 <?php
-// Reads data/jobs.json and works out everything the page needs for each job:
+// Reads the jobs (from the Neon database, or data/jobs.json when there is no database) and works out everything the page needs for each job:
 // which tab it belongs to, its tags, whether it is NEW / UPDATED, and whether it is in the Dead zone.
 
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/location.php';
+require_once __DIR__ . '/store.php';
 
 // Remote / Hybrid / In-office. Uses the job's "mode" if it has one, otherwise guesses from the text.
 function mode_of(array $j): string
@@ -46,10 +47,10 @@ function no_em_dash(string $s): string
     return preg_replace('/\s*\x{2014}\s*/u', ' - ', $s) ?? $s;
 }
 
-// Loads every job from the file and adds the extra information.
+// Loads every job and adds the extra information.
 function load_jobs(array $settings): array
 {
-    $raw = json_decode((string)@file_get_contents(__DIR__ . '/../data/jobs.json'), true);
+    $raw = jobs_for_page();
     $now      = time();
     $newCut   = $now - $settings['new_days'] * 86400;
     $staleCut = $now - $settings['stale_days'] * 86400;

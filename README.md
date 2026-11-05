@@ -18,16 +18,17 @@ Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards
 - `index.php` – the page. `style.css` – the look (change colours at the top). `assets/app.js` – tabs, page numbers, pins.
 - `lib/jobs.php` – works out each job's tab, tags, badge and Dead-zone status.
 - `config/settings.php` – site name, tagline, rows per page, `new_days` (badge window), `stale_days` (inactive after).
-- `data/jobs.json` – the jobs. No database.
+- **The jobs live in a Neon (Postgres) database**, in a table called `jobs` that the site creates by itself the first time it runs. `data/jobs.json` is only the starting list (copied into the database once, when the table is first created) and the fallback when there is no database (your own computer, or the database being down).
+- `lib/db.php` – talks to Neon. `lib/store.php` – decides where jobs are read and saved.
 - `config/roles.php` – the list of roles we accept (UI/UX Designer ... Internship) and the rules (`min_confidence`, whether worldwide remote counts as India). **Edit this to add or remove a role.**
 - `config/groq_prompt.txt` – the instructions given to the Groq AI, in plain English. Read and edit freely; `{{TAGS}}` is filled in from `config/roles.php`.
 - `config/sources.php` – the websites the automatic collector will read (not built yet). `config/companies.php` – companies with job boards we can read (Figma, Canva, ...).
-- `lib/pagefetch.php`, `lib/groq.php`, `lib/github_store.php`, `lib/intake.php` – the engine: read a job page, ask the AI, double-check its answer in code, save.
+- `lib/pagefetch.php`, `lib/groq.php`, `lib/intake.php` – the engine: read a job page, ask the AI, double-check its answer in code, save.
 - `lib/add_job_endpoint.php` – the endpoint behind the `/admin` card (reached through `api/index.php?add=1`). `api/index.php` shows the admin card when the address is `/admin`.
 
 ## The jobs file
 
-Each job in `data/jobs.json`:
+Each job (in the database, or in `data/jobs.json` for the starting list and local use) looks like this:
 
 ```json
 {
@@ -68,7 +69,7 @@ Then open http://localhost:8000
 
 ## Adding jobs with the AI (the /admin card)
 
-Open `/admin` on your site (for example `creativejobs.vercel.app/admin`). Above the Pinned box you get a card: paste a job link and press **Add job**. The page is read, Groq decides whether it is one of our roles (and whether it is an internship), India or Abroad (by the job's own location, not the company's home city), and remote / hybrid / in-office. The answer is double-checked in code (the AI's quotes must really be on the page, doubtful jobs are refused, jobs older than `stale_days` are refused, duplicates are skipped). If it passes, the job is saved to `data/jobs.json` and the site updates about a minute later.
+Open `/admin` on your site (for example `creativejobs.vercel.app/admin`). Above the Pinned box you get a card: paste a job link and press **Add job**. The page is read, Groq decides whether it is one of our roles (and whether it is an internship), India or Abroad (by the job's own location, not the company's home city), and remote / hybrid / in-office. The answer is double-checked in code (the AI's quotes must really be on the page, doubtful jobs are refused, jobs older than `stale_days` are refused, duplicates are skipped). If it passes, the job is saved to the database straight away (no rebuild of the site is needed) and the page shows it within about a minute, because Vercel keeps each page for 60 seconds.
 
 There is no password: anyone who knows the `/admin` address can add jobs, so keep that address to yourself. The AI still only lists real design jobs that pass the rules.
 
@@ -77,9 +78,9 @@ Set these in Vercel, Settings, Environment Variables (Preview and Production), t
 | Name | What it is |
 |---|---|
 | `GROQ_API_KEY` | Your Groq key. Never put it in code. |
-| `JOBS_GITHUB_TOKEN` | A GitHub token with **Contents: Read and write** on this repository. Needed because Vercel cannot save files, so each new job is saved by committing `data/jobs.json`. |
+| `DATABASE_URL` | The Neon connection string (starts with `postgresql://`). It contains your database password, so it lives only here, never in the code or on GitHub. |
 
-Optional: `GROQ_MODEL` (default `llama-3.3-70b-versatile`). If Groq says that model is gone, the app asks Groq which models your key can use and picks one from the list in `lib/groq.php` by itself; if none fit, the error message lists what is available so you can set `GROQ_MODEL`. On your own computer (no token) the local file is edited directly; open `http://localhost:8000/admin.php`.
+Optional: `GROQ_MODEL` (default `llama-3.3-70b-versatile`). If Groq says that model is gone, the app asks Groq which models your key can use and picks one from the list in `lib/groq.php` by itself; if none fit, the error message lists what is available so you can set `GROQ_MODEL`. On your own computer (no `DATABASE_URL`) the local file `data/jobs.json` is edited directly; open `http://localhost:8000/admin.php`.
 
 ## Coming next
 

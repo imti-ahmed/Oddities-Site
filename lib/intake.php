@@ -9,7 +9,7 @@ require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/jobs.php';
 require_once __DIR__ . '/pagefetch.php';
 require_once __DIR__ . '/groq.php';
-require_once __DIR__ . '/github_store.php';
+require_once __DIR__ . '/store.php';
 
 // Is this job (or the same job under another link) already in the list?
 function job_already_listed(array $list, array $job): bool
@@ -63,6 +63,6 @@ function intake_job(string $url, string $source = 'admin'): array
 
     $bits = [$job['tags'][0], $job['region'] === 'india' ? 'India' : 'Abroad'];
     if (!empty($job['mode'])) $bits[] = ucfirst($job['mode']);
-    return ['status' => 'added', 'message' => 'Added: ' . $job['title'] . ' at ' . $job['company'] . ' (' . implode(', ', $bits) . ').' . (jobs_store_mode() === 'github' ? ' It goes live in about a minute.' : ''),
+    return ['status' => 'added', 'message' => 'Added: ' . $job['title'] . ' at ' . $job['company'] . ' (' . implode(', ', $bits) . ').' . (jobs_store_mode() === 'db' ? ' It is saved. The site shows it within a minute.' : ''),
             'job' => $job, 'notes' => $check['notes'], 'confidence' => $check['confidence']];
 }

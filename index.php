@@ -13,6 +13,7 @@ foreach ($live as $j) { $n[$j['region']]++; $n[$j['mode']]++; }
 
 $lastUpdate = $all ? max(array_column($all, 'change')) : 0;   // date of the most recent added/updated job
 $isAdmin = defined('IS_ADMIN') && IS_ADMIN;                    // true only when the page is opened at /admin (see api/admin.php)
+if (!$isAdmin) header('Cache-Control: public, s-maxage=60, stale-while-revalidate=300');   // Vercel keeps the page for a minute, so the database is not asked on every visit
 
 $tabs = [['all', 'All'], ['india', 'India'], ['abroad', 'Abroad'], ['remote', 'Remote']];
 if ($n['hybrid'] > 0) $tabs[] = ['hybrid', 'Hybrid'];
