@@ -66,7 +66,7 @@
     logView.hidden   = view !== 'log';
     aboutView.hidden = view !== 'about';
     $$('#tabs a').forEach(function (a) { a.classList.toggle('on', a.dataset.view === view); });
-    if (!isList) { window.scrollTo(0, 0); return; }
+    if (!isList) { countEl.textContent = view === 'log' ? 'Update log' : 'About'; window.scrollTo(0, 0); return; }
 
     var isDead = view === 'dead';
     liveTable.hidden = isDead; deadTable.hidden = !isDead;
