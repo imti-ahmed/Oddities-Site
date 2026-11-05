@@ -4,9 +4,12 @@
 return [
     'site_name'     => 'Design Jobs',
     'tagline'       => 'Hand-picked creative jobs in India and abroad.',
-    'jobs_per_page' => 30,     // how many rows show on each page (the page buttons appear below the table)
+    'jobs_per_page' => 20,     // how many rows show on each page (the page buttons appear below the table)
 
-    'new_days'   => 3,         // a job added/updated within this many days gets a glowing NEW / UPDATED badge and sits at the top
+    // NEW / UPDATED stickers are switched off for now. Set this to true to bring them back
+    // (recently added/updated jobs then also move to the top of the list, as before).
+    'show_badges' => false,
+    'new_days'   => 3,         // when stickers are on: a job added/updated within this many days gets a NEW / UPDATED sticker
     'stale_days' => 90,        // a job not posted or updated for this many days moves to the Dead zone as "inactive"
     'dead_limit' => 20,        // the Dead zone shows only this many entries (the most recently removed); older ones drop off the list
 

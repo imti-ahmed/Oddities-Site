@@ -73,6 +73,7 @@ function load_jobs(array $settings): array
             if ($added >= $newCut)        $badge = 'new';
             elseif ($updated >= $newCut)  $badge = 'updated';
         }
+        if (empty($settings['show_badges'])) $badge = null;   // stickers are switched off in config/settings.php: no sticker, and no jumping to the top
 
         $jobs[] = [
             'id' => substr(sha1($j['url']), 0, 10), 'title' => no_em_dash($j['title']), 'company' => no_em_dash($j['company']),
