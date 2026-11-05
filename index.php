@@ -96,6 +96,7 @@ function table_head(bool $dead = false): string
   <div class="bar wrap">
     <a class="brand" href="#all"><?= h($settings['site_name']) ?></a>
     <nav id="tabs">
+      <div class="menu-dots"><?= winbar() ?></div>   <!-- the Mac-window strip on top of the phone menu (hidden on bigger screens) -->
       <?php foreach ($tabs as [$key, $label]): ?>
         <a href="#<?= $key ?>" data-view="<?= $key ?>"<?= ($key === 'highlighted' && !$n['highlighted'] && !$isAdmin) ? ' hidden' : '' ?>><?= h($label) ?> <span class="n"><?= $n[$key] ?></span></a>
       <?php endforeach; ?>
@@ -105,6 +106,7 @@ function table_head(bool $dead = false): string
       <a href="#about" data-view="about">About</a>
     </nav>
     <div class="sys"><span class="jobsn"><?= $n['all'] ?> jobs</span><span id="clock"></span></div>
+    <button type="button" id="menuBtn" class="menubtn" aria-label="Menu" aria-expanded="false" aria-controls="tabs"><span></span><span></span><span></span></button>
   </div>
 </header>
 

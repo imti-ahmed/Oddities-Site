@@ -340,6 +340,19 @@
     if (liveBtn) { liveBtn.addEventListener('click', checkOpen); colStop.addEventListener('click', function () { stopNow = true; colSay('Stopping after this round...', 'wait'); }); }
   })();
 
+  // Phone menu: the icon slides the menu frame down. It closes when you pick a tab, tap outside, or press Escape.
+  (function () {
+    var top = $('#top'), btn = $('#menuBtn');
+    if (!top || !btn) return;
+    function set(open) { top.classList.toggle('menu-open', open); btn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+    btn.addEventListener('click', function (e) { e.stopPropagation(); set(!top.classList.contains('menu-open')); });
+    document.addEventListener('click', function (e) {
+      if (top.classList.contains('menu-open') && (e.target.closest('#tabs a') || e.target.closest('.brand') || !e.target.closest('#top'))) set(false);
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') set(false); });
+    window.addEventListener('resize', function () { if (window.innerWidth > 760) set(false); });
+  })();
+
   renderPins();
   var first = parse(location.hash.slice(1));                     // opening the site: honour an old #link once, then show the plain address
   show(first.v, first.p);
