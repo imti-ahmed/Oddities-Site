@@ -68,7 +68,7 @@ function winbar(): string
 function table_head(bool $dead = false): string
 {
     // The Dead zone is kept simple: no Tag column, and "Removed On" instead of "Posted".
-    return '<thead><tr><th class="rank">#</th><th>Job</th><th class="company">Company &amp; location</th>'
+    return '<thead><tr><th class="rank"></th><th>Job</th><th class="company">Company &amp; location</th>'
          . ($dead ? '' : '<th class="tags">Tag</th>')
          . '<th class="posted">' . ($dead ? 'Removed On' : 'Posted') . '</th>' . ($dead ? '' : '<th class="pin"></th>') . '</tr></thead>';
 }
