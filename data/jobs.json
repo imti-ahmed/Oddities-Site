@@ -253,7 +253,8 @@
         "location": "London",
         "url": "https://jobs.lever.co/spotify/f02fb195-ba10-40bd-a926-0318a34a7fae",
         "posted_at": "2026-10-21",
-        "region": "abroad"
+        "region": "abroad",
+        "updated_at": "2026-11-05"
     },
     {
         "title": "Research Engineer, AI for Chip Design",
@@ -429,7 +430,8 @@
         "location": "New York, NY (HQ)",
         "url": "https://jobs.ashbyhq.com/ramp/30323399-3039-499d-a0b6-a891ced89e1e",
         "posted_at": "2026-07-01",
-        "region": "abroad"
+        "region": "abroad",
+        "updated_at": "2026-11-05"
     },
     {
         "title": "Creative Producer",
@@ -566,5 +568,59 @@
         "url": "https://jobs.ashbyhq.com/linear/c97e034e-19a8-4ec7-89a5-c81987451da8",
         "posted_at": "2026-10-21",
         "region": "abroad"
+    },
+    {
+        "title": "Creative Designer (Fixed Term Contract)",
+        "company": "Mozilla",
+        "location": "Remote UK",
+        "url": "https://job-boards.greenhouse.io/mozilla/jobs/7961363",
+        "posted_at": "2026-11-04",
+        "region": "abroad",
+        "mode": "remote"
+    },
+    {
+        "title": "Animator & Motion Graphics Designer",
+        "company": "PostHog",
+        "location": "Remote",
+        "url": "https://jobs.ashbyhq.com/posthog/4a8a1ee5-aa45-447e-a438-919b4577f14d",
+        "posted_at": "2026-10-14",
+        "region": "abroad",
+        "mode": "remote"
+    },
+    {
+        "title": "Video Producer",
+        "company": "Supabase",
+        "location": "Remote, San Francisco, CA, US",
+        "url": "https://jobs.ashbyhq.com/supabase/05226c15-0501-4559-833d-3815fdf01f56",
+        "posted_at": "2026-10-26",
+        "region": "abroad",
+        "mode": "remote"
+    },
+    {
+        "title": "Staff Product Designer, Risk",
+        "company": "Stripe",
+        "location": "US Remote",
+        "url": "https://stripe.com/jobs/search?gh_jid=8031782",
+        "posted_at": "2026-10-29",
+        "region": "abroad",
+        "mode": "remote"
+    },
+    {
+        "title": "Creative Engineer, Stripe Creative Lab",
+        "company": "Stripe",
+        "location": "New York, US, Canada, Remote",
+        "url": "https://stripe.com/jobs/search?gh_jid=8283782",
+        "posted_at": "2026-11-05",
+        "region": "abroad",
+        "mode": "remote"
+    },
+    {
+        "title": "Designer, Web Presence & Platform",
+        "company": "Stripe",
+        "location": "US-Remote",
+        "url": "https://stripe.com/jobs/search?gh_jid=8130913",
+        "posted_at": "2026-10-29",
+        "region": "abroad",
+        "mode": "remote"
     }
 ]

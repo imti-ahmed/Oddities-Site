@@ -1,121 +1,175 @@
 <?php
-require_once __DIR__ . '/lib/helpers.php';
+require_once __DIR__ . '/lib/jobs.php';
 
 $settings = require __DIR__ . '/config/settings.php';
+$all  = load_jobs($settings);
+$live = sort_live(array_values(array_filter($all, fn($j) => !$j['dead'])));
+$dead = sort_dead(array_values(array_filter($all, fn($j) => $j['dead'])));
+$log  = build_log($all, $settings);
 
-$jobsFile = json_decode((string)@file_get_contents(__DIR__ . '/data/jobs.json'), true);
-$all = array_values(array_filter(is_array($jobsFile) ? $jobsFile : [], fn($j) => !empty($j['title']) && is_safe_url($j['url'] ?? '')));
-usort($all, fn($a, $b) => strcmp($b['posted_at'] ?? '', $a['posted_at'] ?? ''));   // newest first
+// Numbers shown on the tabs
+$n = ['all' => count($live), 'india' => 0, 'abroad' => 0, 'remote' => 0, 'hybrid' => 0, 'in-office' => 0];
+foreach ($live as $j) { $n[$j['region']]++; $n[$j['mode']]++; }
 
-// Split into the two tabs
-$tabs = ['india' => [], 'abroad' => []];
-foreach ($all as $j) $tabs[region_of($j)][] = $j;
+// Lists for the two drop-down filters
+$allTags = []; $allCompanies = [];
+foreach ($all as $j) { foreach ($j['tags'] as $t) $allTags[$t[0]] = true; $allCompanies[$j['company']] = true; }
+ksort($allTags); ksort($allCompanies, SORT_NATURAL | SORT_FLAG_CASE);
+
+$tabs = [['all', 'All'], ['india', 'India'], ['abroad', 'Abroad'], ['remote', 'Remote']];
+if ($n['hybrid'] > 0) $tabs[] = ['hybrid', 'Hybrid'];
+$tabs[] = ['in-office', 'In-office'];
+
+function pills(array $tags): string
+{
+    $out = '';
+    foreach ($tags as [$name, $kind]) $out .= '<button type="button" class="tag ' . h($kind) . '" data-tag="' . h($name) . '">' . h($name) . '</button>';
+    return $out;
+}
+
+function job_row(array $j, bool $isDead, int $staleDays): string
+{
+    $tagNames = implode('|', array_map(fn($t) => $t[0], $j['tags']));
+    $text = mb_strtolower($j['title'] . ' ' . $j['company'] . ' ' . $j['location'] . ' ' . str_replace('|', ' ', $tagNames));
+    $posted = $j['posted'] ? time_ago($j['posted']) : '';
+    ob_start(); ?>
+    <tr data-id="<?= h($j['id']) ?>" data-region="<?= h($j['region']) ?>" data-mode="<?= h($j['mode']) ?>" data-co="<?= h($j['company']) ?>" data-tags="<?= h($tagNames) ?>" data-text="<?= h($text) ?>" data-title="<?= h($j['title']) ?>" data-url="<?= h($j['url']) ?>">
+      <td class="rank"></td>
+      <td class="job">
+        <?php if ($isDead): ?>
+          <span class="stamp" title="<?= h($j['dead'] === 'closed' ? ($j['dead_note'] ?: 'Marked as closed') : "Not posted or updated in over $staleDays days") ?>"><?= $j['dead'] === 'closed' ? 'Closed' : 'Inactive' ?></span>
+        <?php elseif ($j['badge']): ?>
+          <span class="blinkie <?= h($j['badge']) ?>"><?= h($j['badge']) ?></span>
+        <?php endif; ?>
+        <a class="jt" href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><?= h($j['title']) ?></a>
+        <div class="meta"><span class="co"><?= h($j['company']) ?></span> &middot; <?= h(domain_of($j['url'])) ?></div>
+        <div class="m-only meta"><?= pills($j['tags']) ?><br><?= h(trim($j['location'] . ($j['location'] && $posted ? ' · ' : '') . $posted)) ?></div>
+      </td>
+      <td class="tags"><?= pills($j['tags']) ?></td>
+      <td class="loc"><?= h($j['location']) ?></td>
+      <td class="posted"><?= h($posted) ?></td>
+      <td class="pin"><button type="button" class="pinbtn" title="Pin this job" aria-label="Pin this job">&#9734;</button></td>
+    </tr>
+    <?php return ob_get_clean();
+}
+
+function table_head(): string
+{
+    return '<thead><tr><th class="rank">#</th><th>Job</th><th class="tags">Tags</th><th class="loc">Location</th><th class="posted">Posted</th><th class="pin"></th></tr></thead>';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><?= h($settings['site_name']) ?></title>
+  <title><?= h($settings['site_name']) ?> - <?= h($settings['tagline']) ?></title>
+  <meta name="description" content="<?= h($settings['tagline']) ?>">
   <style><?= file_get_contents(__DIR__ . '/style.css') ?></style>
 </head>
 <body>
-<div id="page">
-  <div id="topbar">
-    <span class="logo">D</span><span class="name"><?= h($settings['site_name']) ?></span>
-    <a href="#india" data-tab="india" class="on">india <span class="count">(<?= count($tabs['india']) ?>)</span></a>
-    |
-    <a href="#abroad" data-tab="abroad">abroad <span class="count">(<?= count($tabs['abroad']) ?>)</span></a>
-  </div>
 
-  <div id="intro">Creative jobs <span id="where">in India</span>.</div>
-  <form id="search" onsubmit="return false">
-    <input type="text" id="q" placeholder="Search title, company, city" autocomplete="off">
-    <a class="clear" id="clear" href="#" hidden>clear</a>
-  </form>
-
-  <?php foreach ($tabs as $tab => $list): ?>
-    <ol class="jobs" data-tab="<?= $tab ?>">
-      <?php foreach ($list as $j): ?>
-        <li data-text="<?= h(mb_strtolower(($j['title'] ?? '') . ' ' . ($j['company'] ?? '') . ' ' . ($j['location'] ?? ''))) ?>">
-          <span class="rank"></span>
-          <div>
-            <div class="title">
-              <a href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><?= h($j['company']) ?> is hiring: <?= h($j['title']) ?></a>
-              <span class="domain">(<a href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><?= h(domain_of($j['url'])) ?></a>)</span>
-            </div>
-            <div class="subtext">
-              <?= h(time_ago(strtotime($j['posted_at'] ?? '') ?: null)) ?>
-              <?php if (!empty($j['location'])): ?> | <?= h($j['location']) ?><?php endif; ?>
-            </div>
-          </div>
-        </li>
+<header id="top">
+  <div class="wrap">
+    <a class="brand" href="#all"><span class="logo">D</span><?= h($settings['site_name']) ?></a>
+    <nav id="tabs">
+      <?php foreach ($tabs as [$key, $label]): ?>
+        <a href="#<?= $key ?>" data-view="<?= $key ?>"><?= h($label) ?> <span class="n">(<?= $n[$key] ?>)</span></a>
       <?php endforeach; ?>
-    </ol>
-  <?php endforeach; ?>
+      <span class="gap"></span>
+      <a href="#dead" data-view="dead">Dead zone <span class="n">(<?= count($dead) ?>)</span></a>
+      <a href="#log" data-view="log">Update log</a>
+      <a href="#about" data-view="about">About</a>
+    </nav>
+  </div>
+</header>
 
-  <div class="empty" id="empty" hidden>No jobs match your search.</div>
-  <div class="more" id="more" hidden><a href="#" id="moreLink">More</a></div>
+<main class="wrap">
 
-  <div id="footer"><?= h($settings['site_name']) ?></div>
-</div>
+  <!-- ===== Jobs + Dead zone ===== -->
+  <section id="listView">
+    <div class="intro" id="intro">
+      <b><?= h($settings['tagline']) ?></b> Every job links to the company's own page.
+      <div class="legend">
+        <span class="blinkie new">new</span> added in the last <?= (int)$settings['new_days'] ?> days &nbsp;
+        <span class="blinkie updated">updated</span> recently changed &nbsp; &middot; &nbsp;
+        &#9734; pin jobs to keep them in the box (saved in this browser)
+      </div>
+    </div>
 
-<script>
-// Tabs, search and "More" all happen right here on the page, with no reloading.
-(function () {
-  var PER_PAGE = <?= (int)$settings['jobs_per_page'] ?>;
-  var tabLinks = document.querySelectorAll('#topbar a[data-tab]');
-  var lists    = document.querySelectorAll('ol.jobs');
-  var q        = document.getElementById('q');
-  var clear    = document.getElementById('clear');
-  var more     = document.getElementById('more');
-  var empty    = document.getElementById('empty');
-  var where    = document.getElementById('where');
-  var tab = 'india', shown = PER_PAGE;
+    <div class="toolbar">
+      <input type="text" id="q" placeholder="Search jobs, companies, cities..." autocomplete="off" aria-label="Search">
+      <select id="fTag" aria-label="Filter by tag"><option value="">Tag</option>
+        <?php foreach ($allTags as $t => $_): ?><option><?= h($t) ?></option><?php endforeach; ?></select>
+      <select id="fCo" aria-label="Filter by company"><option value="">Company</option>
+        <?php foreach ($allCompanies as $c => $_): ?><option><?= h($c) ?></option><?php endforeach; ?></select>
+      <a href="#" class="clear" id="clear" hidden>clear filters</a>
+      <span class="count" id="count"></span>
+    </div>
 
-  function show() {
-    var words = q.value.toLowerCase().split(/\s+/).filter(Boolean);
-    var matches = 0, visible = 0;
+    <div class="layout">
+      <div class="main">
+        <p class="dead-note" id="deadNote" hidden>Jobs that are <b>closed</b>, or <b>inactive</b> (not posted or updated in over <?= (int)$settings['stale_days'] ?> days, so probably not hiring any more). Kept here for reference.</p>
+        <div class="card">
+          <table class="jobs" id="liveTable"><?= table_head() ?><tbody>
+            <?php foreach ($live as $j) echo job_row($j, false, (int)$settings['stale_days']); ?>
+          </tbody></table>
+          <table class="jobs dead" id="deadTable" hidden><?= table_head() ?><tbody>
+            <?php foreach ($dead as $j) echo job_row($j, true, (int)$settings['stale_days']); ?>
+          </tbody></table>
+          <div class="empty" id="empty" hidden></div>
+        </div>
+        <div class="more" id="more" hidden><button type="button" id="moreBtn">Show more</button></div>
+      </div>
 
-    lists.forEach(function (ol) {
-      var active = ol.dataset.tab === tab;
-      ol.hidden = !active;
-      if (!active) return;
-      ol.querySelectorAll('li').forEach(function (li) {
-        var ok = words.every(function (w) { return li.dataset.text.indexOf(w) !== -1; });
-        if (ok) matches++;
-        var showIt = ok && matches <= shown;
-        li.hidden = !showIt;
-        if (showIt) { visible++; li.querySelector('.rank').textContent = matches + '.'; }
-      });
-    });
+      <aside id="pinbox" aria-label="Pinned jobs">
+        <h3>&#128204; Pinned <span id="pinCount">0</span></h3>
+        <ul id="pinList"></ul>
+        <div class="hint" id="pinHint">Tap the &#9734; on any job to pin it here. Pins are saved in this browser only.</div>
+      </aside>
+    </div>
+  </section>
 
-    tabLinks.forEach(function (a) { a.classList.toggle('on', a.dataset.tab === tab); });
-    where.textContent = tab === 'india' ? 'in India' : 'abroad';
-    empty.hidden = matches > 0;
-    more.hidden  = matches <= visible;
-    clear.hidden = !q.value;
-  }
+  <!-- ===== Update log ===== -->
+  <section id="logView" class="panel" hidden>
+    <h2>Update log</h2>
+    <p>Everything that was added, updated, closed or went inactive, newest first.</p>
+    <?php $day = ''; foreach ($log as $e):
+        $d = date('M j, Y', $e['ts']);
+        if ($d !== $day): $day = $d; ?><div class="log-day"><?= h($d) ?></div><?php endif; ?>
+      <div class="log-row">
+        <span class="stamp <?= h($e['type']) ?>"><?= h($e['type']) ?></span>
+        <span><a href="<?= h($e['job']['url']) ?>" target="_blank" rel="nofollow noopener"><b><?= h($e['job']['company']) ?></b> &mdash; <?= h($e['job']['title']) ?></a>
+          <?php if ($e['job']['location']): ?><small>&middot; <?= h($e['job']['location']) ?></small><?php endif; ?></span>
+      </div>
+    <?php endforeach; ?>
+  </section>
 
-  function setTab(t, updateHash) {
-    tab = t; shown = PER_PAGE;
-    if (updateHash) history.replaceState(null, '', '#' + t);
-    show();
-  }
+  <!-- ===== About ===== -->
+  <section id="aboutView" class="panel" hidden>
+    <h2>About</h2>
+    <p><?= h($settings['site_name']) ?> is a simple, hand-picked list of creative jobs: design, brand, motion, illustration, video, content and more. It's built to be one clean page you can scan quickly and click through to apply.</p>
+    <p><b>How it works.</b> Every row links straight to the company's own job page. We don't host applications. Jobs are split into tabs: <b>India</b>, <b>Abroad</b>, <b>Remote</b> and <b>In-office</b>.</p>
+    <p><b>New and updated.</b> Jobs that were just added or changed move to the top and glow with a little <span class="blinkie new">new</span> or <span class="blinkie updated">updated</span> badge.</p>
+    <p><b>Dead zone.</b> Jobs that have closed, or haven't been posted or updated in a long time, move to the Dead zone so the main list stays fresh. Nothing is deleted.</p>
+    <p><b>Pins.</b> Click the &#9734; on a job to pin it to the box at the side. Your pins are saved in your own browser, not on any server, so they're private to you (and clearing your browser data clears them).</p>
+    <p><b>Tags.</b> The small coloured tags describe the kind of role, the level and whether it's remote. They're a first draft and will get better over time.</p>
+  </section>
 
-  tabLinks.forEach(function (a) {
-    a.addEventListener('click', function (e) { e.preventDefault(); setTab(a.dataset.tab, true); });
-  });
-  q.addEventListener('input', function () { shown = PER_PAGE; show(); });
-  clear.addEventListener('click', function (e) { e.preventDefault(); q.value = ''; shown = PER_PAGE; show(); q.focus(); });
-  document.getElementById('moreLink').addEventListener('click', function (e) { e.preventDefault(); shown += PER_PAGE; show(); });
+</main>
 
-  // Open on the tab in the address (e.g. yoursite.com/#abroad), otherwise India.
-  // Also follows the address if it changes (browser back button, typing a new #address).
-  function fromAddress() { setTab(location.hash === '#abroad' ? 'abroad' : 'india', false); }
-  window.addEventListener('hashchange', fromAddress);
-  fromAddress();
-})();
-</script>
+<footer>
+  <div class="wrap">
+    <div class="col grow"><h4><?= h($settings['site_name']) ?></h4><p><?= h($settings['tagline']) ?> One simple page, no sign-up.</p></div>
+    <div class="col"><h4>Browse</h4>
+      <a href="#india">India</a><a href="#abroad">Abroad</a><a href="#remote">Remote</a><a href="#in-office">In-office</a></div>
+    <div class="col"><h4>Site</h4>
+      <a href="#dead">Dead zone</a><a href="#log">Update log</a><a href="#about">About</a></div>
+  </div>
+  <div class="small">&copy; <?= date('Y') ?> <?= h($settings['site_name']) ?> &middot; Job links lead to external websites we don't control &middot; Your pins stay in your browser.</div>
+</footer>
+
+<script>window.DJ = { perPage: <?= (int)$settings['jobs_per_page'] ?> };</script>
+<script><?= file_get_contents(__DIR__ . '/assets/app.js') ?></script>
 </body>
 </html>

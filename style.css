@@ -1,66 +1,181 @@
-/* Hacker-News-style layout, in blue. Change the colours here: */
+/* Design Jobs: Hacker-News compactness + a clean rounded table. Change the colours here: */
 :root {
-  --blue: #2563eb;        /* top bar + accents */
-  --page: #f3f6fc;        /* page background */
-  --grey: #828282;        /* small text */
+  --blue: #2563eb;          /* top bar + accents */
+  --blue-dark: #1d4ed8;
+  --ink: #0f172a;           /* main text */
+  --muted: #64748b;         /* small text */
+  --faint: #94a3b8;
+  --line: #dde5f1;          /* borders */
+  --zebra: #f3f6fd;         /* every second row */
+  --soft: #f6f8fc;          /* soft boxes */
 }
 
+* { box-sizing: border-box; }
 body {
-  margin: 8px 0;
-  background: #fff;
-  font-family: Verdana, Geneva, sans-serif;
-  font-size: 10pt;
-  color: var(--grey);
+  margin: 0; background: #fff; color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px; line-height: 1.4;
 }
-a { color: #000; text-decoration: none; }
-a:visited { color: var(--grey); }
+a { color: inherit; text-decoration: none; }
 a:hover { text-decoration: underline; }
-
-#page { width: 85%; margin: 0 auto; background: var(--page); }
-
-#topbar { background: var(--blue); padding: 3px 6px; line-height: 14pt; color: #dbe6ff; }
-#topbar .logo {
-  display: inline-block; border: 1px solid #fff; color: #fff; width: 18px; height: 18px;
-  text-align: center; line-height: 18px; font-weight: bold; margin-right: 6px; vertical-align: middle;
-}
-#topbar .name { font-weight: bold; color: #fff; margin-right: 10px; }
-#topbar a, #topbar a:visited { color: #dbe6ff; }
-#topbar a.on, #topbar a.on:visited { color: #fff; font-weight: bold; }
-#topbar .count { font-size: 8pt; opacity: .8; }
-
-#intro { padding: 10px 14px 4px; }
-#search { padding: 2px 14px 8px; }
-#search input[type=text] {
-  font-family: Verdana, Geneva, sans-serif; font-size: 9pt; padding: 3px 6px;
-  border: 1px solid #c7d3ea; background: #fff; width: 220px; max-width: 60%;
-}
-/* (search button removed: results update as you type) */
-#search button {
-  font-family: Verdana, Geneva, sans-serif; font-size: 9pt; padding: 3px 10px;
-  border: 1px solid var(--blue); background: var(--blue); color: #fff; cursor: pointer;
-}
-#search .clear { font-size: 8pt; margin-left: 6px; text-decoration: underline; color: var(--grey); }
-
-ol.jobs { list-style: none; margin: 0; padding: 0 0 10px; }
-ol.jobs li { display: flex; padding: 3px 0 4px; }
-.rank { width: 38px; text-align: right; padding-right: 6px; flex: none; }
-.title { font-size: 10pt; line-height: 1.3; word-break: break-word; }
-.domain { font-size: 8pt; }
-.domain a { color: var(--grey); }
-.subtext { font-size: 7pt; margin-top: 1px; }
-
-.more { padding: 6px 14px 16px 44px; }
-.more a { color: var(--grey); text-decoration: underline; }
-
-.empty { padding: 20px 14px 30px; }
-
-#footer { border-top: 2px solid var(--blue); margin-top: 4px; padding: 14px; text-align: center; font-size: 8pt; }
-
+button, select, input { font: inherit; color: inherit; }
 [hidden] { display: none !important; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 16px; }
 
-/* Phones and small screens: use the full width */
-@media (max-width: 750px) {
-  #page { width: 100%; }
-  .rank { width: 30px; }
-  .more { padding-left: 36px; }
+/* ---------- top bar with tabs ---------- */
+#top { background: var(--blue); color: #dbe6ff; }
+#top .wrap { display: flex; align-items: center; gap: 18px; min-height: 40px; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #fff; white-space: nowrap; padding: 8px 0; }
+.brand:hover { text-decoration: none; }
+.logo { display: inline-grid; place-items: center; width: 20px; height: 20px; border: 1px solid #fff; font-size: 12px; }
+#tabs { display: flex; align-items: center; gap: 2px; overflow-x: auto; scrollbar-width: none; flex: 1; }
+#tabs::-webkit-scrollbar { display: none; }
+#tabs a { color: #dbe6ff; padding: 10px 9px; white-space: nowrap; font-size: 13.5px; border-bottom: 3px solid transparent; }
+#tabs a:hover { color: #fff; text-decoration: none; }
+#tabs a.on { color: #fff; font-weight: 700; border-bottom-color: #fff; }
+#tabs .n { font-size: 11px; opacity: .75; font-weight: 400; }
+#tabs .gap { width: 1px; height: 18px; background: rgba(255,255,255,.3); margin: 0 6px; flex: none; }
+
+/* ---------- intro box ---------- */
+.intro {
+  margin: 18px 0 0; padding: 12px 16px; background: var(--soft); border: 1px solid var(--line);
+  border-radius: 10px; color: #334155; font-size: 13.5px;
+}
+.intro b { color: var(--ink); }
+.intro .legend { margin-top: 6px; color: var(--muted); font-size: 12.5px; }
+
+/* ---------- search + filters ---------- */
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 16px 0 12px; }
+.toolbar input[type=text] {
+  width: 250px; max-width: 100%; padding: 7px 10px; border: 1px solid #cfd8e6; border-radius: 8px; background: #fff;
+}
+.toolbar input[type=text]:focus, .toolbar select:focus { outline: 2px solid #bcd0fb; border-color: var(--blue); }
+.toolbar select {
+  padding: 7px 26px 7px 10px; border: 0; border-radius: 8px; background: #eef1f6; color: #334155; cursor: pointer;
+}
+.toolbar .clear { font-size: 12.5px; color: var(--muted); text-decoration: underline; }
+.toolbar .count { margin-left: auto; font-size: 12.5px; color: var(--muted); }
+
+/* ---------- layout: table + pinned box ---------- */
+.layout { display: flex; gap: 16px; align-items: flex-start; }
+.main { flex: 1; min-width: 0; }
+.card { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; }
+
+table.jobs { width: 100%; border-collapse: collapse; }
+table.jobs th {
+  text-align: left; font-size: 12px; font-weight: 500; color: var(--faint); padding: 10px 12px;
+  background: #fafbfe; border-bottom: 1px solid #e6ecf5;
+}
+table.jobs td { padding: 9px 12px; vertical-align: middle; }
+table.jobs tbody tr.z { background: var(--zebra); }
+table.jobs tbody tr:hover { background: #e9efff; }
+td.rank, th.rank { width: 44px; color: var(--faint); text-align: right; font-size: 12.5px; }
+td.pin, th.pin { width: 40px; text-align: center; }
+td.posted, th.posted { width: 104px; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+td.loc, th.loc { width: 160px; color: #475569; font-size: 12.5px; }
+td.tags, th.tags { width: 190px; }
+
+.jt { font-weight: 600; font-size: 14.5px; color: var(--ink); }
+.jt:visited { color: #6b7280; }
+.meta { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.meta .co { font-weight: 600; color: #334155; }
+.m-only { display: none; }
+
+/* tag pills (click one to filter by it) */
+.tag {
+  display: inline-block; font-size: 11px; line-height: 1.5; padding: 0 8px; margin: 1px 4px 1px 0; border-radius: 999px;
+  border: 1px solid; cursor: pointer; background: none; white-space: nowrap;
+}
+.tag.role  { background: #fff4ea; border-color: #fcd5b5; color: #9a4b12; }
+.tag.level { background: #eef2ff; border-color: #c7d2fe; color: #3b4cb8; }
+.tag.mode  { background: #e8f7ee; border-color: #b7e4c7; color: #1b6b3a; }
+.tag:hover { filter: brightness(.95); }
+.tag.active { outline: 2px solid var(--blue); }
+
+/* pin star */
+.pinbtn { border: 0; background: none; cursor: pointer; font-size: 18px; line-height: 1; color: #cbd5e1; padding: 2px 4px; }
+.pinbtn:hover { color: #f59e0b; }
+.pinbtn.on { color: #f59e0b; }
+
+/* ---------- blinkies: little glowing NEW / UPDATED badges ---------- */
+.blinkie {
+  display: inline-block; vertical-align: 2px; margin-right: 7px; padding: 3px 6px 2px; border-radius: 3px;
+  font: 700 9.5px/1 "Courier New", Courier, monospace; letter-spacing: .1em; text-transform: uppercase;
+  color: #fff; border: 1px solid rgba(255,255,255,.75); text-shadow: 0 0 4px rgba(255,255,255,.9);
+  animation: glow 1.2s ease-in-out infinite alternate, blink 1.6s steps(1) infinite;
+}
+.blinkie.new     { --g: #ff3d9a; background: linear-gradient(#ff7ac0, #d6126f); }
+.blinkie.updated { --g: #ffb300; background: linear-gradient(#ffe27a, #f08a00); color: #4a2c00; text-shadow: none; }
+@keyframes glow  { from { box-shadow: 0 0 2px var(--g), 0 0 5px var(--g); } to { box-shadow: 0 0 7px var(--g), 0 0 15px var(--g); } }
+@keyframes blink { 0%, 80% { filter: brightness(1); } 81%, 100% { filter: brightness(1.35); } }
+@media (prefers-reduced-motion: reduce) { .blinkie { animation: none; box-shadow: 0 0 5px var(--g); } }
+
+/* ---------- dead zone ---------- */
+.dead-note { color: var(--muted); font-size: 12.5px; margin: 0 0 10px; }
+table.dead .jt { color: #8b95a5; text-decoration: line-through; }
+table.dead td { color: #8b95a5; }
+.stamp {
+  display: inline-block; margin-right: 7px; padding: 2px 6px; border-radius: 3px; vertical-align: 2px;
+  font: 700 9.5px/1 "Courier New", Courier, monospace; letter-spacing: .1em; text-transform: uppercase;
+  background: #e5e7eb; color: #6b7280; border: 1px solid #cfd4dc;
+}
+
+/* ---------- pinned box ---------- */
+#pinbox { width: 250px; flex: none; position: sticky; top: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); overflow: hidden; }
+#pinbox h3 { margin: 0; padding: 9px 12px; font-size: 13px; background: #fff; border-bottom: 1px solid #e6ecf5; display: flex; justify-content: space-between; }
+#pinbox h3 span { color: var(--muted); font-weight: 400; }
+#pinbox ul { list-style: none; margin: 0; padding: 4px 0; max-height: 60vh; overflow: auto; }
+#pinbox li { display: flex; gap: 6px; padding: 6px 12px; align-items: flex-start; }
+#pinbox li a { font-size: 13px; font-weight: 600; display: block; }
+#pinbox li small { display: block; color: var(--muted); font-size: 11.5px; }
+#pinbox li.gone a { color: #8b95a5; text-decoration: line-through; }
+#pinbox .x { border: 0; background: none; color: var(--faint); cursor: pointer; font-size: 16px; line-height: 1; margin-left: auto; padding: 0 2px; }
+#pinbox .x:hover { color: #b91c1c; }
+#pinbox .hint { padding: 10px 12px 12px; color: var(--muted); font-size: 12.5px; }
+
+.more { padding: 12px 0 4px; text-align: center; }
+.more button { border: 1px solid #cfd8e6; background: #fff; border-radius: 8px; padding: 7px 18px; cursor: pointer; color: #334155; }
+.more button:hover { background: #eef2fb; }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); }
+
+/* ---------- update log + about ---------- */
+.panel { max-width: 760px; }
+.panel h2 { font-size: 18px; margin: 4px 0 6px; }
+.panel p, .panel li { color: #334155; line-height: 1.6; }
+.log-day { margin: 18px 0 6px; font-size: 12.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.log-row { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; border-bottom: 1px solid #eef1f6; font-size: 13.5px; }
+.log-row .stamp { margin: 0; flex: none; width: 64px; text-align: center; }
+.stamp.added    { background: #e6f7ec; color: #166534; border-color: #b7e4c7; }
+.stamp.updated  { background: #fff3d6; color: #8a5200; border-color: #f3d58a; }
+.stamp.closed   { background: #fde8e8; color: #991b1b; border-color: #f3b4b4; }
+.log-row small { color: var(--muted); }
+
+/* ---------- footer ---------- */
+footer { margin-top: 40px; border-top: 3px solid var(--blue); background: var(--soft); }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 28px 56px; padding-top: 24px; padding-bottom: 8px; }
+footer .col { min-width: 150px; }
+footer .col.grow { flex: 1; min-width: 220px; max-width: 380px; }
+footer h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+footer a { display: block; padding: 2px 0; color: #334155; font-size: 13px; }
+footer p { margin: 0; color: var(--muted); font-size: 13px; }
+footer .small { padding: 14px 16px 26px; color: var(--faint); font-size: 12px; max-width: 1240px; margin: 0 auto; }
+
+/* ---------- phones ---------- */
+@media (max-width: 900px) {
+  .layout { flex-direction: column-reverse; }   /* pinned box goes above the table */
+  #pinbox { position: static; width: 100%; }
+  #pinbox.empty { display: none; }          /* on phones, hide the box until something is pinned */
+  #pinbox ul { max-height: 30vh; }
+}
+@media (max-width: 760px) {
+  #top .wrap { flex-wrap: wrap; gap: 0 12px; }
+  #tabs { flex-basis: 100%; flex-wrap: wrap; overflow: visible; }
+  #tabs a { padding: 7px 8px; }
+  #tabs .gap { display: none; }
+  th.loc, td.loc, th.posted, td.posted, th.tags, td.tags { display: none; }
+  .m-only { display: block; }
+  td.rank, th.rank { width: 30px; padding-left: 6px; padding-right: 2px; }
+  table.jobs td { padding: 9px 8px; }
+  .toolbar input[type=text] { width: 100%; }
+  .toolbar .count { margin-left: 0; width: 100%; }
 }
