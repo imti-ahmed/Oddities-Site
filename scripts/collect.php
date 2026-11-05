@@ -40,7 +40,7 @@ if (isset($opt['prune'])) {
 $s = collector_stats();
 say("Start: {$s['jobs']} jobs listed, {$s['pending']} waiting in the queue.");
 
-if ($s['pending'] === 0 || isset($opt['gather']) || isset($opt['dry-run'])) {
+if (true) {      // every run reads the boards again: it costs no AI, and jobs already known or queued are skipped, so it is safe to repeat
     $queued = 0;
     for ($from = 0, $total = count(collector_companies()); $from < $total; ) {
         $g = collector_gather_companies($from);
