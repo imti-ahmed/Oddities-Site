@@ -150,5 +150,57 @@ function read_job_page(string $url, int $maxChars, bool $strict): array
     if (!$d['ok']) return ['ok' => false, 'error' => $d['error']];
     $page = page_to_text($d['html'], $maxChars);
     return ['ok' => true, 'final_url' => $d['final_url'], 'page_title' => $page['title'], 'description' => $page['description'],
-            'structured' => extract_job_posting($d['html']), 'text' => $page['text']];
+            'structured' => extract_job_posting($d['html']), 'text' => $page['text'], 'html' => $d['html']];
+}
+
+
+// Turns a link found on a page ("/jobs/12", "../x", "//host/y") into a full address.
+function absolute_url(string $base, string $href): string
+{
+    $href = trim($href);
+    if ($href === '' || $href[0] === '#') return '';
+    if (preg_match('#^https?://#i', $href)) return $href;
+    $b = parse_url($base);
+    if (!$b || empty($b['host'])) return '';
+    $origin = ($b['scheme'] ?? 'https') . '://' . $b['host'] . (isset($b['port']) ? ':' . $b['port'] : '');
+    if (str_starts_with($href, '//')) return ($b['scheme'] ?? 'https') . ':' . $href;
+    if ($href[0] === '/') return $origin . $href;
+    if ($href[0] === '?') return $origin . ($b['path'] ?? '/') . $href;
+    if (preg_match('#^[a-z][a-z0-9+.-]*:#i', $href)) return '';            // mailto:, tel:, javascript: ...
+    $dir = preg_replace('#/[^/]*$#', '/', $b['path'] ?? '/');
+    $path = $dir . $href;
+    $out = [];
+    foreach (explode('/', parse_url($path, PHP_URL_PATH) ?: '') as $seg) { if ($seg === '..') array_pop($out); elseif ($seg !== '.') $out[] = $seg; }
+    $q = parse_url($path, PHP_URL_QUERY);
+    return $origin . implode('/', $out) . ($q ? '?' . $q : '');
+}
+
+// Every link on a job-list page that could lead to one job: [['url' => ..., 'text' => ...], ...] (at most $max).
+function extract_page_links(string $html, string $pageUrl, int $max = 220): array
+{
+    if (!mb_check_encoding($html, 'UTF-8')) $html = mb_convert_encoding($html, 'UTF-8', 'UTF-8, ISO-8859-1');
+    libxml_use_internal_errors(true);
+    $doc = new DOMDocument();
+    @$doc->loadHTML('<?xml encoding="utf-8" ?>' . $html);
+    libxml_clear_errors();
+    $self = normalize_job_url($pageUrl);
+    $junkText = '/^(home|about|contact|login|log in|sign in|sign up|register|pricing|blog|privacy|terms|cookies?|faq|help|post a job|post job|advertise|subscribe|newsletter|next|previous|prev|more|load more|see all|view all|all jobs|jobs|careers|search|filter|rss|menu|skip to content)\b/i';
+    $skipHost = '/(^|\.)(twitter|x|facebook|instagram|linkedin|youtube|tiktok|pinterest|reddit|medium|github|apple|google|t)\.(com|co)$/i';
+    $found = [];
+    foreach ($doc->getElementsByTagName('a') as $a) {
+        $url = absolute_url($pageUrl, (string)$a->getAttribute('href'));
+        if ($url === '' || !preg_match('#^https?://#i', $url)) continue;
+        $p = parse_url($url);
+        if (empty($p['host']) || preg_match($skipHost, $p['host'])) continue;
+        if (preg_match('/\.(jpe?g|png|gif|svg|webp|css|js|pdf|zip|ico|xml|json)(\?|$)/i', $p['path'] ?? '')) continue;
+        $key = normalize_job_url($url);
+        if ($key === $self) continue;
+        $text = trim(preg_replace('/\s+/u', ' ', $a->textContent));
+        if ($text === '') $text = trim((string)($a->getAttribute('title') ?: $a->getAttribute('aria-label')));
+        if (mb_strlen($text) < 4 || preg_match($junkText, $text)) continue;
+        $text = mb_substr($text, 0, 140);
+        if (!isset($found[$key]) || mb_strlen($text) > mb_strlen($found[$key]['text'])) $found[$key] = ['url' => $url, 'text' => $text];
+        if (count($found) >= $max) break;
+    }
+    return array_values($found);
 }

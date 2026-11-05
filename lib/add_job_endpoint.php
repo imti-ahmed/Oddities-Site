@@ -23,4 +23,4 @@ $url = trim((string)($in['url'] ?? ''));
 if ($url === '' || mb_strlen($url) > 1500) reply(400, ['status' => 'error', 'message' => 'Paste a job link first.']);
 
 set_time_limit(55);
-reply(200, intake_job($url, 'admin'));
+reply(200, intake_job($url, 'admin', empty($in['single'])));   // single = true when the card is checking one job from a list

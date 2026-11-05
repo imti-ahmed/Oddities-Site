@@ -146,12 +146,13 @@ function table_head(bool $dead = false): string
         <div class="win" id="adminCard">
           <?= winbar() ?>
           <div class="winbody">
-            <p>Paste a job link. The AI checks it against our roles and lists it.</p>
+            <p>Paste a job link, or a page that lists many jobs. The AI checks every job against our roles and lists the ones that fit.</p>
             <form id="adminForm" autocomplete="off">
               <input type="url" id="adminUrl" placeholder="https://..." aria-label="Job link" required>
               <button type="submit" id="adminBtn">Add job</button>
             </form>
             <p id="adminMsg" class="admin-msg" role="status"></p>
+            <ul id="adminLog" class="admin-log"></ul>
           </div>
         </div>
         <?php else: ?>
@@ -161,12 +162,13 @@ function table_head(bool $dead = false): string
           <div class="win" id="adminCard">
             <?= winbar() ?>
             <div class="winbody">
-              <p>Paste a job link. The AI checks it against our roles and lists it.</p>
+              <p>Paste a job link, or a page that lists many jobs. The AI checks every job against our roles and lists the ones that fit.</p>
               <form id="adminForm" autocomplete="off">
                 <input type="url" id="adminUrl" placeholder="https://..." aria-label="Job link" required>
                 <button type="submit" id="adminBtn">Add job</button>
               </form>
               <p id="adminMsg" class="admin-msg" role="status"></p>
+            <ul id="adminLog" class="admin-log"></ul>
             </div>
           </div>
         </template>

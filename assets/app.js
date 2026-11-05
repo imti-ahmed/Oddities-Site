@@ -186,23 +186,55 @@
     if (!form) return;
     var urlBox = $('#adminUrl'), btn = $('#adminBtn'), msg = $('#adminMsg');
     function say(text, kind) { msg.textContent = text; msg.className = 'admin-msg ' + kind; }
+    var logBox = $('#adminLog');
+    function post(url, single) {
+      return fetch('/api/index.php?add=1', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: url, single: !!single })
+      }).then(function (r) {
+        return r.json().catch(function () { return { status: 'error', message: 'The server gave an answer we could not read. Try again in a moment.' }; });
+      });
+    }
+    function wait(ms) { return new Promise(function (res) { setTimeout(res, ms); }); }
+    // one job from a list; if Groq says it is busy, wait and try again (twice at most)
+    function checkOne(url, tries) {
+      return post(url, true).then(function (d) {
+        if (d.status === 'error' && /rate limit/i.test(d.message || '') && (tries || 0) < 2) return wait(20000).then(function () { return checkOne(url, (tries || 0) + 1); });
+        return d;
+      });
+    }
+    function addLine(text, kind) { var li = document.createElement('li'); li.className = kind; li.textContent = text; logBox.appendChild(li); logBox.scrollTop = logBox.scrollHeight; }
+    function short(t) { t = String(t || ''); return t.length > 70 ? t.slice(0, 67) + '...' : t; }
+
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var url = urlBox.value.trim();
       if (!url) { say('Paste a job link first.', 'bad'); return; }
-      btn.disabled = true;
+      btn.disabled = true; logBox.innerHTML = '';
       say('Reading the page and asking the AI. This takes a few seconds...', 'wait');
-      fetch('/api/index.php?add=1', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url })
-      })
-        .then(function (r) { return r.json().catch(function () { return { status: 'error', message: 'The server gave an answer we could not read. Try again in a moment.' }; }).then(function (d) { return { code: r.status, d: d }; }); })
-        .then(function (x) {
-          var d = x.d || {};
-          if (d.status === 'added') { say(d.message, 'good'); urlBox.value = ''; }
-          else if (d.status === 'duplicate') say(d.message, 'wait');
-          else say(d.message || 'Something went wrong.', 'bad');
+      post(url, false)
+        .then(function (d) {
+          if (d.status === 'added') { say(d.message, 'good'); urlBox.value = ''; return; }
+          if (d.status === 'duplicate') { say(d.message, 'wait'); return; }
+          if (d.status !== 'list') { say(d.message || 'Something went wrong.', 'bad'); return; }
+          // a page that lists many jobs: check each job on its own, one after the other
+          var links = d.links || [], added = 0, skipped = 0, failed = 0, i = 0;
+          say(d.message, 'wait');
+          function next() {
+            if (i >= links.length) {
+              say('Done. Added ' + added + ', not added ' + skipped + (failed ? ', could not check ' + failed : '') + '.' + (added ? ' The site shows them within a minute.' : ''), added ? 'good' : 'wait');
+              if (added) urlBox.value = '';
+              return Promise.resolve();
+            }
+            var l = links[i++];
+            say('Checking ' + i + ' of ' + links.length + ': ' + short(l.text), 'wait');
+            return checkOne(l.url, 0).then(function (r) {
+              if (r.status === 'added') { added++; addLine(r.message.replace(/ It is saved\..*$/, ''), 'ok'); }
+              else if (r.status === 'error') { failed++; addLine(short(l.text) + ': ' + r.message, 'skip'); }
+              else { skipped++; addLine(short(l.text) + ': ' + (r.message || '').replace(/^Not added: /, ''), 'skip'); }
+              return next();
+            });
+          }
+          return next();
         })
         .catch(function () { say('Could not reach the server. Check your internet and try again.', 'bad'); })
         .then(function () { btn.disabled = false; });
