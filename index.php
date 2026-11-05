@@ -1,5 +1,4 @@
 <?php
-require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/helpers.php';
 
 $settings = require __DIR__ . '/config/settings.php';
@@ -7,29 +6,15 @@ $perPage  = (int)$settings['jobs_per_page'];
 $page     = max(1, (int)($_GET['p'] ?? 1));
 $offset   = ($page - 1) * $perPage;
 
-$jobs = [];
-$total = 0;
-$lastCheck = 0;
-$problem = null;   // filled in if the database can't be reached, so we show a friendly message
+// All jobs live in one simple file: data/jobs.json
+$all = json_decode((string)@file_get_contents(__DIR__ . '/data/jobs.json'), true);
+$all = is_array($all) ? array_values(array_filter($all, fn($j) => !empty($j['title']) && is_safe_url($j['url'] ?? ''))) : [];
 
-try {
-$pdo   = db();
-$total = (int)$pdo->query("SELECT COUNT(*) FROM jobs WHERE status = 'open'")->fetchColumn();
+// Newest first
+usort($all, fn($a, $b) => strcmp($b['posted_at'] ?? '', $a['posted_at'] ?? ''));
 
-// Newest jobs first. Only jobs that the tester still believes are open are shown.
-$stmt = $pdo->prepare("
-    SELECT * FROM jobs WHERE status = 'open'
-    ORDER BY COALESCE(posted_at, first_seen) DESC, id DESC
-    LIMIT :limit OFFSET :offset");
-$stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
-$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-$stmt->execute();
-$jobs = $stmt->fetchAll();
-
-$lastCheck = (int)$pdo->query("SELECT MAX(last_checked) FROM jobs")->fetchColumn();
-} catch (Throwable $e) {
-    $problem = $e->getMessage();
-}
+$total = count($all);
+$jobs  = array_slice($all, $offset, $perPage);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -46,12 +31,10 @@ $lastCheck = (int)$pdo->query("SELECT MAX(last_checked) FROM jobs")->fetchColumn
     <a href="./">jobs</a>
   </div>
 
-  <div id="intro">Creative jobs from around the web. <?= number_format($total) ?> open right now, and every link is re-checked automatically.</div>
+  <div id="intro">Creative jobs from around the web. <?= number_format($total) ?> jobs listed.</div>
 
-  <?php if ($problem): ?>
-    <div class="empty"><b>The site can't reach its database yet.</b><br><?= h($problem) ?></div>
-  <?php elseif (!$jobs): ?>
-    <div class="empty">No jobs yet. Run the finder to fill the list (locally: <code>php cron/fetch.php</code>, on Vercel: open <code>/api/fetch?key=YOUR_CRON_SECRET</code>).</div>
+  <?php if (!$jobs): ?>
+    <div class="empty">No jobs yet. Add some to <code>data/jobs.json</code>.</div>
   <?php else: ?>
   <ol class="jobs">
     <?php foreach ($jobs as $i => $j): ?>
@@ -63,9 +46,8 @@ $lastCheck = (int)$pdo->query("SELECT MAX(last_checked) FROM jobs")->fetchColumn
             <span class="domain">(<a href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><?= h(domain_of($j['url'])) ?></a>)</span>
           </div>
           <div class="subtext">
-            <?= h(time_ago($j['posted_at'] ?: $j['first_seen'])) ?>
-            <?php if ($j['location']): ?> | <?= h($j['location']) ?><?php endif; ?>
-            | checked <?= h(time_ago($j['last_checked'] ?: $j['first_seen'])) ?>
+            <?= h(time_ago(strtotime($j['posted_at'] ?? '') ?: null)) ?>
+            <?php if (!empty($j['location'])): ?> | <?= h($j['location']) ?><?php endif; ?>
           </div>
         </div>
       </li>
@@ -76,7 +58,7 @@ $lastCheck = (int)$pdo->query("SELECT MAX(last_checked) FROM jobs")->fetchColumn
   <?php endif; ?>
   <?php endif; ?>
 
-  <div id="footer">Last link check: <?= h(time_ago($lastCheck ?: null)) ?></div>
+  <div id="footer"><?= h($settings['site_name']) ?></div>
 </div>
 </body>
 </html>
