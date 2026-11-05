@@ -41,14 +41,22 @@ function job_row(array $j, bool $isDead, int $staleDays): string
     // Dead zone rows show the date it was removed (worked out in lib/jobs.php).
     $removedAt = $isDead ? $j['removed'] : 0;
     $dateCell  = $isDead ? ($removedAt ? date('M j, Y', $removedAt) : '') : $posted;
+
+    // The role name. A NEW / UPDATED pill goes right after it, glued to the last word so it can never sit alone on a new line.
+    $title = trim($j['title']);
+    if (!$isDead && $j['badge']) {
+        $pill  = '<span class="pill ' . h($j['badge']) . '">' . h(strtoupper($j['badge'])) . '</span>';
+        $cut   = strrpos($title, ' ');
+        $titleHtml = $cut === false ? '<span class="nw">' . h($title) . $pill . '</span>'
+                                    : h(substr($title, 0, $cut)) . ' <span class="nw">' . h(substr($title, $cut + 1)) . $pill . '</span>';
+    } else {
+        $titleHtml = h($title);
+    }
     ob_start(); ?>
     <tr data-id="<?= h($j['id']) ?>" data-region="<?= h($j['region']) ?>" data-mode="<?= h($j['mode']) ?>" data-co="<?= h($j['company']) ?>" data-title="<?= h($j['title']) ?>" data-url="<?= h($j['url']) ?>">
       <td class="rank"></td>
       <td class="job">
-        <?php if (!$isDead && $j['badge']): ?>
-          <span class="blinkie <?= h($j['badge']) ?>" data-t="<?= h($j['badge']) ?>"><?= h($j['badge']) ?></span>
-        <?php endif; ?>
-        <a class="jt" href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><?= h($j['title']) ?></a>
+        <a class="jt" href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><?= $titleHtml ?></a>
         <div class="m-only meta"><span class="co"><?= h($j['company']) ?></span><?php if ($j['location']): ?> (<?= h($j['location']) ?>)<?php endif; ?><br><?php if (!$isDead): ?><?= pills($j['tags']) ?><br><?php endif; ?><?= h(trim(($isDead && $dateCell ? 'Removed ' : '') . $dateCell)) ?></div>
       </td>
       <td class="company"><span class="cn"><?= h($j['company']) ?></span><?php if ($j['location']): ?> <span class="cloc">(<?= h($j['location']) ?>)</span><?php endif; ?></td>
@@ -82,7 +90,7 @@ function table_head(bool $dead = false): string
   <meta name="description" content="<?= h($settings['tagline']) ?>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bangers&family=Playfair+Display:ital,wght@1,700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bangers&display=swap">
   <style><?= file_get_contents(__DIR__ . '/style.css') ?></style>
 </head>
 <body>
