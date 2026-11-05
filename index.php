@@ -160,9 +160,7 @@ function table_head(): string
         <?= winbar() ?>
         <div class="winbody">
           <p>A simple job board for creative people.</p>
-          <p>I collect design and creative jobs from around the internet and put them here in one place. Every listing takes you directly to the original job posting.</p>
-          <p>That's pretty much it.</p>
-        </div>
+          <p>I collect design and creative jobs from around the internet and put them here in one place. Every listing takes you directly to the original job posting.</p>        </div>
       </div>
 
       <div class="win">
