@@ -72,8 +72,9 @@ button, select, input { font: inherit; color: inherit; }
 
 /* ---------- welcome card ---------- */
 .intro { margin: 22px 0 0; font-size: 14.5px; color: #333; }
-.intro b { color: var(--ink); }
-.intro .legend { margin-top: 9px; color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+.intro .lead { font-size: 20px; font-weight: 700; letter-spacing: -.01em; color: var(--ink); margin: 0 0 6px; }
+.intro p { margin: 0; line-height: 1.55; }
+.intro .legend { margin-top: 10px; color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
 
 /* ---------- layout: table + pinned window ---------- */
 .layout { display: flex; gap: 20px; align-items: flex-start; margin-top: 20px; }

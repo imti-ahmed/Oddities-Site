@@ -103,8 +103,11 @@ function table_head(): string
   <section id="listView">
     <div class="intro win" id="intro">
       <?= winbar() ?>
-      <div class="winbody"><b><?= h($settings['tagline']) ?></b> Every job links to the company's own page.
-      <div class="legend">&#9734; Pin jobs to keep them in the box on the side (saved in this browser).</div></div>
+      <div class="winbody">
+        <div class="lead">Hand-picked creative jobs. No noise.</div>
+        <p>A simple list of design and creative jobs from companies around the internet.<br>No accounts. No applications here. No bullshit. Just the job and a link to where you can apply.</p>
+        <div class="legend">&#9734; Pin jobs you want to come back to. Pins are saved in this browser.</div>
+      </div>
     </div>
 
     <div class="layout">
