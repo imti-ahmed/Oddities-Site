@@ -192,7 +192,7 @@
       if (!url) { say('Paste a job link first.', 'bad'); return; }
       btn.disabled = true;
       say('Reading the page and asking the AI. This takes a few seconds...', 'wait');
-      fetch('/api/add-job.php', {
+      fetch('/api/index.php?add=1', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url })

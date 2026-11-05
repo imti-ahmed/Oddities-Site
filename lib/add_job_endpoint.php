@@ -1,8 +1,8 @@
 <?php
-// The door the /admin card knocks on: "here is a job link, please check it and list it".
+// The door the /admin card knocks on (reached through api/index.php?add=1): "here is a job link, please check it and list it".
 // No password: anyone who knows the /admin address can use it (by choice).
 
-require_once __DIR__ . '/../lib/intake.php';
+require_once __DIR__ . '/intake.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
