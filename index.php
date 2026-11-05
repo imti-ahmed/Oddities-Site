@@ -203,9 +203,11 @@ function table_head(): string
       <div class="win">
         <?= winbar() ?>
         <div class="winbody">
-          <p>Total jobs: <?= (int)$n['all'] ?></p>
-          <p>Last update: <?= $lastUpdate ? h(date('M j, Y', $lastUpdate)) : 'n/a' ?></p>
-          <p>Views: <span id="viewsNum">&ndash;</span></p>
+          <div class="stats">
+            <p>Total jobs: <?= (int)$n['all'] ?></p>
+            <p>Last update: <?= $lastUpdate ? h(date('M j, Y', $lastUpdate)) : 'n/a' ?></p>
+            <p>Views: <span id="viewsNum">&ndash;</span></p>
+          </div>
         </div>
       </div>
 

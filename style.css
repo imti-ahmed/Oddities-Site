@@ -168,6 +168,8 @@ table.dead td { color: #8b95a5; }
 .about p { margin: 0 0 12px; color: #334155; line-height: 1.65; }   /* every line is the same plain paragraph */
 .about p:last-child { margin-bottom: 0; }
 .about a { color: #1d4ed8; text-decoration: underline; }
+.stats { display: flex; flex-wrap: wrap; gap: 6px 32px; }   /* the three stats sit side by side */
+.stats p { margin: 0; }
 .steps { margin: 0; padding: 0 0 0 24px; columns: 2; column-gap: 48px; }
 .steps li { break-inside: avoid; margin: 0 0 12px; padding-left: 4px; color: #334155; line-height: 1.55; }
 .log-day { margin: 20px 0 6px; font-size: 12.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
