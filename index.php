@@ -229,7 +229,7 @@ function table_head(bool $dead = false): string
       <div class="win orange">
         <?= winbar() ?>
         <div class="winbody">
-          <p>Made by <a href="https://www.imtiyazahmed.com" target="_blank" rel="noopener"><strong>Imtiyaz Ahmed</strong></a>, a designer &amp; builder who spends too much time trying to make fun and useful stuff for the internet.</p>
+          <p>Made by <a class="maker" href="https://www.imtiyazahmed.com" target="_blank" rel="noopener"><strong>Imtiyaz Ahmed</strong></a>, a designer &amp; builder who spends too much time trying to make fun and useful stuff for the internet.</p>
           <p>I wanted a small, useful place to find creative jobs without all the extra stuff.</p>
         </div>
       </div>
