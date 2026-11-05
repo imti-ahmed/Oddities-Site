@@ -38,21 +38,22 @@ function pills(array $tags): string
 function job_row(array $j, bool $isDead, int $staleDays): string
 {
     $posted = $j['posted'] ? time_ago($j['posted']) : '';
+    // Dead zone rows show the date it was removed: the closed date, or for inactive jobs the day the "inactive" rule moved it here.
+    $removedAt = !$isDead ? 0 : ($j['dead'] === 'closed' ? ($j['closed'] ?: $j['change']) : max($j['posted'], $j['updated']) + $staleDays * 86400);
+    $dateCell  = $isDead ? ($removedAt ? date('M j, Y', $removedAt) : '') : $posted;
     ob_start(); ?>
     <tr data-id="<?= h($j['id']) ?>" data-region="<?= h($j['region']) ?>" data-mode="<?= h($j['mode']) ?>" data-co="<?= h($j['company']) ?>" data-title="<?= h($j['title']) ?>" data-url="<?= h($j['url']) ?>">
       <td class="rank"></td>
       <td class="job">
-        <?php if ($isDead): ?>
-          <span class="stamp" title="<?= h($j['dead'] === 'closed' ? ($j['dead_note'] ?: 'Marked as closed') : "Not posted or updated in over $staleDays days") ?>"><?= $j['dead'] === 'closed' ? 'Closed' : 'Inactive' ?></span>
-        <?php elseif ($j['badge']): ?>
+        <?php if (!$isDead && $j['badge']): ?>
           <span class="blinkie <?= h($j['badge']) ?>" data-t="<?= h($j['badge']) ?>"><?= h($j['badge']) ?></span>
         <?php endif; ?>
         <a class="jt" href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><?= h($j['title']) ?></a>
-        <div class="m-only meta"><span class="co"><?= h($j['company']) ?></span><br><?= pills($j['tags']) ?><br><?= h(trim($j['location'] . ($j['location'] && $posted ? ' · ' : '') . $posted)) ?></div>
+        <div class="m-only meta"><span class="co"><?= h($j['company']) ?></span><br><?php if (!$isDead): ?><?= pills($j['tags']) ?><br><?php endif; ?><?= h(trim($j['location'] . ($j['location'] && $dateCell ? ' · ' : '') . ($isDead && $dateCell ? 'Removed ' : '') . $dateCell)) ?></div>
       </td>
       <td class="company"><span class="cn"><?= h($j['company']) ?></span><?php if ($j['location']): ?><small class="cloc"><?= h($j['location']) ?></small><?php endif; ?></td>
-      <td class="tags"><?= pills($j['tags']) ?></td>
-      <td class="posted"><?= h($posted) ?></td>
+      <?php if (!$isDead): ?><td class="tags"><?= pills($j['tags']) ?></td><?php endif; ?>
+      <td class="posted"><?= h($dateCell) ?></td>
       <td class="pin"><button type="button" class="pinbtn" title="Pin this job" aria-label="Pin this job">&#9734;</button></td>
     </tr>
     <?php return ob_get_clean();
@@ -64,9 +65,12 @@ function winbar(): string
     return '<div class="winbar" aria-hidden="true"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i><span class="wx">x</span></div>';
 }
 
-function table_head(): string
+function table_head(bool $dead = false): string
 {
-    return '<thead><tr><th class="rank">#</th><th>Job</th><th class="company">Company &amp; location</th><th class="tags">Tag</th><th class="posted">Posted</th><th class="pin"></th></tr></thead>';
+    // The Dead zone is kept simple: no Tag column, and "Removed On" instead of "Posted".
+    return '<thead><tr><th class="rank">#</th><th>Job</th><th class="company">Company &amp; location</th>'
+         . ($dead ? '' : '<th class="tags">Tag</th>')
+         . '<th class="posted">' . ($dead ? 'Removed On' : 'Posted') . '</th><th class="pin"></th></tr></thead>';
 }
 ?>
 <!DOCTYPE html>
@@ -118,7 +122,7 @@ function table_head(): string
           <table class="jobs" id="liveTable"><?= table_head() ?><tbody>
             <?php foreach ($live as $j) echo job_row($j, false, (int)$settings['stale_days']); ?>
           </tbody></table>
-          <table class="jobs dead" id="deadTable" hidden><?= table_head() ?><tbody>
+          <table class="jobs dead" id="deadTable" hidden><?= table_head(true) ?><tbody>
             <?php foreach ($dead as $j) echo job_row($j, true, (int)$settings['stale_days']); ?>
           </tbody></table>
           <div class="empty" id="empty" hidden></div>

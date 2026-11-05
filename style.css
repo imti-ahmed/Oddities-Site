@@ -136,7 +136,7 @@ td.company { font-size: 14px; color: #334155; }
 
 /* ---------- dead zone ---------- */
 .dead-note { color: var(--muted); font-size: 13.5px; margin: 0 0 12px; }
-table.dead .jt { color: #8b95a5; text-decoration: line-through; }
+table.dead .jt { color: #8b95a5; }
 table.dead td { color: #8b95a5; }
 .stamp { display: inline-block; margin-right: 9px; padding: 0 7px; vertical-align: 1px; transform: rotate(-3deg); font: 400 14px/17px var(--comic); letter-spacing: .06em; text-transform: uppercase; color: #6b7280; background: #fff; border: 2px solid #9aa3b2; border-radius: 4px; }
 
@@ -147,7 +147,7 @@ table.dead td { color: #8b95a5; }
 #pinbox li { display: flex; gap: 6px; padding: 7px 14px; align-items: flex-start; }
 #pinbox li a { font-size: 14px; font-weight: 600; display: block; }
 #pinbox li small { display: block; color: var(--muted); font-size: 12.5px; }
-#pinbox li.gone a { color: #8b95a5; text-decoration: line-through; }
+#pinbox li.gone a { color: #8b95a5; }
 #pinbox .x { border: 0; background: none; color: var(--faint); cursor: pointer; font-size: 17px; line-height: 1; margin-left: auto; padding: 0 2px; }
 #pinbox .x:hover { color: #b91c1c; }
 #pinbox .hint { padding: 6px 14px 12px; color: var(--muted); font-size: 13px; }
