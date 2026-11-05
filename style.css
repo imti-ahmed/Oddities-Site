@@ -127,8 +127,8 @@ td.company { font-size: 14px; line-height: 1.3; color: #334155; }
   border: 2px solid var(--edge);                          /* the thick outline (its colour is set per pill below) */
   /* comic "halftone": rows of little dots, every second row shifted, on a pale base colour */
   background-color: var(--tint);
-  background-image: radial-gradient(circle, var(--dot) 0.9px, transparent 1.25px), radial-gradient(circle, var(--dot) 0.9px, transparent 1.25px);
-  background-size: 4px 4px; background-position: 0 0, 2px 2px;
+  background-image: radial-gradient(circle, var(--dot) 0.6px, transparent 0.95px), radial-gradient(circle, var(--dot) 0.6px, transparent 0.95px);
+  background-size: 3px 3px; background-position: 0 0, 1.5px 1.5px;
   animation: pill-blink 1.3s ease-in-out infinite;
 }
 .pill.new     { --tint: #c9f7d8; --dot: #2fbf68; --edge: #17803f; }   /* green */
