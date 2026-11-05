@@ -66,6 +66,7 @@ Then open http://localhost:8000
 
 - **Plain address:** the web address stays the plain domain whatever tab or page you are on (no `#india`, no `?page=2`). The tab and page you are on live in the browser's history, so the Back button still steps through them. An old `#about` style link still opens the right place once, then the address is tidied.
 - **Favicon:** the smiley icon lives in `assets/icons/` (`favicon.ico`, `favicon-32.png`, `apple-touch-icon.png`). Vercel doesn't serve plain files by itself, so `api/icon.php` hands out exactly those three files (and nothing else) through the routes in `vercel.json`.
+- **Cursor:** the glossy black arrow is built into `style.css` (search for "Custom cursor"). It replaces the normal arrow; links, buttons and text boxes keep the hand and text cursors. To change it, replace the two `url(data:image/png;base64,...)` pictures there (22 pixels tall, and a 44 pixel one for sharp screens) and the click point `1 1`.
 - **Site name:** change `site_name` in `config/settings.php` (top-left header and browser tab title).
 
 ## Adding jobs with the AI (the /admin card)
