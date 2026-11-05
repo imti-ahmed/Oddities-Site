@@ -93,6 +93,7 @@ td.pin, th.pin { width: 44px; text-align: center; padding-left: 4px; padding-rig
 td.posted, th.posted { width: 112px; color: var(--muted); font-size: 13px; white-space: nowrap; }
 td.tags, th.tags { width: 170px; }
 td.company, th.company { width: 200px; }
+table.dead td.company, table.dead th.company { width: 320px; }   /* Dead zone: narrower job names, wider company column */
 
 .jt { font-weight: 600; font-size: 15.5px; color: var(--ink); }
 .jt:visited { color: #6b7280; }
