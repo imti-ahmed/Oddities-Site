@@ -157,6 +157,18 @@ table.dead td { color: #8b95a5; }
 .panel .winbody { padding: 18px 22px 22px; }
 .panel h2 { font-size: 22px; margin: 0 0 6px; letter-spacing: -.01em; }
 .panel p, .panel li { color: #334155; line-height: 1.65; }
+
+/* About page: two cards side by side, then one full-width card below */
+.about { margin-top: 22px; display: grid; gap: 20px; }
+.about-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.about .winbody { padding: 22px 26px 26px; }
+.about h2 { font-size: 22px; margin: 0 0 12px; letter-spacing: -.01em; }
+.about p { margin: 0 0 12px; color: #334155; line-height: 1.65; }
+.about p:last-child { margin-bottom: 0; }
+.about p.lead { font-size: 17px; font-weight: 600; color: var(--ink); }
+.steps { margin: 0; padding: 0 0 0 24px; columns: 2; column-gap: 48px; }
+.steps li { break-inside: avoid; margin: 0 0 12px; padding-left: 4px; color: #334155; line-height: 1.55; }
+.steps li::marker { color: var(--blue); font-weight: 700; }
 .log-day { margin: 20px 0 6px; font-size: 12.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 .log-row { display: flex; gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid #eef1f6; font-size: 14.5px; }
 .log-row small { color: var(--muted); font-size: 13px; }
@@ -170,6 +182,9 @@ table.dead td { color: #8b95a5; }
   #pinbox.nopins { display: none; }
 }
 @media (max-width: 760px) {
+  .about-row { grid-template-columns: 1fr; }   /* stack the two cards on phones */
+  .steps { columns: 1; }
+  .about .winbody { padding: 18px 18px 20px; }
   .wrap { padding: 0 12px; }
   #top { position: static; }
   .bar { flex-wrap: wrap; gap: 0 12px; padding-top: 8px; padding-bottom: 4px; }
