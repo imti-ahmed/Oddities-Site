@@ -158,7 +158,7 @@ function table_head(bool $dead = false): string
             <div class="col-box">
               <p>Or fill the board from our list of companies and job sites. Keep this tab open while it runs.</p>
               <div class="col-row"><button type="button" id="colBtn">Collect jobs</button><button type="button" id="colStop" hidden>Stop</button></div>
-              <p class="col-sub">Or check that the listed jobs are still open (no AI). Closed ones move to the Dead Zone.</p>
+              <p class="col-sub">Check that listed jobs are still open.</p>
               <button type="button" id="liveBtn">Check open jobs</button>
               <p id="colMsg" class="admin-msg" role="status"></p>
               <ul id="colLog" class="admin-log"></ul>
@@ -182,7 +182,7 @@ function table_head(bool $dead = false): string
             <div class="col-box">
               <p>Or fill the board from our list of companies and job sites. Keep this tab open while it runs.</p>
               <div class="col-row"><button type="button" id="colBtn">Collect jobs</button><button type="button" id="colStop" hidden>Stop</button></div>
-              <p class="col-sub">Or check that the listed jobs are still open (no AI). Closed ones move to the Dead Zone.</p>
+              <p class="col-sub">Check that listed jobs are still open.</p>
               <button type="button" id="liveBtn">Check open jobs</button>
               <p id="colMsg" class="admin-msg" role="status"></p>
               <ul id="colLog" class="admin-log"></ul>
