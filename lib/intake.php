@@ -144,6 +144,7 @@ function fast_path_job(array $c, array $roles, array $settings): ?array
         'visual designer' => 'Visual Designer', 'graphic designer' => 'Graphic Designer', 'illustrator' => 'Illustrator', 'interaction designer' => 'Interaction Designer',
         'design system designer' => 'Design System Designer', 'design systems designer' => 'Design System Designer', 'art director' => 'Art Director',
         'packaging designer' => 'Packaging Designer', 'brand designer' => 'Brand Designer', 'cmf designer' => 'CMF Designer', 'creative coder' => 'Creative Coder', 'vibe coder' => 'Vibe Coder',
+        'motion designer' => 'Motion Designer', 'motion graphics designer' => 'Motion Designer', 'imagineer' => 'Imagineer',
     ];
     $role = $roleOf[$base] ?? null;
     if ($role === null) return null;

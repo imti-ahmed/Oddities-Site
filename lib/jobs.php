@@ -38,7 +38,7 @@ function tags_of(array $j): array
             'Technology' => '/technolog|engineer|coder|coding|prototyp/',
             'Brand'      => '/\bbrand|packaging/',
             'Visual'     => '/graphic|visual|communication design|\bgame ui\b/',
-            'Creative'   => '/creative|illustrat|art director|motion|animat|video|film/',
+            'Creative'   => '/creative|illustrat|art director|motion|animat|video|film|imagineer|dreamer/',
             'Product'    => '/product|\bux\b|\bui\b|interaction|design system|experience|\bcmf\b/',
         ];
         foreach ($kinds as $name => $re) if (preg_match($re, $t)) return $name;

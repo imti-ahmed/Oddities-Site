@@ -14,7 +14,7 @@ return [
     'categories' => [
         ['name' => 'Product',    'means' => 'designing digital or physical products: UI and UX, product design, interaction design, design systems, CMF (colour, material, finish)'],
         ['name' => 'Brand',      'means' => 'brand identity and branding work, including packaging design'],
-        ['name' => 'Creative',   'means' => 'art direction and creative craft, including illustration'],
+        ['name' => 'Creative',   'means' => 'art direction and creative craft, including illustration, motion design and imagineering'],
         ['name' => 'Visual',     'means' => 'visual and graphic design: layouts, graphics, game UI art'],
         ['name' => 'Research',   'means' => 'UX, user and design research'],
         ['name' => 'Technology', 'means' => 'design combined with code: design engineering, creative technology, creative coding'],
@@ -69,6 +69,24 @@ return [
          'means'  => 'draws original illustrations (digital or traditional) as the main part of the job',
          'titles' => 'Illustrator, Digital Illustrator, Character Illustrator',
          'not'    => 'concept artists for games and film unless the posting calls it illustration'],
+
+        ['tag' => 'Motion Designer',
+         'category' => 'Creative',
+         'means'  => 'makes motion graphics and animation: animated brand and marketing visuals, explainer and social animations, title design, product and UI animation',
+         'titles' => 'Motion Designer, Motion Graphics Designer, Animator (motion graphics), Senior / Lead Motion Designer',
+         'not'    => 'a pure video editor, a 3D or game animator, or a film VFX artist unless the posting calls it motion design'],
+
+        ['tag' => 'Imagineer',
+         'category' => 'Creative',
+         'means'  => 'imagines and designs immersive experiences, themed environments, attractions or story-led concepts, blending design, storytelling and technology',
+         'titles' => 'Imagineer, Concept Imagineer, Creative Imagineer, Experience Imagineer',
+         'not'    => 'a construction, civil or ride-maintenance engineer, or a theme park operations job'],
+
+        ['tag' => 'Dreamer',
+         'category' => 'Creative',
+         'means'  => 'a blue-sky creative who dreams up new ideas, worlds and concepts and shapes them into visual or story-led directions',
+         'titles' => 'Dreamer, Creative Dreamer, Concept Dreamer, Ideation Lead',
+         'not'    => 'a vague posting that only uses the word "dream" (for example "dream job") without real creative design work'],
 
         ['tag' => 'Interaction Designer',
          'category' => 'Product',
