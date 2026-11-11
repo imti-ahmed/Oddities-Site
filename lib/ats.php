@@ -11,7 +11,7 @@ require_once __DIR__ . '/helpers.php';
 function title_is_candidate(string $title): bool
 {
     $t = mb_strtolower($title);
-    $fits = '/\b(designers?|design|art director|art direction|illustrat\w*|creative|brand|ux|ui|user experience|user interface|visual|graphic|packaging|cmf|interaction|technologist|vibe|typograph\w*|motion|ux research\w*|user research\w*|design research\w*|researcher)\b/u';
+    $fits = '/\b(designers?|design|art director|art direction|illustrat\w*|creative|brand|ux|ui|user experience|user interface|visual|graphic|packaging|cmf|interaction|technologist|vibe|typograph\w*|motion|imagineer\w*|dreamer\w*|ux research\w*|user research\w*|design research\w*|researcher)\b/u';
     if (!preg_match($fits, $t)) return false;
     if (preg_match('/\b(researcher|research)\b/u', $t) && !preg_match('/\b(ux|user|design|product|customer|human|usability|interaction)\b/u', $t)
         && !preg_match('/\b(designers?|design|creative|brand|visual|graphic)\b/u', $t)) return false;     // "Research Scientist" is not UX research

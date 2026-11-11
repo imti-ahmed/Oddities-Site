@@ -27,7 +27,7 @@ How to decide:
    - software, machine learning, data, security, hardware-chip or QA engineering jobs (for example "design verification engineer", "data center design")
    - product managers, project managers, marketing managers, growth, SEO, sales, account, recruiting, HR, finance, legal, support
    - architects, civil or structural engineers, interior designers, fashion or textile designers
-   - motion graphics, video editing, 3D modelling, photography, copywriting (unless the posting is clearly one of our roles)
+   - video editing, 3D modelling, photography, copywriting (unless the posting is clearly one of our roles; motion graphics and motion design ARE a role: Motion Designer)
 6. REJECT if the page is not ONE job. Set page_type to say what kind of page it is:
    - "job_list": a page that lists MANY separate jobs (a job board page, a company careers page with a list of openings). Reject with reject_reason "this page lists many jobs". Do NOT judge the jobs on the list yourself: the system opens and checks each job one by one.
    - "other": anything else that is not a single job (a company home page with no openings, a blog post).
