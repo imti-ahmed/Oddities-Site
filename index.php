@@ -177,7 +177,7 @@ function company_row(array $c, int $i): string
 // One card in the Portfolios / Tools gallery: a picture, the name (opens the site), the tag (tools only) and a pin star.
 function gallery_card(array $it, string $kind): string
 {
-    $color = $kind === 'tools' ? ' purple' : ' green';   // Tools cards have a purple frame, Portfolio cards a green one
+    $color = $kind === 'tools' ? ' purple' : ' orange';   // Tools cards have a purple frame, Portfolio cards an orange one
     $host = preg_replace('/^www\./', '', (string)parse_url($it['link'], PHP_URL_HOST));
     $label = $kind === 'tools' ? ($it['tag'] !== '' ? 'Tool · ' . $it['tag'] : 'Tool') : 'Portfolio';
     ob_start(); ?>
