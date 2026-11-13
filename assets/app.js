@@ -21,15 +21,27 @@
   var view = 'all', page = 1, pendingScroll = false;
 
   /* ---------- pins (saved in this browser with localStorage) ---------- */
+  // RULES that keep a visitor's pins safe when the site changes (deploys, new features, database edits never touch this):
+  //  1. The storage key 'dj_pins_v1' and the shape of a pin {id, title, company, url} never change. If one ever has to, read the OLD key first and copy its pins over.
+  //  2. A pin remembers its own title, company and link, so it still shows (marked closed) even when the entry is gone from the page.
+  //  3. A pin is matched to an entry by its id OR its link, so a changed id scheme (or a table that was emptied and refilled) cannot orphan it.
+  //  4. Damaged saved data is cleaned up here, never allowed to break the page, and never deleted wholesale.
   var KEY = 'dj_pins_v1', pins = [];
   try { pins = JSON.parse(localStorage.getItem(KEY) || '[]') || []; } catch (e) { pins = []; }
+  if (!Array.isArray(pins)) pins = [];
+  pins = pins.filter(function (p) { return p && typeof p === 'object' && typeof p.id === 'string' && typeof p.url === 'string'; });
   function savePins() { try { localStorage.setItem(KEY, JSON.stringify(pins)); } catch (e) { /* storage blocked: pins just last until the page closes */ } }
-  function isPinned(id) { return pins.some(function (p) { return p.id === id; }); }
+  function samePin(p, id, url) { return p.id === id || (!!url && p.url === url); }
+  function isPinned(id, url) { return pins.some(function (p) { return samePin(p, id, url); }); }
+  function findEntry(p) {                                   // the entry on the page that a pin belongs to: by id, else by link
+    var el = $('[data-id="' + p.id + '"]');
+    return el || $$('[data-url]').filter(function (e) { return e.dataset.url === p.url; })[0] || null;
+  }
 
   function renderPins() {
     var list = $('#pinList'); list.innerHTML = '';
     pins.forEach(function (p) {
-      var row = $('[data-id="' + p.id + '"]');
+      var row = findEntry(p);
       var gone = !row || row.closest('table') === deadTable;   // not on the page any more (or in the Dead Zone) = no longer a live job
       var li = document.createElement('li'); if (gone) li.className = 'gone';
       var box = document.createElement('div');
@@ -48,7 +60,7 @@
       var b = $('.pinbtn', r);
       if (!b) return;                                   // Dead Zone rows have no star
       var isRow = r.matches('tr:not(.crow)');
-      var admin = isAdmin() && isRow, on = admin ? r.dataset.hl === '1' : isPinned(r.dataset.id);   // on /admin the star on a JOB means "highlight for everyone"; gallery cards always pin for you
+      var admin = isAdmin() && isRow, on = admin ? r.dataset.hl === '1' : isPinned(r.dataset.id, r.dataset.url);   // on /admin the star on a JOB means "highlight for everyone"; gallery cards always pin for you
       if (!isRow) { b.hidden = isAdmin(); b.classList.toggle('on', on); b.innerHTML = on ? '&#9733;' : '&#9734;'; b.title = on ? 'Unpin this' : 'Pin this'; return; }
       if (admin && !$('.delbtn', r)) {                  // admin mode: a small delete button beside the star
         var d = document.createElement('button'); d.type = 'button'; d.className = 'delbtn'; d.title = 'Delete this job'; d.setAttribute('aria-label', 'Delete this job'); d.textContent = '×';
@@ -104,11 +116,9 @@
       .catch(function (e) { set(!on); var m = $('#adminMsg'); if (m) { m.textContent = 'Highlight not saved: ' + e.message; m.className = 'admin-msg bad'; } });
   }
   function togglePin(id) {
-    if (isPinned(id)) pins = pins.filter(function (p) { return p.id !== id; });
-    else {
-      var r = $('[data-id="' + id + '"]');
-      if (r) pins.unshift({ id: id, title: r.dataset.title, company: r.dataset.co, url: r.dataset.url });
-    }
+    var r = $('[data-id="' + id + '"]'), url = r ? r.dataset.url : '';
+    if (isPinned(id, url)) pins = pins.filter(function (p) { return !samePin(p, id, url); });
+    else if (r) pins.unshift({ id: id, title: r.dataset.title, company: r.dataset.co, url: r.dataset.url });
     savePins(); renderPins();
   }
 

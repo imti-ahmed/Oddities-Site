@@ -50,6 +50,7 @@ html, body, button, select, summary { cursor: -webkit-image-set(url(data:image/p
 #tabs .gap { width: 1px; height: 16px; background: #d4d4d4; margin: 0 8px; flex: none; }
 .sys { display: flex; gap: 16px; font-size: 14px; color: #8b8b8b; white-space: nowrap; }
 .sys .jobsn { color: var(--blue); font-weight: 500; }
+.sys .ver { color: #8b8b8b; font-weight: 500; }   /* V.X.Y beside the clock */
 /* phone menu button and the strip on top of the phone menu: only shown on phones (see the phone rules at the bottom) */
 .menubtn { display: none; }
 .menu-dots { display: none; }
@@ -189,6 +190,7 @@ table.jobs:has(.delbtn) td.pin, table.jobs:has(.delbtn) th.pin { width: 76px; wh
 }
 .pill.new, .pill.added { --tint: #c9f7d8; --dot: #2fbf68; --edge: #17803f; }   /* green (the Update log's "ADDED" pill matches NEW) */
 .pill.updated          { --tint: #ffeaad; --dot: #ffb21e; --edge: #a36b00; }   /* amber */
+.pill.site             { --tint: #d9e8ff; --dot: #4a8df5; --edge: #1d4ed8; }   /* blue (Update log only: SITE UPDATE) */
 .pill.closed           { --tint: #ffdada; --dot: #f06a6a; --edge: #b02a2a; }   /* red (Update log only) */
 .pill.inactive         { --tint: #eceff4; --dot: #a9b2c1; --edge: #66738a; }   /* grey (Update log only) */
 .nw { white-space: nowrap; }                              /* keeps the last word of the role name and its pill together */
@@ -287,7 +289,7 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
 .log-day-block + .log-day-block { border-top: 1px solid #d9e0ec; }
 .log-day-block:last-child { padding-bottom: 0; }
 .log-day { margin: 0 0 10px; font-size: 12.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-.log-line { display: grid; grid-template-columns: 84px minmax(0, 1fr); column-gap: 10px; align-items: baseline; margin: 0 0 8px; font-size: 14px; line-height: 1.75; color: #334155; }
+.log-line { display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 10px; align-items: baseline; margin: 0 0 8px; font-size: 14px; line-height: 1.75; color: #334155; }
 .log-line:last-child { margin-bottom: 0; }
 .log-line .pill { margin-left: 0; justify-self: start; }
 

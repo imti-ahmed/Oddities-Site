@@ -30,6 +30,10 @@ Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards
 - `lib/liveness.php`, `scripts/check_live.php` – the nightly "is it still open?" check (no AI).
 - `lib/add_job_endpoint.php` – the endpoint behind the `/admin` card (reached through `api/index.php?add=1`). `api/index.php` shows the admin card when the address is `/admin`.
 
+## Versions
+
+The site has a version number, shown beside the clock as **V.X.Y**: **X** goes up for a major update (a big new part of the site or a redesign), **Y** for a minor one (a smaller feature or change). The list is `config/versions.php`, newest on top. Each release is also a **SITE UPDATE** line in the Update log: the version, then the one short line in brackets. To release a new version, add one line at the top of that file (version, date, one short line); nothing else needs changing. (Versions up to 1.3 were written afterwards from the project history.)
+
 ## Portfolios and Tools
 
 The top bar has **Jobs**, **Portfolios**, **Tools** (then Dead Zone, Update log, About). Portfolios and Tools each show a welcome card like Jobs, the **Pinned** card beside it, and a **gallery** of picture cards (the default view). One Pinned card serves all three tabs: a visitor's pins are kept in their own browser.

@@ -29,6 +29,10 @@ foreach ([['Tools', $tools], ['Portfolio', $portfolios], ['Company', $companies]
         if ($it['dead'] && $it['removed']) $log[] = ['ts' => $it['removed'], 'type' => 'closed', 'job' => $entry];
     }
 }
+// Every release (config/versions.php) is a "SITE UPDATE" line in the Update log: the version, then the short line in brackets.
+$releases = require __DIR__ . '/config/versions.php';
+$siteVersion = 'V.' . ($releases[0]['version'] ?? '1.0');   // the newest release: shown beside the clock
+foreach ($releases as $rel) $log[] = ['ts' => strtotime($rel['date'] . ' 12:00') ?: 0, 'type' => 'site', 'job' => ['label' => 'V.' . $rel['version'], 'text' => $rel['note'], 'site' => true]];
 usort($log, fn($a, $b) => $b['ts'] <=> $a['ts']);
 $log = array_slice($log, 0, 200);
 
@@ -261,7 +265,7 @@ function table_head(bool $dead = false): string
       <a href="#log" data-top="log">Update log</a>
       <a href="#about" data-top="about">About</a>
     </nav>
-    <div class="sys"><span class="jobsn" data-extra="<?= count($tools) + count($portfolios) + count($companies) ?>"><?= (int)$totalOddities ?> oddities</span><span id="clock"></span></div>
+    <div class="sys"><span class="jobsn" data-extra="<?= count($tools) + count($portfolios) + count($companies) ?>"><?= (int)$totalOddities ?> oddities</span><span id="clock"></span><span class="ver" title="Site version: X is a major update, Y a minor one"><?= h($siteVersion) ?></span></div>
     <button type="button" id="menuBtn" class="menubtn" aria-label="Menu" aria-expanded="false" aria-controls="tabs"><span></span><span></span><span></span></button>
   </div>
 </header>
@@ -375,7 +379,7 @@ function table_head(bool $dead = false): string
   </section>
 
   <!-- ===== Update log ===== -->
-  <section id="logView" class="panel win" hidden>
+  <section id="logView" class="panel win green" hidden>
     <?= winbar() ?>
     <div class="winbody">
     <h2>Update log</h2>
@@ -392,10 +396,10 @@ function table_head(bool $dead = false): string
       foreach ($byDay as $day): ?>
       <div class="log-day-block">
         <div class="log-day"><?= h($day['label']) ?></div>
-        <?php foreach (['added', 'updated', 'closed', 'inactive'] as $type): if (empty($day['types'][$type])) continue; ?>
+        <?php foreach (['site', 'added', 'updated', 'closed', 'inactive'] as $type): if (empty($day['types'][$type])) continue; ?>
           <div class="log-line">
-            <span class="pill <?= $type ?>"><?= strtoupper($type) ?></span>
-            <span class="log-items"><?php foreach ($day['types'][$type] as $i => $j): ?><?= $i ? ', ' : '' ?><a href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><b><?= h($j['label'] ?? 'Jobs') ?></b>: <?= h($j['text'] ?? ($j['company'] . ' (' . $j['title'] . ')')) ?></a><?php endforeach; ?></span>
+            <span class="pill <?= $type ?>"><?= $type === 'site' ? 'SITE UPDATE' : strtoupper($type) ?></span>
+            <span class="log-items"><?php foreach ($day['types'][$type] as $i => $j): ?><?= $i ? ', ' : '' ?><?php if (!empty($j['site'])): ?><span><b><?= h($j['label']) ?></b> (<?= h($j['text']) ?>)</span><?php else: ?><a href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><b><?= h($j['label'] ?? 'Jobs') ?></b>: <?= h($j['text'] ?? ($j['company'] . ' (' . $j['title'] . ')')) ?></a><?php endif; ?><?php endforeach; ?></span>
           </div>
         <?php endforeach; ?>
       </div>
