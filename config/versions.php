@@ -8,6 +8,7 @@
 // To release a new version: add one line at the top, with today's date (YYYY-MM-DD) and ONE short line saying what is new
 // (plain words, no full stop, no em dash). Everything else updates by itself. Versions up to 1.3 were written afterwards from the project history.
 return [
+    ['version' => '2.5', 'date' => '2026-11-13', 'note' => 'Add several portfolios, tools or companies at once with commas'],
     ['version' => '2.4', 'date' => '2026-11-13', 'note' => 'Version numbers, Site Update lines in the Update log, safer pins'],
     ['version' => '2.3', 'date' => '2026-11-13', 'note' => 'NEW and UPDATED stamps on portfolios, tools and companies, lasting 36 hours'],
     ['version' => '2.2', 'date' => '2026-11-13', 'note' => 'Counts in the top bar, Total Oddities, new About page and rules'],

@@ -211,7 +211,7 @@ function admin_card(): string
             </div>
             <p id="adminHelp">Paste a job link, or a page that lists many jobs. The AI checks every job against our roles and lists the ones that fit.</p>
             <form id="adminForm" autocomplete="off">
-              <input type="url" id="adminUrl" placeholder="https://..." aria-label="Link" required>
+              <input type="text" inputmode="url" id="adminUrl" placeholder="https://..." aria-label="Link" autocapitalize="off" spellcheck="false" required>
               <button type="submit" id="adminBtn">Add job</button>
             </form>
             <p id="adminMsg" class="admin-msg" role="status"></p>

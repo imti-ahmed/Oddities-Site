@@ -263,9 +263,9 @@
     // What are we adding? Job (the AI checks it against our roles), or a Portfolio / a Tool (the AI just fills in the entry: name, and the tag for a tool).
     var KINDS = {
       job:        { button: 'Add job',       help: 'Paste a job link, or a page that lists many jobs. The AI checks every job against our roles and lists the ones that fit.' },
-      portfolios: { button: 'Add portfolio', help: 'Paste a link to a portfolio or personal site. The AI names the entry and a screenshot is taken. Nothing is judged: whatever you paste is added.' },
-      companies:  { button: 'Add company',    help: 'Paste a link to a company website. The AI names it, picks its type (Tech, Design, Studio...) and writes a short description. Nothing is judged: whatever you paste is added.' },
-      tools:      { button: 'Add tool',      help: 'Paste a link to a tool. The AI names it and picks its tag (the kind of tool), and a screenshot is taken. Nothing is judged: whatever you paste is added.' }
+      portfolios: { button: 'Add portfolio', help: 'Paste a link to a portfolio or personal site, or several separated by commas. The AI names each entry and a screenshot is taken. Nothing is judged: whatever you paste is added.' },
+      companies:  { button: 'Add company',    help: 'Paste a link to a company website, or several separated by commas. The AI names each one, picks its type (Tech, Design, Studio...) and writes a short description. Nothing is judged: whatever you paste is added.' },
+      tools:      { button: 'Add tool',      help: 'Paste a link to a tool, or several separated by commas. The AI names each one and picks its tag (the kind of tool), and a screenshot is taken. Nothing is judged: whatever you paste is added.' }
     };
     function currentKind() { var r = $('input[name="adminKind"]:checked'); return r ? r.value : 'job'; }
     function applyKind() { var k = KINDS[currentKind()]; btn.textContent = k.button; $('#adminHelp').textContent = k.help; msg.textContent = ''; logBox.innerHTML = ''; }
@@ -288,10 +288,44 @@
     function addLine(text, kind) { var li = document.createElement('li'); li.className = kind; li.textContent = text; logBox.appendChild(li); logBox.scrollTop = logBox.scrollHeight; }
     function short(t) { t = String(t || ''); return t.length > 70 ? t.slice(0, 67) + '...' : t; }
 
+    // Portfolio / Tools / Company: one link, or several separated by commas (spaces and new lines work too). Each is added on its own, one after the other.
+    // A link that could not be added stays in the box, so you can fix it or press the button again.
+    function addMany(raw) {
+      var seen = {};
+      var links = raw.split(/[\s,]+/).filter(Boolean).map(function (t) { return /^https?:\/\//i.test(t) ? t : 'https://' + t; })
+        .filter(function (t) { var k = t.toLowerCase(); if (seen[k]) return false; seen[k] = 1; return true; });
+      if (!links.length) { say('Paste a link first.', 'bad'); return; }
+      if (links.length > 30) { say('That is ' + links.length + ' links. Please add at most 30 at a time.', 'bad'); return; }
+      btn.disabled = true; logBox.innerHTML = '';
+      var added = 0, skipped = 0, failed = 0, i = 0, keep = [], last = null;
+      function next() {
+        if (i >= links.length) return Promise.resolve();
+        var l = links[i++];
+        say(links.length > 1 ? 'Adding ' + i + ' of ' + links.length + ': ' + short(l) : 'Reading the page and asking the AI. This takes a few seconds...', 'wait');
+        return checkOne(l, 0).then(function (r) {
+          last = r;
+          var msg = String(r.message || '').replace(/ The site shows it within a minute\.$/, '');
+          if (r.status === 'added') { added++; addLine(msg, 'ok'); }
+          else if (r.status === 'duplicate') { skipped++; addLine(short(l) + ': ' + msg, 'skip'); }
+          else { failed++; keep.push(l); addLine(short(l) + ': ' + msg, 'skip'); }
+          return next();
+        });
+      }
+      next()
+        .then(function () {
+          urlBox.value = keep.join(', ');
+          if (links.length === 1) { logBox.innerHTML = ''; say(last.message || 'Done.', last.status === 'added' ? 'good' : (last.status === 'duplicate' ? 'wait' : 'bad')); return; }
+          say('Done. Added ' + added + ', already in the list ' + skipped + (failed ? ', not added ' + failed + ' (left in the box)' : '') + '.' + (added ? ' The site shows them within a minute.' : ''), failed ? 'bad' : (added ? 'good' : 'wait'));
+        })
+        .catch(function () { say('Could not reach the server. Check your internet and try again.', 'bad'); })
+        .then(function () { btn.disabled = false; });
+    }
+
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var url = urlBox.value.trim();
-      if (!url) { say('Paste a job link first.', 'bad'); return; }
+      if (!url) { say('Paste a link first.', 'bad'); return; }
+      if (currentKind() !== 'job') { addMany(url); return; }
       btn.disabled = true; logBox.innerHTML = '';
       say('Reading the page and asking the AI. This takes a few seconds...', 'wait');
       post(url, false)
