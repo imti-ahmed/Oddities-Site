@@ -215,10 +215,10 @@ function table_head(bool $dead = false): string
     <nav id="tabs">
       <div class="menu-dots"><?= winbar() ?></div>   <!-- the Mac-window strip on top of the phone menu (hidden on bigger screens) -->
       <!-- The big sections of the site. "Jobs" stays lit on All, Highlighted, India, Abroad and Remote. -->
-      <a href="#all" data-top="jobs">Jobs</a>
-      <a href="#portfolios" data-top="portfolios">Portfolios</a>
-      <a href="#tools" data-top="tools">Tools</a>
-      <a href="#companies" data-top="companies">Companies</a>
+      <a href="#all" data-top="jobs">Jobs <span class="n"><?= $n['all'] ?></span></a>
+      <a href="#portfolios" data-top="portfolios">Portfolios <span class="n"><?= count($portfolios) ?></span></a>
+      <a href="#tools" data-top="tools">Tools <span class="n"><?= count($tools) ?></span></a>
+      <a href="#companies" data-top="companies">Companies <span class="n"><?= count($companies) ?></span></a>
       <span class="gap"></span>
       <a href="#dead" data-top="dead">Dead Zone <span class="n"><?= count($deadItems) ?></span></a>
       <a href="#log" data-top="log">Update log</a>
@@ -382,7 +382,7 @@ function table_head(bool $dead = false): string
         <?= winbar() ?>
         <div class="winbody">
           <p>Made by <a class="maker" href="https://www.imtiyazahmed.com" target="_blank" rel="noopener"><strong>Imtiyaz Ahmed</strong></a>, a designer &amp; builder who spends too much time trying to make fun and useful stuff for the internet.</p>
-          <p>I wanted a small, useful place to find good creative things without all the extra stuff.</p>
+          <p>I wanted a small, useful place to find good creative things that are hard to find elsewhere, without all the extra stuff.</p>
         </div>
       </div>
 
@@ -392,14 +392,14 @@ function table_head(bool $dead = false): string
       <?= winbar() ?>
       <div class="winbody">
         <ol class="steps">
-          <li>Everything is hand-picked or collected from around the internet.</li>
-          <li>Jobs, portfolios, tools and companies, mostly for design and creative people.</li>
+          <li>Hand-picked from around the internet.</li>
+          <li>Jobs, portfolios, tools and companies.</li>
           <li>Jobs cover India, abroad and remote.</li>
-          <li>Every entry links straight to the original source.</li>
-          <li>Everything is checked again and again: jobs every night, websites every two weeks.</li>
-          <li>What stops working moves to the Dead Zone. It is never deleted.</li>
-          <li>Pin what you like. Pins are saved in your browser only.</li>
-          <li>No accounts, no sign-ups, no applications here.</li>
+          <li>Every entry links to the original source.</li>
+          <li>Checked often: jobs nightly, sites every 2 weeks.</li>
+          <li>Dead things go to the Dead Zone, never deleted.</li>
+          <li>Pin what you like. Saved in your browser.</li>
+          <li>No accounts, no sign-ups.</li>
         </ol>
       </div>
     </div>

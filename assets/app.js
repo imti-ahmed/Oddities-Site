@@ -73,6 +73,7 @@
       var v = a.dataset.view; if (v === 'dead' || !JOB_VIEWS.hasOwnProperty(v)) return;
       $('.n', a).textContent = '(' + rows.filter(JOB_VIEWS[v]).length + ')';
     });
+    var topJobs = $('#tabs a[data-top="jobs"] .n'); if (topJobs) topJobs.textContent = rows.length;   // the number beside Jobs in the top bar
     var jn = $('.jobsn'); if (jn) jn.textContent = (rows.length + (parseInt(jn.dataset.extra, 10) || 0)) + ' oddities';   // every job, portfolio, tool and company
   }
   function adminSay(text, kind) { var m = $('#adminMsg'); if (m) { m.textContent = text; m.className = 'admin-msg ' + kind; } }
