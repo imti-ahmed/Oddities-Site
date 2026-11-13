@@ -28,6 +28,8 @@ return [
         'AI'         => 'companies built around AI models and research',
         'Design'     => 'design tools, design-led product companies, design platforms',
         'Studio'     => 'small creative or design studios',
+        'Experimental' => 'playful, odd or boundary-pushing companies that make experiments and unusual products, for example Panic or Playdate',
+        'Community'  => 'communities, clubs and builder collectives where people learn and make things together, for example buildspace or ai+frnds',
         'Agency'     => 'branding, advertising and digital agencies',
         'Product'    => 'consumer products and apps people love',
         'Media'      => 'publishers, magazines, film, music and games',

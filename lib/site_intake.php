@@ -27,7 +27,7 @@ function site_system_prompt(string $kind, array $cfg): string
         foreach ($cfg['company_types'] as $type => $means) $lines[] = '- "' . $type . '": ' . $means;
         $rules = "\"name\": the company's name, as it calls itself (short, for example \"Figma\", not \"Figma, Inc.\").\n"
                . "\"type\": the kind of company. Pick EXACTLY ONE of these types, written exactly like this:\n" . implode("\n", $lines) . "\n"
-               . "\"description\": ONE or TWO plain sentences (25 to 40 words in total) saying what the company does and what makes it interesting. Write it in your own words, calm and specific, no marketing hype, no \"leading\" or \"innovative\" or \"cutting-edge\". Only say what the page (or what you surely know about this company) supports.";
+               . "\"description\": as SHORT as possible: ONE plain sentence of 8 to 16 words (never more than two short lines, under 120 characters) saying what the company does, for example \"Makes a browser-based design tool for teams.\" Write it in your own words, calm and specific, no marketing hype, no \"leading\" or \"innovative\" or \"cutting-edge\". Only say what the page (or what you surely know about this company) supports.";
         $shape = '{"name": "...", "type": "...", "description": "..."}';
         $plural = 'companies';
     } else {
@@ -91,8 +91,8 @@ function intake_site(string $url, string $kind): array
         $tag = 'Other';                                   // (for a company the "tag" is its Type)
         foreach (array_keys($cfg['company_types']) as $t) if (strcasecmp($t, $given) === 0) { $tag = $t; break; }
         $desc = trim(no_em_dash(preg_replace('/\s+/u', ' ', strip_tags((string)($ask['answer']['description'] ?? '')))));
-        if (mb_strlen($desc) > 320) $desc = rtrim(mb_substr($desc, 0, 317)) . '...';
-        if ($desc === '') $desc = mb_substr(trim(no_em_dash($page['description'])), 0, 220);   // the AI gave none: the site's own description
+        if (mb_strlen($desc) > 140) $desc = rtrim(mb_substr($desc, 0, 137)) . '...';   // one or two short lines at most
+        if ($desc === '') $desc = mb_substr(trim(no_em_dash($page['description'])), 0, 120);   // the AI gave none: the site's own description
     }
 
     try {

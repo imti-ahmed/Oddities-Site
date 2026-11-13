@@ -73,7 +73,7 @@
       var v = a.dataset.view; if (v === 'dead' || !JOB_VIEWS.hasOwnProperty(v)) return;
       $('.n', a).textContent = '(' + rows.filter(JOB_VIEWS[v]).length + ')';
     });
-    var jn = $('.jobsn'); if (jn) jn.textContent = rows.length + ' jobs';
+    var jn = $('.jobsn'); if (jn) jn.textContent = (rows.length + (parseInt(jn.dataset.extra, 10) || 0)) + ' oddities';   // every job, portfolio, tool and company
   }
   function adminSay(text, kind) { var m = $('#adminMsg'); if (m) { m.textContent = text; m.className = 'admin-msg ' + kind; } }
   // Admin mode: delete a job for good (asks first). It also disappears from the database, and the collector will not bring it back.
@@ -128,7 +128,6 @@
     var top = (isList && !isDead) ? 'jobs' : view;               // which section is lit in the top bar
     $$('#tabs a').forEach(function (a) { a.classList.toggle('on', a.dataset.top === top); });
     $$('#pills a').forEach(function (a) { a.classList.toggle('on', a.dataset.view === view); });
-    var jn = $('.jobsn'); if (jn) jn.hidden = !isList;
     if (!isList) { window.scrollTo(0, 0); return; }
 
     liveTable.hidden = isDead; deadTable.hidden = !isDead;

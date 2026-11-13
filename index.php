@@ -23,7 +23,7 @@ usort($deadItems, fn($a, $b) => $b['removed'] <=> $a['removed']);   // most rece
 // Tools, portfolios and companies are in the update log too: ADDED when saved, CLOSED when their website stopped working.
 foreach ([['Tools', $tools], ['Portfolio', $portfolios], ['Company', $companies]] as [$label, $list]) {
     foreach ($list as $it) {
-        $entry = ['company' => $label, 'title' => $it['name'], 'url' => $it['link']];
+        $entry = ['label' => $label, 'text' => $it['name'], 'url' => $it['link']];
         if ($it['added'])                  $log[] = ['ts' => $it['added'],   'type' => 'added',  'job' => $entry];
         if ($it['dead'] && $it['removed']) $log[] = ['ts' => $it['removed'], 'type' => 'closed', 'job' => $entry];
     }
@@ -44,7 +44,8 @@ foreach ($live as $j) {
     if ($j['highlighted']) $n['highlighted']++;
 }
 
-$lastUpdate = $all ? max(array_column($all, 'change')) : 0;   // date of the most recent added/updated job
+$totalOddities = $n['all'] + count($tools) + count($portfolios) + count($companies);   // every working job, portfolio, tool and company
+$lastUpdate = max($all ? max(array_column($all, 'change')) : 0, ...array_column(array_merge($tools, $portfolios, $companies), 'added'), ...array_column($deadItems, 'removed'));   // the most recent addition or change of anything
 $isAdmin = defined('IS_ADMIN') && IS_ADMIN;                    // true only when the page is opened at /admin (see api/admin.php)
 if (!$isAdmin) header('Cache-Control: public, s-maxage=60, stale-while-revalidate=300');   // Vercel keeps the page for a minute, so the database is not asked on every visit
 
@@ -126,7 +127,7 @@ function company_row(array $c, int $i): string
       </td>
       <td class="cweb"><a class="glink" href="<?= h($c['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($host) ?></a></td>
       <td class="ctype"><?= h($c['type']) ?></td>
-      <td class="cdesc"><?= h($c['description']) ?></td>
+      <td class="cdesc"><div class="clamp"><?= h($c['description']) ?></div></td>
       <td class="pin"><button type="button" class="pinbtn" title="Pin this" aria-label="Pin this">&#9734;</button></td>
     </tr>
     <?php return ob_get_clean();
@@ -135,20 +136,20 @@ function company_row(array $c, int $i): string
 // One card in the Portfolios / Tools gallery: a picture, the name (opens the site), the tag (tools only) and a pin star.
 function gallery_card(array $it, string $kind): string
 {
-    static $n = 0;
-    $color = ['', ' pink', ' orange'][$n++ % 3];   // the cards rotate blue / pink / orange, like the job cards
+    $color = $kind === 'tools' ? ' purple' : ' green';   // Tools cards have a purple frame, Portfolio cards a green one
     $host = preg_replace('/^www\./', '', (string)parse_url($it['link'], PHP_URL_HOST));
     $label = $kind === 'tools' ? ($it['tag'] !== '' ? 'Tool · ' . $it['tag'] : 'Tool') : 'Portfolio';
     ob_start(); ?>
     <div class="win gitem<?= $color ?>" data-id="<?= h($it['id']) ?>" data-co="<?= h($label) ?>" data-title="<?= h($it['name']) ?>" data-url="<?= h($it['link']) ?>">
-      <?= winbar() ?>
-      <a class="gimg" href="<?= h($it['link']) ?>" target="_blank" rel="nofollow noopener" tabindex="-1" aria-hidden="true"><img src="<?= h(directory_image($it)) ?>" alt="" loading="lazy"></a>
-      <div class="gcap">
-        <div class="gtxt">
-          <a class="gt" href="<?= h($it['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($it['name']) ?></a>
-          <small><a class="glink" href="<?= h($it['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($host) ?></a><?php if ($kind === 'tools' && $it['tag'] !== ''): ?> &middot; <?= h($it['tag']) ?><?php endif; ?></small>
+      <div class="ginner">
+        <a class="gimg" href="<?= h($it['link']) ?>" target="_blank" rel="nofollow noopener" tabindex="-1" aria-hidden="true"><img src="<?= h(directory_image($it)) ?>" alt="" loading="lazy"></a>
+        <div class="gcap">
+          <div class="gtxt">
+            <a class="gt" href="<?= h($it['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($it['name']) ?></a>
+            <small><a class="glink" href="<?= h($it['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($host) ?></a><?php if ($kind === 'tools' && $it['tag'] !== ''): ?> &middot; <?= h($it['tag']) ?><?php endif; ?></small>
+          </div>
+          <button type="button" class="pinbtn" title="Pin this" aria-label="Pin this">&#9734;</button>
         </div>
-        <button type="button" class="pinbtn" title="Pin this" aria-label="Pin this">&#9734;</button>
       </div>
     </div>
     <?php return ob_get_clean();
@@ -223,7 +224,7 @@ function table_head(bool $dead = false): string
       <a href="#log" data-top="log">Update log</a>
       <a href="#about" data-top="about">About</a>
     </nav>
-    <div class="sys"><span class="jobsn"><?= $n['all'] ?> jobs</span><span id="clock"></span></div>
+    <div class="sys"><span class="jobsn" data-extra="<?= count($tools) + count($portfolios) + count($companies) ?>"><?= (int)$totalOddities ?> oddities</span><span id="clock"></span></div>
     <button type="button" id="menuBtn" class="menubtn" aria-label="Menu" aria-expanded="false" aria-controls="tabs"><span></span><span></span><span></span></button>
   </div>
 </header>
@@ -357,7 +358,7 @@ function table_head(bool $dead = false): string
         <?php foreach (['added', 'updated', 'closed', 'inactive'] as $type): if (empty($day['types'][$type])) continue; ?>
           <div class="log-line">
             <span class="pill <?= $type ?>"><?= strtoupper($type) ?></span>
-            <span class="log-items"><?php foreach ($day['types'][$type] as $i => $j): ?><?= $i ? ', ' : '' ?><a href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><b><?= h($j['company']) ?></b>: <?= h($j['title']) ?></a><?php endforeach; ?></span>
+            <span class="log-items"><?php foreach ($day['types'][$type] as $i => $j): ?><?= $i ? ', ' : '' ?><a href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><b><?= h($j['label'] ?? 'Jobs') ?></b>: <?= h($j['text'] ?? ($j['company'] . ' (' . $j['title'] . ')')) ?></a><?php endforeach; ?></span>
           </div>
         <?php endforeach; ?>
       </div>
@@ -372,8 +373,8 @@ function table_head(bool $dead = false): string
       <div class="win pink">
         <?= winbar() ?>
         <div class="winbody">
-          <p><b>A simple job board for creative people.</b></p>
-          <p>I collect design and creative jobs from around the internet and put them here in one place. Every listing takes you directly to the original job posting.</p>
+          <p><b>A small collection of oddities for creative people.</b></p>
+          <p>I collect jobs, portfolios, tools and cool companies from around the internet and put them here in one place. Every entry takes you straight to the original source.</p>
         </div>
       </div>
 
@@ -381,7 +382,7 @@ function table_head(bool $dead = false): string
         <?= winbar() ?>
         <div class="winbody">
           <p>Made by <a class="maker" href="https://www.imtiyazahmed.com" target="_blank" rel="noopener"><strong>Imtiyaz Ahmed</strong></a>, a designer &amp; builder who spends too much time trying to make fun and useful stuff for the internet.</p>
-          <p>I wanted a small, useful place to find creative jobs without all the extra stuff.</p>
+          <p>I wanted a small, useful place to find good creative things without all the extra stuff.</p>
         </div>
       </div>
 
@@ -391,14 +392,14 @@ function table_head(bool $dead = false): string
       <?= winbar() ?>
       <div class="winbody">
         <ol class="steps">
-          <li>Jobs are collected from around the internet.</li>
-          <li>Everything is actively updated.</li>
-          <li>Every listing links to the original posting.</li>
-          <li>Mostly design and creative jobs.</li>
-          <li>India, abroad and remote.</li>
-          <li>No accounts or applications.</li>
-          <li>Pin jobs to save them in your browser.</li>
-          <li>Jobs close. The list gets updated.</li>
+          <li>Everything is hand-picked or collected from around the internet.</li>
+          <li>Jobs, portfolios, tools and companies, mostly for design and creative people.</li>
+          <li>Jobs cover India, abroad and remote.</li>
+          <li>Every entry links straight to the original source.</li>
+          <li>Everything is checked again and again: jobs every night, websites every two weeks.</li>
+          <li>What stops working moves to the Dead Zone. It is never deleted.</li>
+          <li>Pin what you like. Pins are saved in your browser only.</li>
+          <li>No accounts, no sign-ups, no applications here.</li>
         </ol>
       </div>
     </div>
@@ -416,7 +417,7 @@ function table_head(bool $dead = false): string
         <?= winbar() ?>
         <div class="winbody">
           <div class="stats">
-            <p><b>Total jobs:</b> <?= (int)$n['all'] ?></p>
+            <p><b>Total Oddities:</b> <?= (int)$totalOddities ?></p>
             <p><b>Last update:</b> <?= $lastUpdate ? h(date('M j, Y', $lastUpdate)) : 'n/a' ?></p>
             <p><b>Views:</b> <span id="viewsNum">&ndash;</span></p>
           </div>
