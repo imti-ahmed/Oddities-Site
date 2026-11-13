@@ -1,6 +1,7 @@
 // Everything on the page happens here, in your browser: tabs, page numbers and pins.
 (function () {
   var PER_PAGE = (window.DJ && window.DJ.perPage) || 30;
+  var GALLERY_PER_PAGE = 15;                                     // cards on each page of the Portfolios and Tools galleries
   var $  = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
 
@@ -139,6 +140,7 @@
     var top = (isList && !isDead) ? 'jobs' : view;               // which section is lit in the top bar
     $$('#tabs a').forEach(function (a) { a.classList.toggle('on', a.dataset.top === top); });
     $$('#pills a').forEach(function (a) { a.classList.toggle('on', a.dataset.view === view); });
+    if (isP || isT) { renderGallery(isP ? '#mainP' : '#mainT', isP ? '#pagerP' : '#pagerT'); return; }
     if (!isList) { window.scrollTo(0, 0); return; }
 
     liveTable.hidden = isDead; deadTable.hidden = !isDead;
@@ -161,11 +163,22 @@
     emptyEl.hidden = total > 0;
     emptyEl.textContent = isDead ? 'Nothing in the Dead Zone yet.' : (view === 'highlighted' ? 'Nothing is highlighted yet.' : 'No jobs here yet.');
     table.hidden = total === 0;
-    renderPager(pages);
+    renderPager(pagerEl, pages);
+  }
+
+  // Portfolios and Tools galleries: 15 cards per page, with their own page buttons.
+  function renderGallery(mainSel, pagerSel) {
+    var cards = $$('.gitem', $(mainSel)), pages = Math.max(1, Math.ceil(cards.length / GALLERY_PER_PAGE));
+    if (page > pages) page = pages;
+    var from = (page - 1) * GALLERY_PER_PAGE, to = from + GALLERY_PER_PAGE;
+    cards.forEach(function (c, i) { c.hidden = i < from || i >= to; });
+    renderPager($(pagerSel), pages);
+    if (pendingScroll) { pendingScroll = false; $(mainSel).previousElementSibling.scrollIntoView(); }   // page button clicked: bring the welcome card into view
+    else window.scrollTo(0, 0);
   }
 
   // Page buttons: Prev, 1 2 3 ... , Next. With many pages: first, last and the pages around the current one, with ... between.
-  function renderPager(pages) {
+  function renderPager(pagerEl, pages) {
     pagerEl.innerHTML = '';
     pagerEl.hidden = pages < 2;
     if (pages < 2) return;
@@ -221,7 +234,7 @@
     var link = e.target.closest('a[href^="#"]');                 // our tab and page buttons
     if (link && e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) {
       e.preventDefault();
-      if (link.closest('#pager')) pendingScroll = true;          // after changing page, bring the top of the table into view
+      if (link.closest('.pager')) pendingScroll = true;          // after changing page, bring the top of the table into view
       go(link.getAttribute('href').slice(1));
     }
   });

@@ -310,6 +310,7 @@ function table_head(bool $dead = false): string
       <div class="main" id="mainP" hidden>
         <?php if ($portfolios): ?><div class="gallery"><?php foreach ($portfolios as $it) echo gallery_card($it, 'portfolios'); ?></div>
         <?php else: ?><div class="win"><div class="empty">No portfolios here yet.</div></div><?php endif; ?>
+        <nav class="pager" id="pagerP" aria-label="Pages" hidden></nav>
       </div>
 
       <!-- Tools: welcome card, then the gallery -->
@@ -323,6 +324,7 @@ function table_head(bool $dead = false): string
       <div class="main" id="mainT" hidden>
         <?php if ($tools): ?><div class="gallery"><?php foreach ($tools as $it) echo gallery_card($it, 'tools'); ?></div>
         <?php else: ?><div class="win"><div class="empty">No tools here yet.</div></div><?php endif; ?>
+        <nav class="pager" id="pagerT" aria-label="Pages" hidden></nav>
       </div>
 
       <!-- Companies: welcome card, then a plain list like the jobs -->
