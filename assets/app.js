@@ -10,12 +10,12 @@
     'india':     function (r) { return r.dataset.region === 'india'; },
     'abroad':    function (r) { return r.dataset.region === 'abroad'; },
     'remote':    function (r) { return r.dataset.mode === 'remote'; },
-    'in-office': function (r) { return r.dataset.mode === 'in-office' || r.dataset.mode === 'hybrid'; },   // partly in the office counts as in-office (there is no Hybrid tab)
     'dead':      function () { return true; }
   };
-  var OTHER_VIEWS = ['log', 'about'];
+  var OTHER_VIEWS = ['log', 'about', 'portfolios', 'tools'];
 
   var listView = $('#listView'), logView = $('#logView'), aboutView = $('#aboutView');
+  var PINNABLE = 'tr[data-id], .gitem[data-id]';                 // a job row, or a card in the Portfolios / Tools gallery
   var liveTable = $('#liveTable'), deadTable = $('#deadTable');
   var emptyEl = $('#empty'), pagerEl = $('#pager');
   var view = 'all', page = 1, pendingScroll = false;
@@ -29,7 +29,7 @@
   function renderPins() {
     var list = $('#pinList'); list.innerHTML = '';
     pins.forEach(function (p) {
-      var row = $('tr[data-id="' + p.id + '"]');
+      var row = $('[data-id="' + p.id + '"]');
       var gone = !row || row.closest('table') === deadTable;   // not on the page any more (or in the Dead Zone) = no longer a live job
       var li = document.createElement('li'); if (gone) li.className = 'gone';
       var box = document.createElement('div');
@@ -41,13 +41,15 @@
       li.appendChild(box); li.appendChild(x); list.appendChild(li);
     });
     var hint = $('#pinHint');
-    if (isAdmin()) { hint.textContent = 'Admin mode: the star highlights a job for everyone (see the Highlighted tab). Pinning for yourself is paused on this page.'; hint.hidden = false; }
+    if (isAdmin()) { hint.textContent = 'Admin mode: the star highlights a job for everyone (see the Highlighted tab). Pinning for yourself is paused on this page. Portfolios and tools have no highlight yet.'; hint.hidden = false; }
     else { hint.textContent = 'Tap the ☆ on any job to pin it here. Pins are saved in this browser only.'; hint.hidden = pins.length > 0; }
     $('#pinbox').classList.toggle('nopins', pins.length === 0 && !isAdmin());
-    $$('tr[data-id]').forEach(function (r) {
+    $$(PINNABLE).forEach(function (r) {
       var b = $('.pinbtn', r);
       if (!b) return;                                   // Dead Zone rows have no star
-      var admin = isAdmin(), on = admin ? r.dataset.hl === '1' : isPinned(r.dataset.id);   // on /admin the star means "highlight for everyone"
+      var isRow = r.tagName === 'TR';
+      var admin = isAdmin() && isRow, on = admin ? r.dataset.hl === '1' : isPinned(r.dataset.id);   // on /admin the star on a JOB means "highlight for everyone"; gallery cards always pin for you
+      if (!isRow) { b.hidden = isAdmin(); b.classList.toggle('on', on); b.innerHTML = on ? '&#9733;' : '&#9734;'; b.title = on ? 'Unpin this' : 'Pin this'; return; }
       if (admin && !$('.delbtn', r)) {                  // admin mode: a small delete button beside the star
         var d = document.createElement('button'); d.type = 'button'; d.className = 'delbtn'; d.title = 'Delete this job'; d.setAttribute('aria-label', 'Delete this job'); d.textContent = '×';
         b.parentNode.appendChild(d);
@@ -60,16 +62,16 @@
   // Admin mode (the /admin card is on the page): the star highlights the job for EVERYONE, saved in the database.
   function isAdmin() { return !!$('#adminCard'); }
   function updateHighlightTab() {
-    var tab = $('#tabs a[data-view="highlighted"]'); if (!tab) return;
-    $('.n', tab).textContent = $$('#liveTable tbody tr').filter(function (r) { return r.dataset.hl === '1'; }).length;
+    var tab = $('#pills a[data-view="highlighted"]'); if (!tab) return;
+    $('.n', tab).textContent = '(' + $$('#liveTable tbody tr').filter(function (r) { return r.dataset.hl === '1'; }).length + ')';
     if (isAdmin()) tab.hidden = false;
   }
   // The numbers on the tabs (and "N jobs" at the top right), counted again from the rows that are on the page.
   function recountTabs() {
     var rows = $$('#liveTable tbody tr');
-    $$('#tabs a').forEach(function (a) {
+    $$('#pills a').forEach(function (a) {
       var v = a.dataset.view; if (v === 'dead' || !JOB_VIEWS.hasOwnProperty(v)) return;
-      $('.n', a).textContent = rows.filter(JOB_VIEWS[v]).length;
+      $('.n', a).textContent = '(' + rows.filter(JOB_VIEWS[v]).length + ')';
     });
     var jn = $('.jobsn'); if (jn) jn.textContent = rows.length + ' jobs';
   }
@@ -103,7 +105,7 @@
   function togglePin(id) {
     if (isPinned(id)) pins = pins.filter(function (p) { return p.id !== id; });
     else {
-      var r = $('tr[data-id="' + id + '"]');
+      var r = $('[data-id="' + id + '"]');
       if (r) pins.unshift({ id: id, title: r.dataset.title, company: r.dataset.co, url: r.dataset.url });
     }
     savePins(); renderPins();
@@ -112,16 +114,23 @@
   /* ---------- showing the right rows ---------- */
   function render() {
     var isList = JOB_VIEWS.hasOwnProperty(view);
-    listView.hidden  = !isList;
+    var isDead = view === 'dead', isP = view === 'portfolios', isT = view === 'tools';
+    listView.hidden  = !(isList || isP || isT);                  // one layout (with the Pinned card) for Jobs, Dead Zone, Portfolios and Tools
     logView.hidden   = view !== 'log';
     aboutView.hidden = view !== 'about';
-    $$('#tabs a').forEach(function (a) { a.classList.toggle('on', a.dataset.view === view); });
+    $('#deadNote').hidden = !isDead;
+    $('#intro').hidden = !isList || isDead;
+    $('#pills').hidden = !isList || isDead;                      // the pills filter the live list, not the Dead Zone
+    $('#jobsMain').hidden = !isList;
+    $('#introP').hidden = !isP; $('#mainP').hidden = !isP;
+    $('#introT').hidden = !isT; $('#mainT').hidden = !isT;
+    var top = (isList && !isDead) ? 'jobs' : view;               // which section is lit in the top bar
+    $$('#tabs a').forEach(function (a) { a.classList.toggle('on', a.dataset.top === top); });
+    $$('#pills a').forEach(function (a) { a.classList.toggle('on', a.dataset.view === view); });
+    var jn = $('.jobsn'); if (jn) jn.hidden = !isList;
     if (!isList) { window.scrollTo(0, 0); return; }
 
-    var isDead = view === 'dead';
     liveTable.hidden = isDead; deadTable.hidden = !isDead;
-    $('#deadNote').hidden = !isDead;
-    $('#intro').hidden = isDead;
 
     var table = isDead ? deadTable : liveTable;
     var inView = JOB_VIEWS[view];
@@ -197,7 +206,7 @@
     var pin = e.target.closest('.pinbtn');
     var del = e.target.closest('.delbtn');
     if (del) { deleteJob(del.closest('tr')); return; }
-    if (pin) { var prow = pin.closest('tr'); if (isAdmin()) toggleHighlight(prow); else togglePin(prow.dataset.id); }
+    if (pin) { var prow = pin.closest(PINNABLE); if (isAdmin() && prow.tagName === 'TR') toggleHighlight(prow); else togglePin(prow.dataset.id); }
     var link = e.target.closest('a[href^="#"]');                 // our tab and page buttons
     if (link && e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) {
       e.preventDefault();
@@ -240,9 +249,18 @@
     var urlBox = $('#adminUrl'), btn = $('#adminBtn'), msg = $('#adminMsg');
     function say(text, kind) { msg.textContent = text; msg.className = 'admin-msg ' + kind; }
     var logBox = $('#adminLog');
+    // What are we adding? Job (the AI checks it against our roles), or a Portfolio / a Tool (the AI just fills in the entry: name, and the tag for a tool).
+    var KINDS = {
+      job:        { button: 'Add job',       help: 'Paste a job link, or a page that lists many jobs. The AI checks every job against our roles and lists the ones that fit.' },
+      portfolios: { button: 'Add portfolio', help: 'Paste a link to a portfolio or personal site. The AI names the entry and a screenshot is taken. Nothing is judged: whatever you paste is added.' },
+      tools:      { button: 'Add tool',      help: 'Paste a link to a tool. The AI names it and picks its tag (the kind of tool), and a screenshot is taken. Nothing is judged: whatever you paste is added.' }
+    };
+    function currentKind() { var r = $('input[name="adminKind"]:checked'); return r ? r.value : 'job'; }
+    function applyKind() { var k = KINDS[currentKind()]; btn.textContent = k.button; $('#adminHelp').textContent = k.help; msg.textContent = ''; logBox.innerHTML = ''; }
+    $$('input[name="adminKind"]').forEach(function (r) { r.addEventListener('change', applyKind); });
     function post(url, single) {
       return fetch('/api/index.php?add=1', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: url, single: !!single })
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: url, single: !!single, kind: currentKind() })
       }).then(function (r) {
         return r.json().catch(function () { return { status: 'error', message: 'The server gave an answer we could not read. Try again in a moment.' }; });
       });
@@ -337,6 +355,24 @@
         liveBtn.disabled = false; colStop.hidden = true;
       }
     }
+    // "Take missing screenshots": a few per press on the server, repeated here until none are left
+    var shotBtn = $('#shotBtn'), shotMsg = $('#shotMsg');
+    function shotSay(text, kind) { shotMsg.textContent = text; shotMsg.className = 'admin-msg ' + kind; }
+    async function takeShots() {
+      shotBtn.disabled = true; var done = 0, failed = 0;
+      try {
+        while (true) {
+          shotSay('Taking screenshots... ' + done + ' saved' + (failed ? ', ' + failed + ' failed' : '') + '.', 'wait');
+          var r = await act('shots');
+          if (r.status !== 'ok') { shotSay(r.message || 'Problem while taking screenshots.', 'bad'); return; }
+          done += r.done; failed += r.failed;
+          if (!r.left || (!r.done && !r.failed)) break;
+        }
+        shotSay(done || failed ? 'Done. ' + done + ' screenshots saved' + (failed ? ', ' + failed + ' failed (try again later)' : '') + '.' : 'Every portfolio and tool already has a screenshot.', failed ? 'bad' : 'good');
+      } catch (e) { shotSay('Lost the connection to the server. Press the button again to continue.', 'bad'); }
+      finally { shotBtn.disabled = false; }
+    }
+    if (shotBtn) shotBtn.addEventListener('click', takeShots);
     if (liveBtn) { liveBtn.addEventListener('click', checkOpen); colStop.addEventListener('click', function () { stopNow = true; colSay('Stopping after this round...', 'wait'); }); }
   })();
 

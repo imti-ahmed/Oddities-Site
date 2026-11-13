@@ -1,4 +1,4 @@
-/* Jobbies!: clean table + glossy early-2000s Mac touches (menu bar, mini-window cards, glossy page buttons)
+/* Oddities!: clean table + glossy early-2000s Mac touches (menu bar, mini-window cards, glossy page buttons)
    plus comic-style stickers. Change the main colours here: */
 :root {
   --blue: #2563eb;          /* accents */
@@ -90,6 +90,13 @@ a.pg:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(0,0,0
 
 /* ---------- welcome card ---------- */
 .intro { grid-area: intro; margin: 0 0 20px; font-size: 14.5px; color: #333; }
+
+/* the pills under the welcome card: they switch between the job lists (same glossy pills as the page buttons) */
+#pills { grid-area: pills; display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; min-width: 0; }
+#pills .pg { cursor: pointer; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }   /* one line: name, then (number) (the page buttons use a grid, which stacked them) */
+#pills .n { font-size: 11.5px; font-weight: 400; color: #8b95a5; margin-left: 5px; }
+#pills .pg.on .n { color: #1e3a8a; }
+#pills a.pg.on:hover { filter: none; }
 .intro p { margin: 0 0 12px; line-height: 1.55; }   /* every line is the same plain paragraph: no headline, no small print */
 .intro p:last-child { margin-bottom: 0; }
 
@@ -97,10 +104,24 @@ a.pg:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(0,0,0
 /* Left column: the welcome card, then the table. Right column: the pinned box, level with the welcome card at the top. */
 .layout {
   display: grid; grid-template-columns: minmax(0, 1fr) 330px; column-gap: 20px; align-items: start; margin-top: 22px;
-  grid-template-areas: "intro pin" "main pin";
-  grid-template-rows: auto 1fr;   /* when the right column is taller, the spare height goes below the table (not between the welcome card and the table) */
+  grid-template-areas: "intro pin" "pills pin" "main pin";
+  grid-template-rows: auto auto 1fr;   /* when the right column is taller, the spare height goes below the table (not between the welcome card and the table) */
 }
 .main { grid-area: main; min-width: 0; }
+
+/* ---------- gallery (Portfolios and Tools): a grid of picture cards ---------- */
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+.gitem { display: flex; flex-direction: column; }   /* the card itself is a .win: same outline, shadow and title strip as every other card */
+.gimg { display: block; aspect-ratio: 4 / 3; background: #eef2f9; overflow: hidden; border-bottom: 1px solid var(--line); }
+.gimg img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; transition: transform .25s ease; }
+.gitem:hover .gimg img { transform: scale(1.03); }
+.gcap { display: flex; align-items: flex-start; gap: 8px; padding: 10px 10px 11px 14px; }
+.gtxt { min-width: 0; }
+.gt { display: block; font-weight: 600; font-size: 14px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gtxt small { display: block; color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gcap .pinbtn { margin-left: auto; flex: none; }
+.glink { color: var(--muted); }
+.glink:hover { color: var(--blue); }
 
 table.jobs { width: 100%; border-collapse: collapse; }
 table.jobs th { text-align: left; font-size: 12.5px; font-weight: 500; color: var(--faint); padding: 9px 14px; background: #fafbfe; border-bottom: 1px solid #e6ecf5; }
@@ -114,7 +135,8 @@ table.jobs td.pin, table.jobs th.pin { padding-left: 4px; padding-right: 8px; }
 td.posted, th.posted { width: 108px; color: var(--muted); font-size: 13px; white-space: nowrap; }
 td.tags, th.tags { width: 150px; }
 td.company, th.company { width: 300px; }
-table.dead td.company, table.dead th.company { width: 340px; }   /* Dead Zone: narrower job names, wider company column */
+td.type, th.type { width: 120px; color: #334155; font-weight: 500; font-size: 14px; white-space: nowrap; }   /* Dead Zone: Job / Portfolio / Tools */
+table.dead td.posted, table.dead th.posted { width: 140px; }
 
 .jt { font-weight: 600; font-size: 14px; color: var(--ink); }   /* same size as the company name, still bold */
 .jt:visited { color: #6b7280; }
@@ -168,6 +190,16 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
 /* admin card (only exists on /admin) */
 #adminCard .winbody { padding: 16px 18px 18px; }
 #adminCard p { margin: 0 0 12px; font-size: 14.5px; line-height: 1.55; color: #333; }
+/* what are you adding? three radio choices as small pills; the chosen one is glossy blue */
+.kinds { display: flex; gap: 6px; margin: 0 0 12px; }
+.kinds label { flex: 1; cursor: pointer; }
+.kinds input { position: absolute; opacity: 0; pointer-events: none; }
+.kinds span {
+  display: block; text-align: center; padding: 7px 8px; border-radius: 999px; font-size: 13.5px; font-weight: 500; line-height: 1.2; color: #111; user-select: none;
+  background: linear-gradient(#fff 0%, #f7f7f7 48%, #e9e9ea 52%, #f6f6f6 100%); border: 1px solid #a5abb5; box-shadow: inset 0 1px 0 #fff;
+}
+.kinds input:checked + span { color: #071a3f; border-color: #2b3fa6; background: linear-gradient(#edf4ff 0%, #d6e7ff 18%, #a2c7ff 50%, #99cbf8 80%, #a2d2f7 100%); }
+.kinds input:focus-visible + span { outline: 2px solid #99cbf8; outline-offset: 2px; }
 #adminForm { display: grid; gap: 8px; }
 #adminForm input { width: 100%; height: 36px; padding: 0 12px; border: 1px solid #a5abb5; border-radius: 8px; background: #fff; font-size: 14px; }
 #adminForm input:focus { outline: 2px solid #99cbf8; outline-offset: 1px; }
@@ -202,7 +234,9 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
 #pinbox { position: static; }
 #pinbox .winbody { padding: 8px 0 4px; }
 #pinbox ul { list-style: none; margin: 0; padding: 0; max-height: 55vh; overflow: auto; }
+#pinList { counter-reset: pin; }
 #pinbox li { display: flex; gap: 6px; padding: 7px 14px; align-items: flex-start; }
+#pinbox li::before { counter-increment: pin; content: counter(pin) "."; flex: none; min-width: 20px; text-align: right; color: var(--faint); font-size: 13px; line-height: 1.55; }   /* 1. 2. 3. like the table rows */
 #pinbox li a { font-size: 14px; font-weight: 600; display: block; }
 #pinbox li small { display: block; color: var(--muted); font-size: 12.5px; }
 #pinbox li.gone a { color: #8b95a5; }
@@ -214,6 +248,7 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
 
 /* ---------- update log + about ---------- */
 .panel { margin-top: 22px; }   /* full width */
+#logView.panel { margin-top: 0; }   /* the pills sit right above it */
 .panel .winbody { padding: 18px 22px 22px; }
 .panel h2 { font-size: 22px; margin: 0 0 6px; letter-spacing: -.01em; }
 .panel p, .panel li { color: #334155; line-height: 1.65; }
@@ -244,7 +279,7 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
 /* ---------- phones ---------- */
 @media (max-width: 1100px) {
   /* narrower screens: one column, in this order: welcome card, pinned box, table */
-  .layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "intro" "pin" "main"; grid-template-rows: auto; }
+  .layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "intro" "pin" "pills" "main"; grid-template-rows: auto; }
   .side { position: static; display: block; }
   .side > .win { margin-bottom: 20px; }
   #pinbox.nopins { display: none; }
@@ -284,7 +319,7 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
   #tabs .n { font-size: 13px; }
   #tabs .gap { display: block; width: auto; height: 7px; margin: 0; background: #f4f6fa; border-top: 1px solid #e6ecf5; border-bottom: 1px solid #e6ecf5; }
   #tabs .gap + a { border-top: 0; }
-  th.company, td.company, th.posted, td.posted, th.tags, td.tags { display: none; }
+  th.company, td.company, th.posted, td.posted, th.tags, td.tags, th.type, td.type { display: none; }
   .m-only { display: block; }
   td.rank, th.rank { width: 30px; padding-left: 6px; padding-right: 2px; }
   table.jobs td { padding: 10px 8px; }

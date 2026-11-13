@@ -4,6 +4,21 @@
 // Reads a setting from the environment (Vercel "Environment Variables", or your computer). Empty text when it is not set.
 function env(string $name): string
 {
+    // On your own computer: read a local ".env" file (never committed, see .gitignore) once.
+    static $loaded = false;
+    if (!$loaded) {
+        $loaded = true;
+        $f = __DIR__ . '/../.env';
+        if (is_file($f)) {
+            foreach (file($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+                $line = trim($line);
+                if ($line === '' || $line[0] === '#' || strpos($line, '=') === false) continue;
+                [$k, $val] = explode('=', $line, 2);
+                $k = trim($k); $val = trim($val, " \t\"'");
+                if ($k !== '' && getenv($k) === false) putenv("$k=$val");
+            }
+        }
+    }
     $v = getenv($name);
     if ($v === false || $v === '') $v = $_ENV[$name] ?? $_SERVER[$name] ?? '';
     return (string)$v;

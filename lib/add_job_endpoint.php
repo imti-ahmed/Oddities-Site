@@ -51,6 +51,13 @@ if ($action === 'delete') {                          // the delete button on /ad
     catch (Throwable $e) { reply(200, ['status' => 'error', 'message' => $e->getMessage()]); }
     reply(200, $found ? ['status' => 'ok'] : ['status' => 'error', 'message' => 'That job is not in the list any more.']);
 }
+if ($action === 'shots') {                           // "Take missing screenshots": a few per press (each one takes several seconds)
+    set_time_limit(55); ini_set('memory_limit', '256M');
+    require_once __DIR__ . '/screenshot.php';
+    if (!db_enabled() || !storage_enabled()) reply(200, ['status' => 'stop', 'message' => 'Screenshots need DATABASE_URL and the storage variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_ENDPOINT_URL_S3, AWS_REGION) in Vercel.']);
+    try { db_create_directory_tables(); reply(200, ['status' => 'ok'] + screenshots_fill_missing(3)); }
+    catch (Throwable $e) { reply(200, ['status' => 'stop', 'message' => 'Could not take screenshots: ' . $e->getMessage()]); }
+}
 if ($action !== '') {                                // the "Check open jobs" button (no AI). Collecting new jobs is NOT possible from here: only the scheduled GitHub job does that.
     set_time_limit(55); ini_set('memory_limit', '256M');
     require_once __DIR__ . '/liveness.php';
@@ -61,4 +68,9 @@ $url = trim((string)($in['url'] ?? ''));
 if ($url === '' || mb_strlen($url) > 1500) reply(400, ['status' => 'error', 'message' => 'Paste a job link first.']);
 
 set_time_limit(55);
+$kind = (string)($in['kind'] ?? 'job');
+if ($kind === 'tools' || $kind === 'portfolios') {   // a Portfolio or a Tool: the AI only fills in the entry (name, and the tag for a tool)
+    require_once __DIR__ . '/site_intake.php';
+    reply(200, intake_site($url, $kind));
+}
 reply(200, intake_job($url, 'admin', empty($in['single'])));   // single = true when the card is checking one job from a list

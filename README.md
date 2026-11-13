@@ -1,18 +1,18 @@
-# Jobbies!
+# Oddities!
 
 A simple website (HTML + CSS + PHP + a little JavaScript) that lists creative jobs in a clean table.
 Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards with traffic-light dots in a pink / orange / blue rotation (add `pink` or `orange` to a card's class in `index.php`; no class = blue), glossy blue pill buttons, faint dotted background) and small comic-style NEW / UPDATED pills (halftone dots, thick outline).
 
 ## What's on the page
 
-- **Menu bar** at the top with the **tabs** (all on the same page, no reloading): All, **Highlighted**, India, Abroad, Remote, In-office (hybrid jobs count as In-office; there is no Hybrid tab), **Dead Zone**, **Update log**, **About**.
+- **Menu bar** at the top with the **tabs** (all on the same page, no reloading): All, **Highlighted**, India, Abroad, Remote (there is no In-office or Hybrid tab), **Dead Zone**, **Update log**, **About**.
 - **Table** with # / Job / Company & location / Tag / Posted / pin star. Each job has exactly **one tag** (the kind of job, e.g. Product Design, Brand, Motion), shown as plain text (same size and boldness as the role name). No search box and no filters: just the list.
 - **Pinned box** at the side: click the star on a job to pin it. Pins are saved in the visitor's own browser (localStorage), nothing is stored on a server.
 - **Highlighted tab** (beside All): jobs you picked to show to everyone. Visitors only see the tab when at least one job is highlighted. To highlight a job, open `/admin` and click its star: on that page the star means "highlight for everyone" (saved in the database) instead of "pin for me". Click it again to remove the highlight. A highlighted job that closes or goes to the Dead Zone leaves the tab by itself.
 - **Delete button** (admin only): on `/admin` each job has a small `x` beside its star. One click hides the job from the site at once, with no confirmation question. The job is **kept in the database** (marked with a `deleted_at` time, never shown), so the collector and every duplicate check (same link, or same title + company + place under a new link) remember it and never check or add it again. To bring a deleted job back, paste its link into **Add job**: it says "Restored".
 - **NEW / UPDATED pills**: small ovals in capitals with black text and a thick coloured outline, right after the role name. The fill is a comic-book halftone (rows of little dots): green for NEW, amber for UPDATED. They blink gently (still for people who turned motion off in their device). Jobs added or updated in the last few days get one and sit at the top. To hide them, set `show_badges` to `false` in `config/settings.php`; the list is then simply newest first.
-- **Dead Zone**: jobs that are `closed`, or *inactive* (not posted/updated for 90+ days). Kept for reference, never deleted, and shown 20 per page with page numbers (no limit on how many).
-- **Update log**: generated automatically from the jobs' dates (added / updated / closed / inactive). One block per day with a full-width line after it. Inside a day there is one pill per kind of change (ADDED green, UPDATED amber, CLOSED red, INACTIVE grey, same halftone style as the NEW / UPDATED pills), with all the jobs for that change listed beside it, separated by commas.
+- **Dead Zone**: everything that stopped working, in one table (Title / Type / Removed On). Type is **Job**, **Portfolio** or **Tools**. A job shows as `Role Name (Company)`. Jobs land here when they are `closed` or *inactive* (not posted/updated for 90+ days); portfolio and tool sites land here when their website is gone (see the 2-week check below). Kept for reference, never deleted, shown 20 per page.
+- **Update log**: generated automatically from the jobs' dates (added / updated / closed / inactive). Tools and portfolios are in it too: ADDED when saved, CLOSED when their website stopped working (shown as "Tools: name" and "Portfolio: name"). One block per day with a full-width line after it. Inside a day there is one pill per kind of change (ADDED green, UPDATED amber, CLOSED red, INACTIVE grey, same halftone style as the NEW / UPDATED pills), with all the jobs for that change listed beside it, separated by commas.
 - **About page**: five cards. The last two are a contact card (`contact_email` in `config/settings.php`) and a stats card: total jobs, last update, and **views**. Views come from a free public counter service (abacus.jasoncameron.dev); each visitor counts once per browser session, and visits from `localhost` are never counted. If the service is down, the number shows a dash. To restart the count from zero, change `views_counter.key` in `config/settings.php`.
 
 ## Files
@@ -29,6 +29,25 @@ Style: a clean table with early-2000s Mac touches (a menu bar, mini-window cards
 - `lib/ats.php`, `lib/collector.php`, `scripts/collect.php` – the collector (reads company boards and job sites into a queue, then settles the jobs in batches).
 - `lib/liveness.php`, `scripts/check_live.php` – the nightly "is it still open?" check (no AI).
 - `lib/add_job_endpoint.php` – the endpoint behind the `/admin` card (reached through `api/index.php?add=1`). `api/index.php` shows the admin card when the address is `/admin`.
+
+## Portfolios and Tools
+
+The top bar has **Jobs**, **Portfolios**, **Tools** (then Dead Zone, Update log, About). Portfolios and Tools each show a welcome card like Jobs, the **Pinned** card beside it, and a **gallery** of picture cards (the default view). One Pinned card serves all three tabs: a visitor's pins are kept in their own browser.
+
+Each has its own table in the Neon database, created by itself the first time it is needed (`lib/directory.php`):
+
+| Table | Columns |
+|---|---|
+| `tools` | `name`, `link` (unique), `image`, `tag` (the kind of tool), `pinned` |
+| `portfolios` | `name`, `link` (unique), `image`, `pinned` (no tag) |
+
+`image` is the picture shown on the card: a screenshot kept in the Neon bucket (below). If it is empty, a live screenshot of the `link` is shown instead (free WordPress mShots service). `pinned` is a pin made by you for everyone: pinned items come first in the gallery. Both tables also hold the site-check notes: `dead_at`, `dead_reason`, `last_checked_at`, `check_fails`.
+
+**Adding them:** on `/admin` the card has three choices on top: **Job**, **Portfolio**, **Tools**. Paste a link and press the button. For a job nothing changed (strict rules). For a portfolio or a tool there are no rules: Groq just names the entry (`config/groq_site_prompt.txt`) and, for a tool, picks its tag from the list in `config/directory.php` (`tool_tags`; edit freely). A site that blocks our page reader (many big tools do) is still added, the AI then works from the address alone; a site that does not exist is refused.
+
+**Screenshots and the Neon bucket.** Pictures live in a private Neon Object Storage bucket called `uploads` (declared in `neon.ts`, created with `neon deploy`). `lib/storage.php` is a tiny S3 client (no libraries); `api/img.php` hands the pictures to visitors; `lib/screenshot.php` takes the screenshot (free Microlink service, about 50 a day without a key), saves it in the bucket and writes its address into `image`. A screenshot is taken when you add an entry; the `php scripts/screenshots.php` fills in any that are missing. In Vercel add the four storage variables from `.env` (`neon deploy` wrote them): `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3`, `AWS_REGION`.
+
+**The 2-week website check.** `scripts/check_sites.php` (GitHub: `.github/workflows/check-sites.yml`, runs every day at 03:00 India time) asks every portfolio and tool website whether it still works, but each site only every 14 days (`recheck_days`). No AI, only web requests. Only clear signals count: a 404 / 410 page, or an address that no longer exists. Blocked, slow or broken (5xx) sites change nothing. A site that looks gone is asked again the next day, and after **2 "gone" answers in a row** (`dead_after`) it moves to the Dead Zone. Needs the secret `DATABASE_URL` on GitHub.
 
 ## The jobs file
 

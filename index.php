@@ -7,11 +7,37 @@ $live = sort_live(array_values(array_filter($all, fn($j) => !$j['dead'])));
 $dead = sort_dead(array_values(array_filter($all, fn($j) => $j['dead'])));   // every dead job, most recently removed first (the page numbers handle long lists)
 $log  = build_log($all, $settings);
 
+require_once __DIR__ . '/lib/directory.php';
+$tools      = directory_items('tools');
+$portfolios = directory_items('portfolios');
+
+// The Dead Zone holds everything that stopped working: closed or stale jobs, and portfolio / tool websites that are gone.
+$deadItems = [];
+foreach ($dead as $j) $deadItems[] = ['id' => $j['id'], 'type' => 'Job', 'title' => trim($j['title']) . ' (' . trim($j['company']) . ')', 'url' => $j['url'], 'removed' => $j['removed']];
+foreach ($tools as $it)      if ($it['dead']) $deadItems[] = ['id' => $it['id'], 'type' => 'Tools',     'title' => $it['name'], 'url' => $it['link'], 'removed' => $it['removed']];
+foreach ($portfolios as $it) if ($it['dead']) $deadItems[] = ['id' => $it['id'], 'type' => 'Portfolio', 'title' => $it['name'], 'url' => $it['link'], 'removed' => $it['removed']];
+usort($deadItems, fn($a, $b) => $b['removed'] <=> $a['removed']);   // most recently removed first
+
+// Tools and portfolios are in the update log too: ADDED when saved, CLOSED when their website stopped working.
+foreach ([['Tools', $tools], ['Portfolio', $portfolios]] as [$label, $list]) {
+    foreach ($list as $it) {
+        $entry = ['company' => $label, 'title' => $it['name'], 'url' => $it['link']];
+        if ($it['added'])                  $log[] = ['ts' => $it['added'],   'type' => 'added',  'job' => $entry];
+        if ($it['dead'] && $it['removed']) $log[] = ['ts' => $it['removed'], 'type' => 'closed', 'job' => $entry];
+    }
+}
+usort($log, fn($a, $b) => $b['ts'] <=> $a['ts']);
+$log = array_slice($log, 0, 200);
+
+// The galleries only show sites that still work.
+$tools      = array_values(array_filter($tools, fn($i) => !$i['dead']));
+$portfolios = array_values(array_filter($portfolios, fn($i) => !$i['dead']));
+
 // Numbers shown on the tabs
-$n = ['all' => count($live), 'highlighted' => 0, 'india' => 0, 'abroad' => 0, 'remote' => 0, 'in-office' => 0];
+$n = ['all' => count($live), 'highlighted' => 0, 'india' => 0, 'abroad' => 0, 'remote' => 0];
 foreach ($live as $j) {
     $n[$j['region']]++;
-    $n[$j['mode'] === 'hybrid' ? 'in-office' : $j['mode']]++;      // there is no Hybrid tab: partly in the office counts as in-office
+    if ($j['mode'] === 'remote') $n['remote']++;
     if ($j['highlighted']) $n['highlighted']++;
 }
 
@@ -19,7 +45,7 @@ $lastUpdate = $all ? max(array_column($all, 'change')) : 0;   // date of the mos
 $isAdmin = defined('IS_ADMIN') && IS_ADMIN;                    // true only when the page is opened at /admin (see api/admin.php)
 if (!$isAdmin) header('Cache-Control: public, s-maxage=60, stale-while-revalidate=300');   // Vercel keeps the page for a minute, so the database is not asked on every visit
 
-$tabs = [['all', 'All'], ['highlighted', 'Highlighted'], ['india', 'India'], ['abroad', 'Abroad'], ['remote', 'Remote'], ['in-office', 'In-office']];
+$tabs = [['all', 'All'], ['highlighted', 'Highlighted'], ['india', 'India'], ['abroad', 'Abroad'], ['remote', 'Remote']];
 
 // The tag (the kind of job) is shown as plain text.
 function pills(array $tags): string
@@ -61,6 +87,68 @@ function job_row(array $j, bool $isDead, int $staleDays): string
     <?php return ob_get_clean();
 }
 
+// One row of the Dead Zone table: Title, Type (Job / Portfolio / Tools) and the date it was removed.
+function dead_row(array $d): string
+{
+    $when = $d['removed'] ? date('M j, Y', $d['removed']) : '';
+    ob_start(); ?>
+    <tr data-id="<?= h($d['id']) ?>" data-title="<?= h($d['title']) ?>" data-url="<?= h($d['url']) ?>">
+      <td class="rank"></td>
+      <td class="job">
+        <a class="jt" href="<?= h($d['url']) ?>" target="_blank" rel="nofollow noopener"><?= h($d['title']) ?></a>
+        <div class="m-only meta"><?= h($d['type']) ?><?= $when ? ' · Removed ' . h($when) : '' ?></div>
+      </td>
+      <td class="type"><?= h($d['type']) ?></td>
+      <td class="posted"><?= h($when) ?></td>
+    </tr>
+    <?php return ob_get_clean();
+}
+
+// One card in the Portfolios / Tools gallery: a picture, the name (opens the site), the tag (tools only) and a pin star.
+function gallery_card(array $it, string $kind): string
+{
+    static $n = 0;
+    $color = ['', ' pink', ' orange'][$n++ % 3];   // the cards rotate blue / pink / orange, like the job cards
+    $host = preg_replace('/^www\./', '', (string)parse_url($it['link'], PHP_URL_HOST));
+    $label = $kind === 'tools' ? ($it['tag'] !== '' ? 'Tool · ' . $it['tag'] : 'Tool') : 'Portfolio';
+    ob_start(); ?>
+    <div class="win gitem<?= $color ?>" data-id="<?= h($it['id']) ?>" data-co="<?= h($label) ?>" data-title="<?= h($it['name']) ?>" data-url="<?= h($it['link']) ?>">
+      <?= winbar() ?>
+      <a class="gimg" href="<?= h($it['link']) ?>" target="_blank" rel="nofollow noopener" tabindex="-1" aria-hidden="true"><img src="<?= h(directory_image($it)) ?>" alt="" loading="lazy"></a>
+      <div class="gcap">
+        <div class="gtxt">
+          <a class="gt" href="<?= h($it['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($it['name']) ?></a>
+          <small><a class="glink" href="<?= h($it['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($host) ?></a><?php if ($kind === 'tools' && $it['tag'] !== ''): ?> &middot; <?= h($it['tag']) ?><?php endif; ?></small>
+        </div>
+        <button type="button" class="pinbtn" title="Pin this" aria-label="Pin this">&#9734;</button>
+      </div>
+    </div>
+    <?php return ob_get_clean();
+}
+
+// The /admin card: choose what kind of entry you are adding (Job, Portfolio, Tools), paste a link, the AI makes the entry.
+function admin_card(): string
+{
+    ob_start(); ?>
+        <div class="win" id="adminCard">
+          <?= winbar() ?>
+          <div class="winbody">
+            <div class="kinds" role="radiogroup" aria-label="What are you adding?">
+              <label><input type="radio" name="adminKind" value="job" checked><span>Job</span></label>
+              <label><input type="radio" name="adminKind" value="portfolios"><span>Portfolio</span></label>
+              <label><input type="radio" name="adminKind" value="tools"><span>Tools</span></label>
+            </div>
+            <p id="adminHelp">Paste a job link, or a page that lists many jobs. The AI checks every job against our roles and lists the ones that fit.</p>
+            <form id="adminForm" autocomplete="off">
+              <input type="url" id="adminUrl" placeholder="https://..." aria-label="Link" required>
+              <button type="submit" id="adminBtn">Add job</button>
+            </form>
+            <p id="adminMsg" class="admin-msg" role="status"></p>
+            <ul id="adminLog" class="admin-log"></ul>
+          </div>
+        </div>
+    <?php return ob_get_clean();
+}
 // The little Mac-window strip on every card: just three dots (decoration only, no title, no x).
 function winbar(): string
 {
@@ -69,10 +157,9 @@ function winbar(): string
 
 function table_head(bool $dead = false): string
 {
-    // The Dead Zone is kept simple: no Tag column, and "Removed On" instead of "Posted".
-    return '<thead><tr><th class="rank"></th><th>Job</th><th class="company">Company &amp; location</th>'
-         . ($dead ? '' : '<th class="tags">Tag</th>')
-         . '<th class="posted">' . ($dead ? 'Removed On' : 'Posted') . '</th>' . ($dead ? '' : '<th class="pin"></th>') . '</tr></thead>';
+    // The Dead Zone holds jobs, portfolios and tools together: Title (for a job: Role Name (Company)), Type, and when it was removed.
+    if ($dead) return '<thead><tr><th class="rank"></th><th>Title</th><th class="type">Type</th><th class="posted">Removed On</th></tr></thead>';
+    return '<thead><tr><th class="rank"></th><th>Job</th><th class="company">Company &amp; location</th><th class="tags">Tag</th><th class="posted">Posted</th><th class="pin"></th></tr></thead>';
 }
 ?>
 <!DOCTYPE html>
@@ -97,13 +184,14 @@ function table_head(bool $dead = false): string
     <a class="brand" href="#all"><?= h($settings['site_name']) ?></a>
     <nav id="tabs">
       <div class="menu-dots"><?= winbar() ?></div>   <!-- the Mac-window strip on top of the phone menu (hidden on bigger screens) -->
-      <?php foreach ($tabs as [$key, $label]): ?>
-        <a href="#<?= $key ?>" data-view="<?= $key ?>"<?= ($key === 'highlighted' && !$n['highlighted'] && !$isAdmin) ? ' hidden' : '' ?>><?= h($label) ?> <span class="n"><?= $n[$key] ?></span></a>
-      <?php endforeach; ?>
+      <!-- The big sections of the site. "Jobs" stays lit on All, Highlighted, India, Abroad and Remote. -->
+      <a href="#all" data-top="jobs">Jobs</a>
+      <a href="#portfolios" data-top="portfolios">Portfolios</a>
+      <a href="#tools" data-top="tools">Tools</a>
       <span class="gap"></span>
-      <a href="#dead" data-view="dead">Dead Zone <span class="n"><?= count($dead) ?></span></a>
-      <a href="#log" data-view="log">Update log</a>
-      <a href="#about" data-view="about">About</a>
+      <a href="#dead" data-top="dead">Dead Zone <span class="n"><?= count($deadItems) ?></span></a>
+      <a href="#log" data-top="log">Update log</a>
+      <a href="#about" data-top="about">About</a>
     </nav>
     <div class="sys"><span class="jobsn"><?= $n['all'] ?> jobs</span><span id="clock"></span></div>
     <button type="button" id="menuBtn" class="menubtn" aria-label="Menu" aria-expanded="false" aria-controls="tabs"><span></span><span></span><span></span></button>
@@ -112,32 +200,67 @@ function table_head(bool $dead = false): string
 
 <main class="wrap">
 
-  <!-- ===== Jobs + Dead Zone ===== -->
+  <!-- ===== Jobs, Dead Zone, Portfolios and Tools: one layout, so the Pinned card is beside all of them ===== -->
   <section id="listView">
     <div class="layout">
       <div class="intro win pink" id="intro">
         <?= winbar() ?>
         <div class="winbody">
           <p>Hand-picked creative jobs. No noise.</p>
-          <p>A simple list of design and creative jobs from companies around the internet.<br>No accounts. No applications here. No bullshit. Just the job and a link to where you can apply.</p>        </div>
+          <p>A simple list of design and creative jobs from companies around the internet.<br>No accounts. No applications here. No bullshit. Just the job and a link to where you can apply.</p>
+        </div>
       </div>
 
       <!-- Dead Zone intro: takes the welcome card's place (and style) on the Dead Zone tab -->
       <div class="intro win pink" id="deadNote" hidden>
         <?= winbar() ?>
         <div class="winbody">
-          <p>The jobs here are the ones that are inactive or dead, or have not been updated in the past <?= (int)$settings['stale_days'] ?> days. That is why we move them here.</p>
+          <p>Where things go when they stop working.</p>
+          <p>Jobs that closed or have not been updated in <?= (int)$settings['stale_days'] ?> days, and portfolios or tools whose websites are gone. Every website is checked again every <?= (int)(require __DIR__ . '/config/directory.php')['recheck_days'] ?> days, and moved here when it no longer works. We keep them for reference, never delete them.</p>
         </div>
       </div>
 
-      <div class="main">
+      <!-- The pills under the welcome card: they switch between the job lists. Same width as the card and the table. -->
+      <nav id="pills" aria-label="Job lists">
+        <?php foreach ($tabs as [$key, $label]): ?>
+          <a class="pg" href="#<?= $key ?>" data-view="<?= $key ?>"<?= ($key === 'highlighted' && !$n['highlighted'] && !$isAdmin) ? ' hidden' : '' ?>><?= h($label) ?> <span class="n">(<?= $n[$key] ?>)</span></a>
+        <?php endforeach; ?>
+      </nav>
+
+      <!-- Portfolios: welcome card, then the gallery -->
+      <div class="intro win pink" id="introP" hidden>
+        <?= winbar() ?>
+        <div class="winbody">
+          <p>Good work deserves to be found.</p>
+          <p>A collection of portfolios, personal sites, and creative work from people worth discovering.<br>No follower counts. No popularity contests. Just interesting people doing interesting work.</p>
+        </div>
+      </div>
+      <div class="main" id="mainP" hidden>
+        <?php if ($portfolios): ?><div class="gallery"><?php foreach ($portfolios as $it) echo gallery_card($it, 'portfolios'); ?></div>
+        <?php else: ?><div class="win"><div class="empty">No portfolios here yet.</div></div><?php endif; ?>
+      </div>
+
+      <!-- Tools: welcome card, then the gallery -->
+      <div class="intro win pink" id="introT" hidden>
+        <?= winbar() ?>
+        <div class="winbody">
+          <p>Useful things for creative people.</p>
+          <p>A collection of tools, experiments, and little internet gems that make creating more interesting.<br>Not another list of the usual suspects. Just things that are actually worth knowing about.</p>
+        </div>
+      </div>
+      <div class="main" id="mainT" hidden>
+        <?php if ($tools): ?><div class="gallery"><?php foreach ($tools as $it) echo gallery_card($it, 'tools'); ?></div>
+        <?php else: ?><div class="win"><div class="empty">No tools here yet.</div></div><?php endif; ?>
+      </div>
+
+      <div class="main" id="jobsMain">
         <div class="card win">
           <?= winbar() ?>
           <table class="jobs" id="liveTable"><?= table_head() ?><tbody>
             <?php foreach ($live as $j) echo job_row($j, false, (int)$settings['stale_days']); ?>
           </tbody></table>
           <table class="jobs dead" id="deadTable" hidden><?= table_head(true) ?><tbody>
-            <?php foreach ($dead as $j) echo job_row($j, true, (int)$settings['stale_days']); ?>
+            <?php foreach ($deadItems as $d) echo dead_row($d); ?>
           </tbody></table>
           <div class="empty" id="empty" hidden></div>
         </div>
@@ -146,48 +269,11 @@ function table_head(bool $dead = false): string
 
       <div class="side">
         <?php if ($isAdmin): ?>
-        <!-- Admin card: only on /admin. Paste a job link; the AI checks it against our roles and lists it. -->
-        <div class="win" id="adminCard">
-          <?= winbar() ?>
-          <div class="winbody">
-            <p>Paste a job link, or a page that lists many jobs. The AI checks every job against our roles and lists the ones that fit.</p>
-            <form id="adminForm" autocomplete="off">
-              <input type="url" id="adminUrl" placeholder="https://..." aria-label="Job link" required>
-              <button type="submit" id="adminBtn">Add job</button>
-            </form>
-            <p id="adminMsg" class="admin-msg" role="status"></p>
-            <ul id="adminLog" class="admin-log"></ul>
-            <div class="col-box">
-              <p class="col-sub">Check that listed jobs are still open.</p>
-              <div class="col-row"><button type="button" id="liveBtn">Check open jobs</button><button type="button" id="colStop" hidden>Stop</button></div>
-              <p id="colMsg" class="admin-msg" role="status"></p>
-              <ul id="colLog" class="admin-log"></ul>
-            </div>
-          </div>
-        </div>
+        <!-- Admin card: only on /admin. Pick what you are adding, paste a link; the AI makes the entry. -->
+        <?= admin_card() ?>
         <?php else: ?>
         <!-- Backup: if the server could not tell the address was /admin, the browser adds the card itself (see assets/app.js). Nothing shows on other addresses. -->
-        <template id="adminTpl">
-          <!-- Admin card: only on /admin. Paste a job link; the AI checks it against our roles and lists it. -->
-          <div class="win" id="adminCard">
-            <?= winbar() ?>
-            <div class="winbody">
-              <p>Paste a job link, or a page that lists many jobs. The AI checks every job against our roles and lists the ones that fit.</p>
-              <form id="adminForm" autocomplete="off">
-                <input type="url" id="adminUrl" placeholder="https://..." aria-label="Job link" required>
-                <button type="submit" id="adminBtn">Add job</button>
-              </form>
-              <p id="adminMsg" class="admin-msg" role="status"></p>
-            <ul id="adminLog" class="admin-log"></ul>
-            <div class="col-box">
-              <p class="col-sub">Check that listed jobs are still open.</p>
-              <div class="col-row"><button type="button" id="liveBtn">Check open jobs</button><button type="button" id="colStop" hidden>Stop</button></div>
-              <p id="colMsg" class="admin-msg" role="status"></p>
-              <ul id="colLog" class="admin-log"></ul>
-            </div>
-            </div>
-          </div>
-        </template>
+        <template id="adminTpl"><?= admin_card() ?></template>
         <?php endif; ?>
 
         <aside id="pinbox" class="win orange" aria-label="Pinned jobs">

@@ -2,7 +2,7 @@
 // General settings. Safe to edit.
 
 return [
-    'site_name'     => 'Jobbies!',
+    'site_name'     => 'Oddities!',
     'tagline'       => 'Hand-picked creative jobs in India and abroad.',
     'jobs_per_page' => 20,     // how many rows show on each page (the page buttons appear below the table)
 

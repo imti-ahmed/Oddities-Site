@@ -1,0 +1,30 @@
+# Every day at 03:00 India time (21:30 UTC), checks that the Portfolio and Tools websites still work. NO AI is used, only web requests.
+# Each website is only asked about every 2 weeks (config/directory.php, 'recheck_days'); a site that looks gone is asked again the next day.
+# A site that is gone twice in a row moves to the Dead Zone. You can also run it by hand: GitHub > Actions > "Check sites" > Run workflow.
+#
+# It needs one secret (GitHub > Settings > Secrets and variables > Actions): DATABASE_URL (your Neon connection string).
+name: Check sites
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 21 * * *'      # 21:30 UTC = 03:00 IST (GitHub uses UTC)
+
+concurrency:
+  group: check-sites
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl, mbstring, dom, libxml, pdo_pgsql, simplexml
+      - name: Check portfolio and tool websites
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: php scripts/check_sites.php
