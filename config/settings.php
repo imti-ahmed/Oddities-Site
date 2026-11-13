@@ -9,7 +9,7 @@ return [
     // NEW / UPDATED pills. Set this to false to hide them (the list is then simply newest first).
     // While they are on, recently added/updated jobs also move to the top of the list.
     'show_badges' => true,
-    'new_days'   => 3,         // a job added/updated within this many days gets a NEW / UPDATED pill
+    'new_hours'  => 36,        // an entry (job, portfolio, tool, company) added or updated within this many hours gets a NEW / UPDATED pill
     'new_badge_from' => '2026-11-05 20:30:00 UTC',   // jobs saved BEFORE this exact moment never get a NEW pill (the jobs that were already on the site). Jobs saved after it do. Use '' to switch this off.
     'stale_days' => 90,        // a job not posted or updated for this many days moves to the Dead Zone as "inactive"
 

@@ -47,6 +47,16 @@ function db_create_directory_tables(): void
         $pdo->exec("ALTER TABLE $t ADD COLUMN IF NOT EXISTS dead_reason TEXT");
         $pdo->exec("ALTER TABLE $t ADD COLUMN IF NOT EXISTS last_checked_at TIMESTAMPTZ");
         $pdo->exec("ALTER TABLE $t ADD COLUMN IF NOT EXISTS check_fails SMALLINT NOT NULL DEFAULT 0");
+        $pdo->exec("ALTER TABLE $t ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ");
+    }
+    // "updated_at" keeps itself: whenever the name, link, picture, tag / type or description of an entry changes (from the site, or by hand in
+    // Neon's SQL Editor), the database stamps the moment. That drives the UPDATED pill. The website checks only touch other columns, so they never do.
+    $pdo->exec("CREATE OR REPLACE FUNCTION oddities_touch_updated() RETURNS trigger AS \$\$ BEGIN NEW.updated_at = now(); RETURN NEW; END; \$\$ LANGUAGE plpgsql");
+    $watch = ['tools' => ['name', 'link', 'image', 'tag'], 'portfolios' => ['name', 'link', 'image'], 'companies' => ['name', 'link', 'type', 'description']];
+    foreach ($watch as $t => $cols) {
+        $when = implode(' OR ', array_map(fn($c) => "OLD.$c IS DISTINCT FROM NEW.$c", $cols));
+        $pdo->exec("DROP TRIGGER IF EXISTS {$t}_touch_updated ON $t");
+        $pdo->exec("CREATE TRIGGER {$t}_touch_updated BEFORE UPDATE ON $t FOR EACH ROW WHEN ($when) EXECUTE FUNCTION oddities_touch_updated()");
     }
 }
 
@@ -75,6 +85,7 @@ function directory_items(string $kind): array
             'description' => (string)($r['description'] ?? ''),   // companies only
             'pinned' => !empty($r['pinned']),
             'added'  => !empty($r['created_at']) ? (strtotime((string)$r['created_at']) ?: 0) : 0,
+            'updated' => !empty($r['updated_at']) ? (strtotime((string)$r['updated_at']) ?: 0) : 0,
             'dead'   => !empty($r['dead_at']),
             'removed' => !empty($r['dead_at']) ? (strtotime((string)$r['dead_at']) ?: 0) : 0,
             'dead_reason' => (string)($r['dead_reason'] ?? ''),

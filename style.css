@@ -120,8 +120,11 @@ a.pg:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(0,0,0
 .gimg img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; transition: transform .25s ease; }
 .gitem:hover .gimg img { transform: scale(1.03); }
 .gcap { display: flex; align-items: flex-start; gap: 8px; padding: 10px 10px 11px 14px; }
-.gtxt { min-width: 0; }
-.gt { display: block; font-weight: 600; font-size: 14px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gtxt { flex: 1; min-width: 0; }   /* fills the caption up to the star, so the sticker can sit at the far right */
+.gtitle { display: flex; align-items: center; gap: 8px; min-width: 0; }   /* the name on the left, its NEW / UPDATED sticker at the right end */
+.gtitle .gt { flex: 1 1 auto; }
+.gtitle .pill { flex: none; margin-left: auto; }
+.gt { display: block; min-width: 0; font-weight: 600; font-size: 14px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gtxt small { display: block; color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gcap .pinbtn { margin-left: auto; flex: none; }
 .glink { color: var(--muted); }

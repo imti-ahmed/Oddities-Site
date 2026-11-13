@@ -65,7 +65,7 @@ function load_jobs(array $settings): array
 {
     $raw = jobs_for_page();
     $now      = time();
-    $newCut   = $now - $settings['new_days'] * 86400;
+    $newCut   = $now - $settings['new_hours'] * 3600;
     $badgeFrom = strtotime((string)($settings['new_badge_from'] ?? '')) ?: 0;   // jobs added before this date never get a NEW pill
     $staleCut = $now - $settings['stale_days'] * 86400;
     $jobs = [];
@@ -87,7 +87,7 @@ function load_jobs(array $settings): array
         if (!$dead) {
             // NEW: added within the last few days AND saved after the cutoff moment (the exact time when the database has it, else the day)
             $savedAt = !empty($j['created_at']) ? (strtotime((string)$j['created_at']) ?: 0) : 0;
-            if ($added >= $newCut && ($savedAt ? $savedAt >= $badgeFrom : $added >= $badgeFrom)) $badge = 'new';
+            if (($savedAt ?: $added) >= $newCut && ($savedAt ? $savedAt >= $badgeFrom : $added >= $badgeFrom)) $badge = 'new';   // (the exact moment it was saved, when the database has it)
             elseif ($updated >= $newCut)  $badge = 'updated';
         }
         if (empty($settings['show_badges'])) $badge = null;   // stickers are switched off in config/settings.php: no sticker, and no jumping to the top

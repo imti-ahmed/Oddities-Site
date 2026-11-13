@@ -25,6 +25,7 @@ foreach ([['Tools', $tools], ['Portfolio', $portfolios], ['Company', $companies]
     foreach ($list as $it) {
         $entry = ['label' => $label, 'text' => $it['name'], 'url' => $it['link']];
         if ($it['added'])                  $log[] = ['ts' => $it['added'],   'type' => 'added',  'job' => $entry];
+        if ($it['updated'] > $it['added'] + 3600) $log[] = ['ts' => $it['updated'], 'type' => 'updated', 'job' => $entry];   // (a change within the first hour is just the screenshot being saved)
         if ($it['dead'] && $it['removed']) $log[] = ['ts' => $it['removed'], 'type' => 'closed', 'job' => $entry];
     }
 }
@@ -35,6 +36,26 @@ $log = array_slice($log, 0, 200);
 $tools      = array_values(array_filter($tools, fn($i) => !$i['dead']));
 $portfolios = array_values(array_filter($portfolios, fn($i) => !$i['dead']));
 $companies  = array_values(array_filter($companies, fn($i) => !$i['dead']));
+
+// NEW / UPDATED pills for portfolios, tools and companies, like the jobs: NEW for 'new_hours' hours after an entry is added, UPDATED for 'new_hours' hours
+// after a later change. Entries with a pill go to the top (after the ones you pinned for everyone), most recent change first.
+$newCut = time() - (int)$settings['new_hours'] * 3600;
+$withBadges = function (array $list) use ($settings, $newCut): array {
+    foreach ($list as &$it) {
+        $it['badge'] = null; $it['change'] = max($it['added'], $it['updated']);
+        if (empty($settings['show_badges'])) continue;
+        if ($it['added'] >= $newCut) $it['badge'] = 'new';
+        elseif ($it['updated'] > $it['added'] + 3600 && $it['updated'] >= $newCut) $it['badge'] = 'updated';
+    }
+    unset($it);
+    usort($list, function ($a, $b) {
+        if ($a['pinned'] !== $b['pinned']) return $a['pinned'] ? -1 : 1;
+        if ((bool)$a['badge'] !== (bool)$b['badge']) return $a['badge'] ? -1 : 1;
+        return $a['badge'] ? $b['change'] <=> $a['change'] : 0;      // (usort keeps the old order for everything else)
+    });
+    return $list;
+};
+$tools = $withBadges($tools); $portfolios = $withBadges($portfolios); $companies = $withBadges($companies);
 
 // Numbers shown on the tabs
 $n = ['all' => count($live), 'highlighted' => 0, 'india' => 0, 'abroad' => 0, 'remote' => 0];
@@ -108,6 +129,22 @@ function dead_row(array $d): string
     <?php return ob_get_clean();
 }
 
+// The little NEW / UPDATED sticker (same as on the jobs).
+function pill_html(?string $badge): string
+{
+    return $badge ? '<span class="pill ' . h($badge) . '">' . h(strtoupper($badge)) . '</span>' : '';
+}
+
+// A name followed by its sticker, glued to the last word so the sticker can never sit alone on a new line (as in the job rows).
+function title_with_pill(string $title, ?string $badge): string
+{
+    $title = trim($title);
+    if (!$badge) return h($title);
+    $cut = strrpos($title, ' ');
+    return $cut === false ? '<span class="nw">' . h($title) . pill_html($badge) . '</span>'
+                          : h(substr($title, 0, $cut)) . ' <span class="nw">' . h(substr($title, $cut + 1)) . pill_html($badge) . '</span>';
+}
+
 // The Companies list: a plain table like the jobs. Name, Website, Type, Description, and a pin star.
 function company_head(): string
 {
@@ -122,7 +159,7 @@ function company_row(array $c, int $i): string
     <tr class="crow<?= $i % 2 ? ' z' : '' ?>" data-id="<?= h($c['id']) ?>" data-co="<?= h($label) ?>" data-title="<?= h($c['name']) ?>" data-url="<?= h($c['link']) ?>">
       <td class="rank"><?= $i + 1 ?>.</td>
       <td class="job">
-        <a class="jt" href="<?= h($c['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($c['name']) ?></a>
+        <a class="jt" href="<?= h($c['link']) ?>" target="_blank" rel="nofollow noopener"><?= title_with_pill($c['name'], $c['badge'] ?? null) ?></a>
         <div class="m-only meta"><a class="glink" href="<?= h($c['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($host) ?></a><?= $c['type'] !== '' ? ' &middot; ' . h($c['type']) : '' ?><?php if ($c['description'] !== ''): ?><br><?= h($c['description']) ?><?php endif; ?></div>
       </td>
       <td class="cweb"><a class="glink" href="<?= h($c['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($host) ?></a></td>
@@ -145,7 +182,7 @@ function gallery_card(array $it, string $kind): string
         <a class="gimg" href="<?= h($it['link']) ?>" target="_blank" rel="nofollow noopener" tabindex="-1" aria-hidden="true"><img src="<?= h(directory_image($it)) ?>" alt="" loading="lazy"></a>
         <div class="gcap">
           <div class="gtxt">
-            <a class="gt" href="<?= h($it['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($it['name']) ?></a>
+            <div class="gtitle"><a class="gt" href="<?= h($it['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($it['name']) ?></a><?= pill_html($it['badge'] ?? null) ?></div>
             <small><a class="glink" href="<?= h($it['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($host) ?></a><?php if ($kind === 'tools' && $it['tag'] !== ''): ?> &middot; <?= h($it['tag']) ?><?php endif; ?></small>
           </div>
           <button type="button" class="pinbtn" title="Pin this" aria-label="Pin this">&#9734;</button>
