@@ -8,6 +8,7 @@
 // To release a new version: add one line at the top, with today's date (YYYY-MM-DD) and ONE short line saying what is new
 // (plain words, no full stop, no em dash). Everything else updates by itself. Versions up to 1.3 were written afterwards from the project history.
 return [
+    ['version' => '2.9', 'date' => '2026-11-13', 'note' => 'Replaced screenshots now show within a minute instead of a day'],
     ['version' => '2.8', 'date' => '2026-11-13', 'note' => 'Admin mode: a cross on every card and row to remove portfolios, tools, companies and dead entries'],
     ['version' => '2.7', 'date' => '2026-11-13', 'note' => 'Companies tab renamed Cool Companies, and it shows 20 per page with page buttons, like the jobs'],
     ['version' => '2.6', 'date' => '2026-11-13', 'note' => 'Custom scrollbar, and Portfolios and Tools galleries show 15 cards per page'],
