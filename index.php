@@ -19,7 +19,8 @@ $lastUpdate = $all ? max(array_column($all, 'change')) : 0;   // date of the mos
 $isAdmin = defined('IS_ADMIN') && IS_ADMIN;                    // true only when the page is opened at /admin (see api/admin.php)
 if (!$isAdmin) header('Cache-Control: public, s-maxage=60, stale-while-revalidate=300');   // Vercel keeps the page for a minute, so the database is not asked on every visit
 
-$tabs = [['all', 'All'], ['highlighted', 'Highlighted'], ['india', 'India'], ['abroad', 'Abroad'], ['remote', 'Remote'], ['in-office', 'In-office']];
+// The In-office tab is hidden for now. To bring it back, add , ['in-office', 'In-office'] to the end of this list (the filtering code is still in place).
+$tabs = [['all', 'All'], ['highlighted', 'Highlighted'], ['india', 'India'], ['abroad', 'Abroad'], ['remote', 'Remote']];
 
 // The tag (the kind of job) is shown as plain text.
 function pills(array $tags): string
