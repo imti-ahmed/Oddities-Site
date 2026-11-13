@@ -259,7 +259,7 @@ function table_head(bool $dead = false): string
       <a href="#all" data-top="jobs">Jobs <span class="n"><?= $n['all'] ?></span></a>
       <a href="#portfolios" data-top="portfolios">Portfolios <span class="n"><?= count($portfolios) ?></span></a>
       <a href="#tools" data-top="tools">Tools <span class="n"><?= count($tools) ?></span></a>
-      <a href="#companies" data-top="companies">Companies <span class="n"><?= count($companies) ?></span></a>
+      <a href="#companies" data-top="companies">Cool Companies <span class="n"><?= count($companies) ?></span></a>
       <span class="gap"></span>
       <a href="#dead" data-top="dead">Dead Zone <span class="n"><?= count($deadItems) ?></span></a>
       <a href="#log" data-top="log">Update log</a>
@@ -344,6 +344,7 @@ function table_head(bool $dead = false): string
           </tbody></table>
           <?php else: ?><div class="empty">No companies here yet.</div><?php endif; ?>
         </div>
+        <nav class="pager" id="pagerC" aria-label="Pages" hidden></nav>
       </div>
 
       <div class="main" id="jobsMain">

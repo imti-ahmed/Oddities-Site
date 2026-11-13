@@ -140,6 +140,7 @@
     var top = (isList && !isDead) ? 'jobs' : view;               // which section is lit in the top bar
     $$('#tabs a').forEach(function (a) { a.classList.toggle('on', a.dataset.top === top); });
     $$('#pills a').forEach(function (a) { a.classList.toggle('on', a.dataset.view === view); });
+    if (isC) { renderCompanies(); return; }
     if (isP || isT) { renderGallery(isP ? '#mainP' : '#mainT', isP ? '#pagerP' : '#pagerT'); return; }
     if (!isList) { window.scrollTo(0, 0); return; }
 
@@ -174,6 +175,20 @@
     cards.forEach(function (c, i) { c.hidden = i < from || i >= to; });
     renderPager($(pagerSel), pages);
     if (pendingScroll) { pendingScroll = false; $(mainSel).previousElementSibling.scrollIntoView(); }   // page button clicked: bring the welcome card into view
+    else window.scrollTo(0, 0);
+  }
+
+  // Companies: same page size as the jobs (20), numbering carries on across pages.
+  function renderCompanies() {
+    var rows = $$('#companyTable tbody tr'), pages = Math.max(1, Math.ceil(rows.length / PER_PAGE));
+    if (page > pages) page = pages;
+    var from = (page - 1) * PER_PAGE, to = from + PER_PAGE;
+    rows.forEach(function (r, i) {
+      r.hidden = i < from || i >= to;
+      if (!r.hidden) { $('.rank', r).textContent = (i + 1) + '.'; r.classList.toggle('z', (i - from) % 2 === 1); }
+    });
+    renderPager($('#pagerC'), pages);
+    if (pendingScroll) { pendingScroll = false; $('#mainC').previousElementSibling.scrollIntoView(); }
     else window.scrollTo(0, 0);
   }
 
