@@ -5,9 +5,9 @@
     "api/img.php":   { "runtime": "vercel-php@0.9.0", "includeFiles": "lib/**" }
   },
   "routes": [
-    { "src": "/favicon\.ico", "dest": "/api/icon.php?f=favicon.ico" },
-    { "src": "/assets/icons/(favicon\.ico|favicon-32\.png|apple-touch-icon\.png)", "dest": "/api/icon.php?f=$1" },
-    { "src": "/api/img\.php", "dest": "/api/img.php" },
+    { "src": "/favicon\\.ico", "dest": "/api/icon.php?f=favicon.ico" },
+    { "src": "/assets/icons/(favicon\\.ico|favicon-32\\.png|apple-touch-icon\\.png)", "dest": "/api/icon.php?f=$1" },
+    { "src": "/api/img\\.php", "dest": "/api/img.php" },
     { "src": "/(.*)", "dest": "/api/index.php" }
   ]
 }
