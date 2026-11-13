@@ -265,7 +265,7 @@ function table_head(bool $dead = false): string
       <a href="#log" data-top="log">Update log</a>
       <a href="#about" data-top="about">About</a>
     </nav>
-    <div class="sys"><span class="jobsn" data-extra="<?= count($tools) + count($portfolios) + count($companies) ?>"><?= (int)$totalOddities ?> oddities</span><span id="clock"></span><span class="ver" title="Site version: X is a major update, Y a minor one"><?= h($siteVersion) ?></span></div>
+    <div class="sys"><span class="jobsn" data-extra="<?= count($tools) + count($portfolios) + count($companies) ?>"><?= (int)$totalOddities ?> Oddities</span><span id="clock"></span><span class="ver" title="Site version: X is a major update, Y a minor one"><?= h($siteVersion) ?></span></div>
     <button type="button" id="menuBtn" class="menubtn" aria-label="Menu" aria-expanded="false" aria-controls="tabs"><span></span><span></span><span></span></button>
   </div>
 </header>

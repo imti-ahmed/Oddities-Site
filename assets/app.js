@@ -86,7 +86,7 @@
       $('.n', a).textContent = '(' + rows.filter(JOB_VIEWS[v]).length + ')';
     });
     var topJobs = $('#tabs a[data-top="jobs"] .n'); if (topJobs) topJobs.textContent = rows.length;   // the number beside Jobs in the top bar
-    var jn = $('.jobsn'); if (jn) jn.textContent = (rows.length + (parseInt(jn.dataset.extra, 10) || 0)) + ' oddities';   // every job, portfolio, tool and company
+    var jn = $('.jobsn'); if (jn) jn.textContent = (rows.length + (parseInt(jn.dataset.extra, 10) || 0)) + ' Oddities';   // every job, portfolio, tool and company
   }
   function adminSay(text, kind) { var m = $('#adminMsg'); if (m) { m.textContent = text; m.className = 'admin-msg ' + kind; } }
   // Admin mode: delete a job for good (asks first). It also disappears from the database, and the collector will not bring it back.
