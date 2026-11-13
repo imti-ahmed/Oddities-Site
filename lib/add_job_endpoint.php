@@ -51,6 +51,13 @@ if ($action === 'delete') {                          // the delete button on /ad
     catch (Throwable $e) { reply(200, ['status' => 'error', 'message' => $e->getMessage()]); }
     reply(200, $found ? ['status' => 'ok'] : ['status' => 'error', 'message' => 'That job is not in the list any more.']);
 }
+if ($action === 'delete_site') {                     // the delete button on a portfolio, tool or company (card, row or Dead Zone)
+    require_once __DIR__ . '/directory.php';
+    $id = trim((string)($in['id'] ?? ''));
+    try { $found = directory_delete($id); }
+    catch (Throwable $e) { reply(200, ['status' => 'error', 'message' => $e->getMessage()]); }
+    reply(200, $found ? ['status' => 'ok'] : ['status' => 'error', 'message' => 'That entry is not in the list any more.']);
+}
 if ($action === 'shots') {                           // "Take missing screenshots": a few per press (each one takes several seconds)
     set_time_limit(55); ini_set('memory_limit', '256M');
     require_once __DIR__ . '/screenshot.php';

@@ -57,16 +57,15 @@
     if (isAdmin()) { hint.textContent = 'Admin mode: the star highlights a job for everyone (see the Highlighted tab). Pinning for yourself is paused on this page. Portfolios and tools have no highlight yet.'; hint.hidden = false; }
     else { hint.textContent = 'Tap the ☆ on any job to pin it here. Pins are saved in this browser only.'; hint.hidden = pins.length > 0; }
     $('#pinbox').classList.toggle('nopins', pins.length === 0 && !isAdmin());
+    if (isAdmin()) $$('#deadTable tbody tr').forEach(function (r) { if (!$('.delbtn', r)) addDelBtn(r, $('td.posted', r)); });
     $$(PINNABLE).forEach(function (r) {
       var b = $('.pinbtn', r);
       if (!b) return;                                   // Dead Zone rows have no star
       var isRow = r.matches('tr:not(.crow)');
       var admin = isAdmin() && isRow, on = admin ? r.dataset.hl === '1' : isPinned(r.dataset.id, r.dataset.url);   // on /admin the star on a JOB means "highlight for everyone"; gallery cards always pin for you
-      if (!isRow) { b.hidden = isAdmin(); b.classList.toggle('on', on); b.innerHTML = on ? '&#9733;' : '&#9734;'; b.title = on ? 'Unpin this' : 'Pin this'; return; }
-      if (admin && !$('.delbtn', r)) {                  // admin mode: a small delete button beside the star
-        var d = document.createElement('button'); d.type = 'button'; d.className = 'delbtn'; d.title = 'Delete this job'; d.setAttribute('aria-label', 'Delete this job'); d.textContent = '×';
-        b.parentNode.appendChild(d);
-      }
+      if (!isRow) { b.hidden = isAdmin(); b.classList.toggle('on', on); b.innerHTML = on ? '&#9733;' : '&#9734;'; b.title = on ? 'Unpin this' : 'Pin this'; }
+      if (isAdmin() && !$('.delbtn', r)) addDelBtn(r, b.parentNode);   // admin mode: a small delete button (a cross) beside the star
+      if (!isRow) return;
       b.classList.toggle('on', on); b.innerHTML = on ? '&#9733;' : '&#9734;';
       b.title = admin ? (on ? 'Remove this highlight' : 'Highlight this job for everyone') : (on ? 'Unpin this job' : 'Pin this job');
     });
@@ -87,23 +86,36 @@
       $('.n', a).textContent = '(' + rows.filter(JOB_VIEWS[v]).length + ')';
     });
     var topJobs = $('#tabs a[data-top="jobs"] .n'); if (topJobs) topJobs.textContent = rows.length;   // the number beside Jobs in the top bar
+    [['portfolios', '#mainP .gitem'], ['tools', '#mainT .gitem'], ['companies', '#companyTable tbody tr'], ['dead', '#deadTable tbody tr']].forEach(function (t) {
+      var n = $('#tabs a[data-top="' + t[0] + '"] .n'); if (n) n.textContent = $$(t[1]).length;
+    });
     var jn = $('.jobsn'); if (jn) jn.textContent = (rows.length + (parseInt(jn.dataset.extra, 10) || 0)) + ' Oddities';   // every job, portfolio, tool and company
   }
   function adminSay(text, kind) { var m = $('#adminMsg'); if (m) { m.textContent = text; m.className = 'admin-msg ' + kind; } }
-  // Admin mode: delete a job for good (asks first). It also disappears from the database, and the collector will not bring it back.
-  function deleteJob(row) {
-    var title = row.dataset.title, co = row.dataset.co;
-    // The row disappears AT ONCE (no waiting for the server). If saving fails, it comes back with a message.
-    var parent = row.parentNode, next = row.nextSibling;
+  function addDelBtn(row, where) {
+    var d = document.createElement('button'); d.type = 'button'; d.className = 'delbtn'; d.title = 'Delete this'; d.setAttribute('aria-label', 'Delete this'); d.textContent = '×';
+    where.appendChild(d);
+  }
+  // Admin mode: delete anything (a job, portfolio, tool, company or a Dead Zone entry). The thing disappears AT ONCE; if saving fails it comes back.
+  // Jobs are only hidden in the database (the collector never brings them back); portfolios, tools and companies are removed from their table.
+  function deleteEntry(row) {
+    var title = row.dataset.title, co = row.dataset.co || '', id = row.dataset.id || '';
+    var isSite = /^(tool|port|co)-\d+$/.test(id);
+    if (!isSite && !row.dataset.url) return;
+    var parent = row.parentNode, next = row.nextSibling, y = window.scrollY;
+    function refresh() { recountTabs(); render(); renderPins(); window.scrollTo(0, y); }
+    var extra = $('.jobsn'), ex = extra ? parseInt(extra.dataset.extra, 10) || 0 : 0;
     parent.removeChild(row);
-    recountTabs(); render(); renderPins();
-    adminSay('Deleted: ' + title + ' at ' + co + '.', 'good');
-    fetch('/api/index.php?add=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', url: row.dataset.url }) })
+    if (extra && isSite) extra.dataset.extra = ex - 1;
+    refresh();
+    adminSay('Deleted: ' + title + (co ? ' at ' + co : '') + '.', 'good');
+    fetch('/api/index.php?add=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(isSite ? { action: 'delete_site', id: id } : { action: 'delete', url: row.dataset.url }) })
       .then(function (r) { return r.json(); })
-      .then(function (d) { if (d.status !== 'ok' && !/not in the list/i.test(d.message || '')) throw new Error(d.message || 'Could not delete.'); })
+      .then(function (d) { if (d.status !== 'ok' && !/not in the list|not in the list any more/i.test(d.message || '')) throw new Error(d.message || 'Could not delete.'); })
       .catch(function (e) {
         parent.insertBefore(row, next);                                // put it back where it was
-        recountTabs(); render(); renderPins();
+        if (extra && isSite) extra.dataset.extra = ex;
+        refresh();
         adminSay('Not deleted (' + title + '): ' + e.message, 'bad');
       });
   }
@@ -244,7 +256,7 @@
   document.addEventListener('click', function (e) {
     var pin = e.target.closest('.pinbtn');
     var del = e.target.closest('.delbtn');
-    if (del) { deleteJob(del.closest('tr')); return; }
+    if (del) { deleteEntry(del.closest('tr, .gitem')); return; }
     if (pin) { var prow = pin.closest(PINNABLE); if (isAdmin() && prow.matches('tr:not(.crow)')) toggleHighlight(prow); else togglePin(prow.dataset.id); }
     var link = e.target.closest('a[href^="#"]');                 // our tab and page buttons
     if (link && e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) {

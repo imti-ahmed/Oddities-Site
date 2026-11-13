@@ -349,3 +349,8 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
   td.rank, th.rank { width: 30px; padding-left: 6px; padding-right: 2px; }
   table.jobs td { padding: 10px 8px; }
 }
+/* admin mode: the delete cross on gallery cards and Dead Zone rows */
+.gcap .delbtn { flex: none; }
+.gitem .gcap .pinbtn { margin-left: auto; }
+.gitem .gcap .delbtn { margin-left: 0; }
+#deadTable td.posted .delbtn { margin-left: 8px; }

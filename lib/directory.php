@@ -100,3 +100,14 @@ function directory_image(array $item): string
     if ($item['image'] !== '') return $item['image'];
     return 'https://s0.wp.com/mshots/v1/' . rawurlencode($item['link']) . '?w=800&h=600';
 }
+
+// Admin only: removes one portfolio, tool or company for good. $id looks like "tool-12", "port-3" or "co-7". Returns true if a row was removed.
+function directory_delete(string $id): bool
+{
+    if (!db_enabled()) throw new RuntimeException('Saving is not set up. Add DATABASE_URL in Vercel, then redeploy.');
+    if (!preg_match('/^(tool|port|co)-(\d+)$/', $id, $m)) return false;
+    $table = ['tool' => 'tools', 'port' => 'portfolios', 'co' => 'companies'][$m[1]];
+    $st = db()->prepare("DELETE FROM $table WHERE id = :id");
+    $st->execute([':id' => (int)$m[2]]);
+    return $st->rowCount() > 0;
+}
