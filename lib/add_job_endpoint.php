@@ -69,7 +69,7 @@ if ($url === '' || mb_strlen($url) > 1500) reply(400, ['status' => 'error', 'mes
 
 set_time_limit(55);
 $kind = (string)($in['kind'] ?? 'job');
-if ($kind === 'tools' || $kind === 'portfolios') {   // a Portfolio or a Tool: the AI only fills in the entry (name, and the tag for a tool)
+if (in_array($kind, ['tools', 'portfolios', 'companies'], true)) {   // a Portfolio, a Tool or a Company: the AI only fills in the entry (name, and the tag for a tool)
     require_once __DIR__ . '/site_intake.php';
     reply(200, intake_site($url, $kind));
 }

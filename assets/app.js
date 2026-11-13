@@ -12,7 +12,7 @@
     'remote':    function (r) { return r.dataset.mode === 'remote'; },
     'dead':      function () { return true; }
   };
-  var OTHER_VIEWS = ['log', 'about', 'portfolios', 'tools'];
+  var OTHER_VIEWS = ['log', 'about', 'portfolios', 'tools', 'companies'];
 
   var listView = $('#listView'), logView = $('#logView'), aboutView = $('#aboutView');
   var PINNABLE = 'tr[data-id], .gitem[data-id]';                 // a job row, or a card in the Portfolios / Tools gallery
@@ -47,7 +47,7 @@
     $$(PINNABLE).forEach(function (r) {
       var b = $('.pinbtn', r);
       if (!b) return;                                   // Dead Zone rows have no star
-      var isRow = r.tagName === 'TR';
+      var isRow = r.matches('tr:not(.crow)');
       var admin = isAdmin() && isRow, on = admin ? r.dataset.hl === '1' : isPinned(r.dataset.id);   // on /admin the star on a JOB means "highlight for everyone"; gallery cards always pin for you
       if (!isRow) { b.hidden = isAdmin(); b.classList.toggle('on', on); b.innerHTML = on ? '&#9733;' : '&#9734;'; b.title = on ? 'Unpin this' : 'Pin this'; return; }
       if (admin && !$('.delbtn', r)) {                  // admin mode: a small delete button beside the star
@@ -114,8 +114,8 @@
   /* ---------- showing the right rows ---------- */
   function render() {
     var isList = JOB_VIEWS.hasOwnProperty(view);
-    var isDead = view === 'dead', isP = view === 'portfolios', isT = view === 'tools';
-    listView.hidden  = !(isList || isP || isT);                  // one layout (with the Pinned card) for Jobs, Dead Zone, Portfolios and Tools
+    var isDead = view === 'dead', isP = view === 'portfolios', isT = view === 'tools', isC = view === 'companies';
+    listView.hidden  = !(isList || isP || isT || isC);          // one layout (with the Pinned card) for Jobs, Dead Zone, Portfolios, Tools and Companies
     logView.hidden   = view !== 'log';
     aboutView.hidden = view !== 'about';
     $('#deadNote').hidden = !isDead;
@@ -123,6 +123,7 @@
     $('#pills').hidden = !isList || isDead;                      // the pills filter the live list, not the Dead Zone
     $('#jobsMain').hidden = !isList;
     $('#introP').hidden = !isP; $('#mainP').hidden = !isP;
+    $('#introC').hidden = !isC; $('#mainC').hidden = !isC;
     $('#introT').hidden = !isT; $('#mainT').hidden = !isT;
     var top = (isList && !isDead) ? 'jobs' : view;               // which section is lit in the top bar
     $$('#tabs a').forEach(function (a) { a.classList.toggle('on', a.dataset.top === top); });
@@ -206,7 +207,7 @@
     var pin = e.target.closest('.pinbtn');
     var del = e.target.closest('.delbtn');
     if (del) { deleteJob(del.closest('tr')); return; }
-    if (pin) { var prow = pin.closest(PINNABLE); if (isAdmin() && prow.tagName === 'TR') toggleHighlight(prow); else togglePin(prow.dataset.id); }
+    if (pin) { var prow = pin.closest(PINNABLE); if (isAdmin() && prow.matches('tr:not(.crow)')) toggleHighlight(prow); else togglePin(prow.dataset.id); }
     var link = e.target.closest('a[href^="#"]');                 // our tab and page buttons
     if (link && e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) {
       e.preventDefault();
@@ -253,6 +254,7 @@
     var KINDS = {
       job:        { button: 'Add job',       help: 'Paste a job link, or a page that lists many jobs. The AI checks every job against our roles and lists the ones that fit.' },
       portfolios: { button: 'Add portfolio', help: 'Paste a link to a portfolio or personal site. The AI names the entry and a screenshot is taken. Nothing is judged: whatever you paste is added.' },
+      companies:  { button: 'Add company',    help: 'Paste a link to a company website. The AI names it, picks its type (Tech, Design, Studio...) and writes a short description. Nothing is judged: whatever you paste is added.' },
       tools:      { button: 'Add tool',      help: 'Paste a link to a tool. The AI names it and picks its tag (the kind of tool), and a screenshot is taken. Nothing is judged: whatever you paste is added.' }
     };
     function currentKind() { var r = $('input[name="adminKind"]:checked'); return r ? r.value : 'job'; }

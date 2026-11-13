@@ -135,6 +135,12 @@ table.jobs td.pin, table.jobs th.pin { padding-left: 4px; padding-right: 8px; }
 td.posted, th.posted { width: 108px; color: var(--muted); font-size: 13px; white-space: nowrap; }
 td.tags, th.tags { width: 150px; }
 td.company, th.company { width: 300px; }
+/* Companies list: Name, Website, Type, Description */
+table.companies td { vertical-align: top; }
+td.cweb, th.cweb { width: 190px; font-size: 13.5px; white-space: nowrap; }
+td.ctype, th.ctype { width: 110px; font-size: 14px; font-weight: 500; color: #334155; white-space: nowrap; }
+td.cdesc, th.cdesc { font-size: 13.5px; color: var(--muted); line-height: 1.45; }
+table.companies td.rank { padding-top: 12px; }
 td.type, th.type { width: 120px; color: #334155; font-weight: 500; font-size: 14px; white-space: nowrap; }   /* Dead Zone: Job / Portfolio / Tools */
 table.dead td.posted, table.dead th.posted { width: 140px; }
 
@@ -319,7 +325,7 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
   #tabs .n { font-size: 13px; }
   #tabs .gap { display: block; width: auto; height: 7px; margin: 0; background: #f4f6fa; border-top: 1px solid #e6ecf5; border-bottom: 1px solid #e6ecf5; }
   #tabs .gap + a { border-top: 0; }
-  th.company, td.company, th.posted, td.posted, th.tags, td.tags, th.type, td.type { display: none; }
+  th.company, td.company, th.posted, td.posted, th.tags, td.tags, th.type, td.type, th.cweb, td.cweb, th.ctype, td.ctype, th.cdesc, td.cdesc { display: none; }
   .m-only { display: block; }
   td.rank, th.rank { width: 30px; padding-left: 6px; padding-right: 2px; }
   table.jobs td { padding: 10px 8px; }

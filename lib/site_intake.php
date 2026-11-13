@@ -22,6 +22,14 @@ function site_system_prompt(string $kind, array $cfg): string
                . "\"tag\": the kind of tool. Pick EXACTLY ONE of these tags, written exactly like this:\n" . implode("\n", $lines);
         $shape = '{"name": "...", "tag": "..."}';
         $plural = 'tools';
+    } elseif ($kind === 'companies') {
+        $lines = [];
+        foreach ($cfg['company_types'] as $type => $means) $lines[] = '- "' . $type . '": ' . $means;
+        $rules = "\"name\": the company's name, as it calls itself (short, for example \"Figma\", not \"Figma, Inc.\").\n"
+               . "\"type\": the kind of company. Pick EXACTLY ONE of these types, written exactly like this:\n" . implode("\n", $lines) . "\n"
+               . "\"description\": ONE or TWO plain sentences (25 to 40 words in total) saying what the company does and what makes it interesting. Write it in your own words, calm and specific, no marketing hype, no \"leading\" or \"innovative\" or \"cutting-edge\". Only say what the page (or what you surely know about this company) supports.";
+        $shape = '{"name": "...", "type": "...", "description": "..."}';
+        $plural = 'companies';
     } else {
         $rules = "\"name\": the name of the person or studio whose portfolio or personal site this is (short, for example \"Jane Doe\" or \"Studio Nord\"). Never write the word \"portfolio\" as the name. If you cannot tell, use the site's own name.";
         $shape = '{"name": "..."}';
@@ -33,8 +41,8 @@ function site_system_prompt(string $kind, array $cfg): string
 
 function intake_site(string $url, string $kind): array
 {
-    $kind = $kind === 'portfolios' ? 'portfolios' : 'tools';
-    $word = $kind === 'tools' ? 'tool' : 'portfolio';
+    $kind = in_array($kind, ['portfolios', 'companies'], true) ? $kind : 'tools';
+    $word = ['tools' => 'tool', 'portfolios' => 'portfolio', 'companies' => 'company'][$kind];
     $cfg  = require __DIR__ . '/../config/directory.php';
     $strict = env('VERCEL') !== '';
 
@@ -62,7 +70,7 @@ function intake_site(string $url, string $kind): array
     $ask = groq_json(site_system_prompt($kind, $cfg),
         "Fill in the entry for this $word and reply with the JSON object.\n\nPAGE (JSON):\n" . json_encode([
             'link' => $page['final_url'], 'page_title' => $page['page_title'], 'page_description' => $page['description'], 'page_text' => mb_substr($page['text'], 0, 3500),
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 300);
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), $kind === 'companies' ? 500 : 300);
     if (!$ask['ok']) return ['status' => 'error', 'service_error' => empty($ask['soft']), 'message' => $ask['error']];
 
     $name = trim(no_em_dash(preg_replace('/\s+/u', ' ', strip_tags((string)($ask['answer']['name'] ?? '')))));
@@ -77,14 +85,30 @@ function intake_site(string $url, string $kind): array
         foreach (array_keys($cfg['tool_tags']) as $t) if (strcasecmp($t, $given) === 0) { $tag = $t; break; }   // only a tag from our list is accepted
     }
 
+    $desc = null;
+    if ($kind === 'companies') {
+        $given = trim((string)($ask['answer']['type'] ?? ''));
+        $tag = 'Other';                                   // (for a company the "tag" is its Type)
+        foreach (array_keys($cfg['company_types']) as $t) if (strcasecmp($t, $given) === 0) { $tag = $t; break; }
+        $desc = trim(no_em_dash(preg_replace('/\s+/u', ' ', strip_tags((string)($ask['answer']['description'] ?? '')))));
+        if (mb_strlen($desc) > 320) $desc = rtrim(mb_substr($desc, 0, 317)) . '...';
+        if ($desc === '') $desc = mb_substr(trim(no_em_dash($page['description'])), 0, 220);   // the AI gave none: the site's own description
+    }
+
     try {
-        $sql = $kind === 'tools' ? 'INSERT INTO tools (name, link, tag) VALUES (:n, :l, :t) ON CONFLICT (link) DO NOTHING RETURNING id'
-                                 : 'INSERT INTO portfolios (name, link) VALUES (:n, :l) ON CONFLICT (link) DO NOTHING RETURNING id';
+        $sql = ['tools'      => 'INSERT INTO tools (name, link, tag) VALUES (:n, :l, :t) ON CONFLICT (link) DO NOTHING RETURNING id',
+                'portfolios' => 'INSERT INTO portfolios (name, link) VALUES (:n, :l) ON CONFLICT (link) DO NOTHING RETURNING id',
+                'companies'  => 'INSERT INTO companies (name, link, type, description) VALUES (:n, :l, :t, :d) ON CONFLICT (link) DO NOTHING RETURNING id'][$kind];
+        $args = [':n' => $name, ':l' => $link];
+        if ($kind === 'tools' || $kind === 'companies') $args[':t'] = $tag;
+        if ($kind === 'companies') $args[':d'] = $desc;
         $st = db()->prepare($sql);
-        $st->execute($kind === 'tools' ? [':n' => $name, ':l' => $link, ':t' => $tag] : [':n' => $name, ':l' => $link]);
+        $st->execute($args);
         $id = $st->fetchColumn();
     } catch (Throwable $e) { return ['status' => 'error', 'service_error' => true, 'message' => 'Could not save to the database: ' . db_error_hint($e)]; }
     if (!$id) return ['status' => 'duplicate', 'message' => 'That link is already in the list.'];
+
+    if ($kind === 'companies') return ['status' => 'added', 'message' => 'Added company: ' . $name . ' (' . $tag . '). The site shows it within a minute.'];
 
     $shot = screenshot_save($kind, (int)$id, $link);     // best effort: if it fails, the card shows a live screenshot instead
     return ['status' => 'added', 'message' => 'Added ' . $word . ': ' . $name . ($tag ? ' (' . $tag . ')' : '') . '. '

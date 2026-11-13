@@ -22,7 +22,7 @@ function sites_due_where(): string
 function sites_remaining(): int
 {
     $n = 0;
-    foreach (directory_kinds() as $t) $n += (int)db()->query("SELECT count(*) FROM $t WHERE " . sites_due_where())->fetchColumn();
+    foreach (site_kinds() as $t) $n += (int)db()->query("SELECT count(*) FROM $t WHERE " . sites_due_where())->fetchColumn();
     return $n;
 }
 
@@ -62,7 +62,7 @@ function sites_check_batch(int $n = 40): array
     $cfg = sites_cfg(); $deadAfter = max(1, (int)$cfg['dead_after']);
     $out = ['checked' => 0, 'alive' => 0, 'gone_signal' => 0, 'unknown' => 0, 'dead' => 0, 'dead_sites' => []];
     $rows = [];
-    foreach (directory_kinds() as $t) {
+    foreach (site_kinds() as $t) {
         foreach (db()->query("SELECT id, name, link, check_fails FROM $t WHERE " . sites_due_where() . ' ORDER BY last_checked_at NULLS FIRST, id LIMIT ' . max(1, $n))->fetchAll() as $r) {
             $rows[] = $r + ['table' => $t];
         }

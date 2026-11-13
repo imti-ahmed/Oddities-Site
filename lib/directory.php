@@ -8,7 +8,10 @@
 
 require_once __DIR__ . '/db.php';
 
+// Lists that have a picture (screenshots): Tools and Portfolios.
 function directory_kinds(): array { return ['tools', 'portfolios']; }
+// Every list whose websites are checked and that can go to the Dead Zone: the two above, and Companies (a plain list, no pictures).
+function site_kinds(): array { return ['tools', 'portfolios', 'companies']; }
 
 function db_create_directory_tables(): void
 {
@@ -30,8 +33,16 @@ function db_create_directory_tables(): void
         pinned     BOOLEAN NOT NULL DEFAULT false,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS companies (
+        id          BIGSERIAL PRIMARY KEY,
+        name        TEXT NOT NULL,
+        link        TEXT NOT NULL UNIQUE,
+        type        TEXT,
+        description TEXT,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    )");
     // the "is the site still working?" check (every 2 weeks) keeps its notes here
-    foreach (directory_kinds() as $t) {
+    foreach (site_kinds() as $t) {
         $pdo->exec("ALTER TABLE $t ADD COLUMN IF NOT EXISTS dead_at TIMESTAMPTZ");
         $pdo->exec("ALTER TABLE $t ADD COLUMN IF NOT EXISTS dead_reason TEXT");
         $pdo->exec("ALTER TABLE $t ADD COLUMN IF NOT EXISTS last_checked_at TIMESTAMPTZ");
@@ -43,8 +54,9 @@ function db_create_directory_tables(): void
 // Each item has 'dead' => true when its site stopped working (those show in the Dead Zone, not in the gallery).
 function directory_items(string $kind): array
 {
-    if (!in_array($kind, directory_kinds(), true) || !db_enabled()) return [];
-    $run = fn() => db()->query("SELECT * FROM $kind ORDER BY pinned DESC, id DESC")->fetchAll();
+    if (!in_array($kind, site_kinds(), true) || !db_enabled()) return [];
+    $order = $kind === 'companies' ? 'id DESC' : 'pinned DESC, id DESC';   // companies: a plain list, newest first
+    $run = fn() => db()->query("SELECT * FROM $kind ORDER BY $order")->fetchAll();
     try { $rows = $run(); }
     catch (Throwable $e) {
         if (!db_missing_table($e)) return [];
@@ -53,12 +65,14 @@ function directory_items(string $kind): array
     $items = [];
     foreach ($rows as $r) {
         $items[] = [
-            'id'     => ($kind === 'tools' ? 'tool-' : 'port-') . $r['id'],
+            'id'     => ['tools' => 'tool-', 'portfolios' => 'port-', 'companies' => 'co-'][$kind] . $r['id'],
             'kind'   => $kind,
             'name'   => (string)$r['name'],
             'link'   => (string)$r['link'],
             'image'  => (string)($r['image'] ?? ''),
             'tag'    => (string)($r['tag'] ?? ''),
+            'type'   => (string)($r['type'] ?? ''),                 // companies only
+            'description' => (string)($r['description'] ?? ''),   // companies only
             'pinned' => !empty($r['pinned']),
             'added'  => !empty($r['created_at']) ? (strtotime((string)$r['created_at']) ?: 0) : 0,
             'dead'   => !empty($r['dead_at']),

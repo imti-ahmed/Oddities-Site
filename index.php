@@ -10,16 +10,18 @@ $log  = build_log($all, $settings);
 require_once __DIR__ . '/lib/directory.php';
 $tools      = directory_items('tools');
 $portfolios = directory_items('portfolios');
+$companies  = directory_items('companies');
 
-// The Dead Zone holds everything that stopped working: closed or stale jobs, and portfolio / tool websites that are gone.
+// The Dead Zone holds everything that stopped working: closed or stale jobs, and portfolio / tool / company websites that are gone.
 $deadItems = [];
 foreach ($dead as $j) $deadItems[] = ['id' => $j['id'], 'type' => 'Job', 'title' => trim($j['title']) . ' (' . trim($j['company']) . ')', 'url' => $j['url'], 'removed' => $j['removed']];
 foreach ($tools as $it)      if ($it['dead']) $deadItems[] = ['id' => $it['id'], 'type' => 'Tools',     'title' => $it['name'], 'url' => $it['link'], 'removed' => $it['removed']];
 foreach ($portfolios as $it) if ($it['dead']) $deadItems[] = ['id' => $it['id'], 'type' => 'Portfolio', 'title' => $it['name'], 'url' => $it['link'], 'removed' => $it['removed']];
+foreach ($companies as $it)  if ($it['dead']) $deadItems[] = ['id' => $it['id'], 'type' => 'Company',   'title' => $it['name'], 'url' => $it['link'], 'removed' => $it['removed']];
 usort($deadItems, fn($a, $b) => $b['removed'] <=> $a['removed']);   // most recently removed first
 
-// Tools and portfolios are in the update log too: ADDED when saved, CLOSED when their website stopped working.
-foreach ([['Tools', $tools], ['Portfolio', $portfolios]] as [$label, $list]) {
+// Tools, portfolios and companies are in the update log too: ADDED when saved, CLOSED when their website stopped working.
+foreach ([['Tools', $tools], ['Portfolio', $portfolios], ['Company', $companies]] as [$label, $list]) {
     foreach ($list as $it) {
         $entry = ['company' => $label, 'title' => $it['name'], 'url' => $it['link']];
         if ($it['added'])                  $log[] = ['ts' => $it['added'],   'type' => 'added',  'job' => $entry];
@@ -32,6 +34,7 @@ $log = array_slice($log, 0, 200);
 // The galleries only show sites that still work.
 $tools      = array_values(array_filter($tools, fn($i) => !$i['dead']));
 $portfolios = array_values(array_filter($portfolios, fn($i) => !$i['dead']));
+$companies  = array_values(array_filter($companies, fn($i) => !$i['dead']));
 
 // Numbers shown on the tabs
 $n = ['all' => count($live), 'highlighted' => 0, 'india' => 0, 'abroad' => 0, 'remote' => 0];
@@ -104,6 +107,31 @@ function dead_row(array $d): string
     <?php return ob_get_clean();
 }
 
+// The Companies list: a plain table like the jobs. Name, Website, Type, Description, and a pin star.
+function company_head(): string
+{
+    return '<thead><tr><th class="rank"></th><th>Name</th><th class="cweb">Website</th><th class="ctype">Type</th><th class="cdesc">Description</th><th class="pin"></th></tr></thead>';
+}
+
+function company_row(array $c, int $i): string
+{
+    $host = preg_replace('/^www\./', '', (string)parse_url($c['link'], PHP_URL_HOST));
+    $label = $c['type'] !== '' ? 'Company · ' . $c['type'] : 'Company';
+    ob_start(); ?>
+    <tr class="crow<?= $i % 2 ? ' z' : '' ?>" data-id="<?= h($c['id']) ?>" data-co="<?= h($label) ?>" data-title="<?= h($c['name']) ?>" data-url="<?= h($c['link']) ?>">
+      <td class="rank"><?= $i + 1 ?>.</td>
+      <td class="job">
+        <a class="jt" href="<?= h($c['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($c['name']) ?></a>
+        <div class="m-only meta"><a class="glink" href="<?= h($c['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($host) ?></a><?= $c['type'] !== '' ? ' &middot; ' . h($c['type']) : '' ?><?php if ($c['description'] !== ''): ?><br><?= h($c['description']) ?><?php endif; ?></div>
+      </td>
+      <td class="cweb"><a class="glink" href="<?= h($c['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($host) ?></a></td>
+      <td class="ctype"><?= h($c['type']) ?></td>
+      <td class="cdesc"><?= h($c['description']) ?></td>
+      <td class="pin"><button type="button" class="pinbtn" title="Pin this" aria-label="Pin this">&#9734;</button></td>
+    </tr>
+    <?php return ob_get_clean();
+}
+
 // One card in the Portfolios / Tools gallery: a picture, the name (opens the site), the tag (tools only) and a pin star.
 function gallery_card(array $it, string $kind): string
 {
@@ -137,6 +165,7 @@ function admin_card(): string
               <label><input type="radio" name="adminKind" value="job" checked><span>Job</span></label>
               <label><input type="radio" name="adminKind" value="portfolios"><span>Portfolio</span></label>
               <label><input type="radio" name="adminKind" value="tools"><span>Tools</span></label>
+              <label><input type="radio" name="adminKind" value="companies"><span>Company</span></label>
             </div>
             <p id="adminHelp">Paste a job link, or a page that lists many jobs. The AI checks every job against our roles and lists the ones that fit.</p>
             <form id="adminForm" autocomplete="off">
@@ -188,6 +217,7 @@ function table_head(bool $dead = false): string
       <a href="#all" data-top="jobs">Jobs</a>
       <a href="#portfolios" data-top="portfolios">Portfolios</a>
       <a href="#tools" data-top="tools">Tools</a>
+      <a href="#companies" data-top="companies">Companies</a>
       <span class="gap"></span>
       <a href="#dead" data-top="dead">Dead Zone <span class="n"><?= count($deadItems) ?></span></a>
       <a href="#log" data-top="log">Update log</a>
@@ -251,6 +281,25 @@ function table_head(bool $dead = false): string
       <div class="main" id="mainT" hidden>
         <?php if ($tools): ?><div class="gallery"><?php foreach ($tools as $it) echo gallery_card($it, 'tools'); ?></div>
         <?php else: ?><div class="win"><div class="empty">No tools here yet.</div></div><?php endif; ?>
+      </div>
+
+      <!-- Companies: welcome card, then a plain list like the jobs -->
+      <div class="intro win pink" id="introC" hidden>
+        <?= winbar() ?>
+        <div class="winbody">
+          <p>Companies worth keeping an eye on.</p>
+          <p>A hand-picked list of cool companies in tech, design and beyond, each with a short note on what they do.<br>No rankings. No sponsored spots. Just places doing interesting work.</p>
+        </div>
+      </div>
+      <div class="main" id="mainC" hidden>
+        <div class="card win">
+          <?= winbar() ?>
+          <?php if ($companies): ?>
+          <table class="jobs companies" id="companyTable"><?= company_head() ?><tbody>
+            <?php foreach ($companies as $i => $c) echo company_row($c, $i); ?>
+          </tbody></table>
+          <?php else: ?><div class="empty">No companies here yet.</div><?php endif; ?>
+        </div>
       </div>
 
       <div class="main" id="jobsMain">

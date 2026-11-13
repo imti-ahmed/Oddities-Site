@@ -49,6 +49,10 @@ Each has its own table in the Neon database, created by itself the first time it
 
 **The 2-week website check.** `scripts/check_sites.php` (GitHub: `.github/workflows/check-sites.yml`, runs every day at 03:00 India time) asks every portfolio and tool website whether it still works, but each site only every 14 days (`recheck_days`). No AI, only web requests. Only clear signals count: a 404 / 410 page, or an address that no longer exists. Blocked, slow or broken (5xx) sites change nothing. A site that looks gone is asked again the next day, and after **2 "gone" answers in a row** (`dead_after`) it moves to the Dead Zone. Needs the secret `DATABASE_URL` on GitHub.
 
+## Companies
+
+A fourth section, **Companies**, in the top bar: a plain list like the jobs (Name, Website, Type, Description, and a pin star; newest first). Its table `companies` (`lib/directory.php`) holds `name`, `link` (unique), `type`, `description`, plus the same site-check notes as Tools and Portfolios. Add one on `/admin` with the **Company** choice: Groq names it, picks its Type from `company_types` in `config/directory.php` (edit freely), and writes the short description (rules in `lib/site_intake.php`). Its website is re-checked every 2 weeks like the others and moves to the Dead Zone (Type: Company) when it is gone. No screenshots. It is also in the Update log.
+
 ## The jobs file
 
 Each job (in the database, or in `data/jobs.json` for the starting list and local use) looks like this:
