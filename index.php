@@ -463,7 +463,7 @@ function table_head(bool $dead = false): string
           <div class="stats">
             <p><b>Total Oddities:</b> <?= (int)$totalOddities ?></p>
             <p><b>Last update:</b> <?= $lastUpdate ? h(date('M j, Y', $lastUpdate)) : 'n/a' ?></p>
-            <p><b>Views:</b> <span id="viewsNum">&ndash;</span></p>
+            <p><b>Views:</b> <span data-view-counter>&ndash;</span></p>
           </div>
         </div>
       </div>
@@ -473,7 +473,8 @@ function table_head(bool $dead = false): string
 
 </main>
 
-<script>window.DJ = { perPage: <?= (int)$settings['jobs_per_page'] ?>, views: <?= json_encode($settings['views_counter']) ?> };</script>
+<script>window.DJ = { perPage: <?= (int)$settings['jobs_per_page'] ?> };</script>
 <script><?= file_get_contents(__DIR__ . '/assets/app.js') ?></script>
+<script defer src="https://imticounter.vercel.app/counter.js" data-site="designjobs" data-counter="home"></script>
 </body>
 </html>
