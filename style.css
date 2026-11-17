@@ -258,6 +258,7 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
 .admin-log li.skip { color: var(--muted); }
 
 #pinbox { position: static; }
+.side:has(#adminCard) #pinbox { display: none; }   /* on /admin the admin card stands alone: no Pinned card */
 #pinbox .winbody { padding: 8px 0 4px; }
 #pinbox ul { list-style: none; margin: 0; padding: 0; max-height: 55vh; overflow: auto; }
 #pinList { counter-reset: pin; }
