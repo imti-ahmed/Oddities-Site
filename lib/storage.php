@@ -46,10 +46,20 @@ function storage_request(string $method, string $key, string $body = '', string 
     return ['code' => (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE), 'body' => $out, 'type' => (string)curl_getinfo($ch, CURLINFO_CONTENT_TYPE), 'error' => curl_error($ch)];
 }
 
+// Local disk cache for pictures read from the bucket (the temp folder survives between requests on a warm server).
+// Entries live 60 seconds, so a replaced picture still shows up within a minute; put/delete on this server clear the entry at once.
+const STORAGE_CACHE_TTL = 60;
+
+function storage_cache_file(string $key): string
+{
+    return rtrim(sys_get_temp_dir(), '/\\') . '/designjobs-img-' . md5($key);
+}
+
 function storage_put(string $key, string $bytes, string $contentType): bool
 {
     if (!storage_enabled()) return false;
     $r = storage_request('PUT', $key, $bytes, $contentType);
+    @unlink(storage_cache_file($key));
     return $r['code'] >= 200 && $r['code'] < 300;
 }
 
@@ -57,13 +67,22 @@ function storage_put(string $key, string $bytes, string $contentType): bool
 function storage_get(string $key): ?array
 {
     if (!storage_enabled()) return null;
+    $cf = storage_cache_file($key);
+    if (is_file($cf) && time() - (int)@filemtime($cf) < STORAGE_CACHE_TTL) {
+        $body = @file_get_contents($cf);
+        if ($body !== false && $body !== '') return ['body' => $body, 'type' => ''];
+    }
     $r = storage_request('GET', $key);
-    return $r['code'] === 200 ? ['body' => $r['body'], 'type' => $r['type']] : null;
+    if ($r['code'] !== 200) return null;
+    $tmp = $cf . '.' . getmypid();
+    if (@file_put_contents($tmp, $r['body']) !== false) @rename($tmp, $cf);   // write then rename: readers never see half a file
+    return ['body' => $r['body'], 'type' => $r['type']];
 }
 
 function storage_delete(string $key): bool
 {
     if (!storage_enabled()) return false;
     $r = storage_request('DELETE', $key);
+    @unlink(storage_cache_file($key));
     return $r['code'] >= 200 && $r['code'] < 300;
 }
