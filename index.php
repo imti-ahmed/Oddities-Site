@@ -71,7 +71,7 @@ foreach ($live as $j) {
 
 $totalOddities = $n['all'] + count($tools) + count($portfolios) + count($companies);   // every working job, portfolio, tool and company
 $lastUpdate = max($all ? max(array_column($all, 'change')) : 0, ...array_column(array_merge($tools, $portfolios, $companies), 'added'), ...array_column($deadItems, 'removed'));   // the most recent addition or change of anything
-$isAdmin = defined('IS_ADMIN') && IS_ADMIN;                    // true only when the page is opened at /admin (see api/admin.php)
+$isAdmin = defined('IS_ADMIN') && IS_ADMIN;                    // true only when the page is opened at /meow (see api/index.php)
 if (!$isAdmin) header('Cache-Control: public, s-maxage=60, stale-while-revalidate=300');   // Vercel keeps the page for a minute, so the database is not asked on every visit
 
 $tabs = [['all', 'All'], ['highlighted', 'Highlighted'], ['india', 'India'], ['abroad', 'Abroad'], ['remote', 'Remote']];
@@ -196,7 +196,7 @@ function gallery_card(array $it, string $kind): string
     <?php return ob_get_clean();
 }
 
-// The /admin card: choose what kind of entry you are adding (Job, Portfolio, Tools), paste a link, the AI makes the entry.
+// The /meow card: choose what kind of entry you are adding (Job, Portfolio, Tools), paste a link, the AI makes the entry.
 function admin_card(): string
 {
     ob_start(); ?>
@@ -363,10 +363,10 @@ function table_head(bool $dead = false): string
 
       <div class="side">
         <?php if ($isAdmin): ?>
-        <!-- Admin card: only on /admin. Pick what you are adding, paste a link; the AI makes the entry. -->
+        <!-- Admin card: only on /meow. Pick what you are adding, paste a link; the AI makes the entry. -->
         <?= admin_card() ?>
         <?php else: ?>
-        <!-- Backup: if the server could not tell the address was /admin, the browser adds the card itself (see assets/app.js). Nothing shows on other addresses. -->
+        <!-- Backup: if the server could not tell the address was /meow, the browser adds the card itself (see assets/app.js). Nothing shows on other addresses. -->
         <template id="adminTpl"><?= admin_card() ?></template>
         <?php endif; ?>
 

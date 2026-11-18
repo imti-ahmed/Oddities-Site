@@ -1,5 +1,5 @@
 <?php
-// ONE job link in, one decision out. (A page that lists many jobs gives back the links to check one by one, see intake_list.) Used by the /admin card now, and by the automatic collector (cron) later.
+// ONE job link in, one decision out. (A page that lists many jobs gives back the links to check one by one, see intake_list.) Used by the /meow card now, and by the automatic collector (cron) later.
 //
 //   link  ->  read the page  ->  ask Groq to check it against our rules  ->  double-check the answer in code  ->  save
 //
@@ -170,7 +170,7 @@ function fast_path_job(array $c, array $roles, array $settings): ?array
 }
 
 // A page that lists many jobs. Finds the links on it, asks the AI which look like our roles, and hands them back so the
-// caller (the /admin card in the browser) can check them one at a time with intake_job(..., allowList: false).
+// caller (the /meow card in the browser) can check them one at a time with intake_job(..., allowList: false).
 function intake_list(array $page, array $existing, array $roles): array
 {
     $all = extract_page_links($page['html'] ?? '', $page['final_url']);

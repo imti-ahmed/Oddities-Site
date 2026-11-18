@@ -1,6 +1,6 @@
 <?php
-// The door the /admin card knocks on (reached through api/index.php?add=1): "here is a job link, please check it and list it".
-// No password: anyone who knows the /admin address can use it (by choice).
+// The door the /meow card knocks on (reached through api/index.php?add=1): "here is a job link, please check it and list it".
+// No password: anyone who knows the /meow address can use it (by choice).
 
 // Only JSON may leave this file. A PHP notice or "deprecated" warning (newer PHP versions have more of them) must never be
 // printed in front of the answer, because the card could not read it. So: no error display, anything printed is thrown away,
@@ -30,21 +30,21 @@ function reply(int $code, array $data): never
     exit;
 }
 
-if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') reply(405, ['status' => 'error', 'message' => 'Use the card on the /admin page.']);
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') reply(405, ['status' => 'error', 'message' => 'Use the card on the /meow page.']);
 
 $in = json_decode((string)file_get_contents('php://input'), true);
 $in = is_array($in) ? $in : [];
 
-// buttons on the /admin card (highlight star, delete, check open jobs)
+// buttons on the /meow card (highlight star, delete, check open jobs)
 $action = (string)($in['action'] ?? '');
-if ($action === 'highlight') {                       // the star on /admin: highlight a job for everyone (the Highlighted tab)
+if ($action === 'highlight') {                       // the star on /meow: highlight a job for everyone (the Highlighted tab)
     $u = trim((string)($in['url'] ?? ''));
     if ($u === '') reply(400, ['status' => 'error', 'message' => 'No job given.']);
     try { $found = jobs_set_highlight($u, !empty($in['on'])); }
     catch (Throwable $e) { reply(200, ['status' => 'error', 'message' => $e->getMessage()]); }
     reply(200, $found ? ['status' => 'ok'] : ['status' => 'error', 'message' => 'That job is not in the list any more.']);
 }
-if ($action === 'delete') {                          // the delete button on /admin
+if ($action === 'delete') {                          // the delete button on /meow
     $u = trim((string)($in['url'] ?? ''));
     if ($u === '') reply(400, ['status' => 'error', 'message' => 'No job given.']);
     try { $found = jobs_delete($u); }

@@ -1,7 +1,7 @@
 <?php
 // Portfolios and Tools. Edit freely.
 //
-// The kinds of tool (the "Tag" of a tool). When you add a tool on /admin, the AI picks ONE of these. Add or remove a line to change the list.
+// The kinds of tool (the "Tag" of a tool). When you add a tool on /meow, the AI picks ONE of these. Add or remove a line to change the list.
 // (Portfolios have no tag.)
 return [
     'tool_tags' => [
@@ -22,7 +22,7 @@ return [
         'Fun'          => 'toys, experiments, games, little internet gems',
         'Other'        => 'anything that fits none of the above',
     ],
-    // The kinds of company (the "Type" of a company). The AI picks ONE of these when you add a company on /admin.
+    // The kinds of company (the "Type" of a company). The AI picks ONE of these when you add a company on /meow.
     'company_types' => [
         'Tech'       => 'software, internet and hardware companies, developer tools, platforms',
         'AI'         => 'companies built around AI models and research',

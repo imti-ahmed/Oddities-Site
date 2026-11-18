@@ -62,7 +62,7 @@
       var b = $('.pinbtn', r);
       if (!b) return;                                   // Dead Zone rows have no star
       var isRow = r.matches('tr:not(.crow)');
-      var admin = isAdmin() && isRow, on = admin ? r.dataset.hl === '1' : isPinned(r.dataset.id, r.dataset.url);   // on /admin the star on a JOB means "highlight for everyone"; gallery cards always pin for you
+      var admin = isAdmin() && isRow, on = admin ? r.dataset.hl === '1' : isPinned(r.dataset.id, r.dataset.url);   // on /meow the star on a JOB means "highlight for everyone"; gallery cards always pin for you
       if (!isRow) { b.hidden = isAdmin(); b.classList.toggle('on', on); b.innerHTML = on ? '&#9733;' : '&#9734;'; b.title = on ? 'Unpin this' : 'Pin this'; }
       if (isAdmin() && !$('.delbtn', r)) addDelBtn(r, b.parentNode);   // admin mode: a small delete button (a cross) beside the star
       if (!isRow) return;
@@ -71,7 +71,7 @@
     });
   }
 
-  // Admin mode (the /admin card is on the page): the star highlights the job for EVERYONE, saved in the database.
+  // Admin mode (the /meow card is on the page): the star highlights the job for EVERYONE, saved in the database.
   function isAdmin() { return !!$('#adminCard'); }
   function updateHighlightTab() {
     var tab = $('#pills a[data-view="highlighted"]'); if (!tab) return;
@@ -266,10 +266,10 @@
     }
   });
 
-  // admin card (only present on /admin): send the pasted link to the server, show what the AI decided
+  // admin card (only present on /meow): send the pasted link to the server, show what the AI decided
   (function () {
     var form = $('#adminForm');
-    if (!form && /^\/admin\/?$/.test(location.pathname)) {       // backup: the address is /admin but the server did not add the card
+    if (!form && /^\/meow\/?$/.test(location.pathname)) {       // backup: the address is /meow but the server did not add the card
       var tpl = $('#adminTpl'), pin = $('#pinbox');
       if (tpl && pin) { pin.parentNode.insertBefore(tpl.content.cloneNode(true), pin); form = $('#adminForm'); }
     }

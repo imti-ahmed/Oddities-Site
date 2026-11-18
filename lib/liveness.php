@@ -1,5 +1,5 @@
 <?php
-// "Is this job still open?" Runs every night (and on the /admin button). NO AI is used here: it is just web requests.
+// "Is this job still open?" Runs every night (and on the /meow button). NO AI is used here: it is just web requests.
 //
 //  * Jobs that came from a company's job board: we read the company's current list of openings (one request per company).
 //    If our job is no longer on that list, the company took it down.

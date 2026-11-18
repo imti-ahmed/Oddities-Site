@@ -5,7 +5,7 @@
 // 'ats' + 'token' is how to find it. The token is the company's name in its job board address, for example
 // jobs.ashbyhq.com/cursor has the token "cursor".
 // (A company with its own career site that cannot be read automatically cannot be listed here. Jobs from such a
-// company can still be added by hand: paste the job link into "Add job" on /admin.)
+// company can still be added by hand: paste the job link into "Add job" on /meow.)
 
 return [
     'checked' => '2026-11-06',

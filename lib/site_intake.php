@@ -1,5 +1,5 @@
 <?php
-// The /admin card for "Portfolio" and "Tools": paste a link, the AI fills in the entry, it is saved, and a screenshot is taken.
+// The /meow card for "Portfolio" and "Tools": paste a link, the AI fills in the entry, it is saved, and a screenshot is taken.
 // There are no strict rules here (unlike jobs): the AI only names the entry and, for a tool, picks its tag from config/directory.php.
 //
 //   link -> already listed? -> read the page -> Groq: name (+ tag for a tool) -> save -> screenshot into the Neon bucket
