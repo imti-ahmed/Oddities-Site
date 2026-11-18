@@ -9,7 +9,6 @@
 // (plain words, no full stop, no em dash). Everything else updates by itself. Versions up to 1.3 were written afterwards from the project history.
 return [
     ['version' => '2.13', 'date' => '2026-11-18', 'note' => 'Product Hunt badge in the top bar, Update log is now Updates, tighter tabs, no clock'],
-    ['version' => '2.12', 'date' => '2026-11-17', 'note' => 'Admin mode no longer shows the Pinned card'],
     ['version' => '2.11', 'date' => '2026-11-17', 'note' => 'Screenshots are kept in a local cache on the server, so they load faster'],
     ['version' => '2.10', 'date' => '2026-11-17', 'note' => 'Page views now come from the imticounter service'],
     ['version' => '2.9', 'date' => '2026-11-13', 'note' => 'Replaced screenshots now show within a minute instead of a day'],
