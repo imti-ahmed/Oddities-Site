@@ -262,10 +262,10 @@ function table_head(bool $dead = false): string
       <a href="#companies" data-top="companies">Cool Companies <span class="n"><?= count($companies) ?></span></a>
       <span class="gap"></span>
       <a href="#dead" data-top="dead">Dead Zone <span class="n"><?= count($deadItems) ?></span></a>
-      <a href="#log" data-top="log">Update log</a>
+      <a href="#log" data-top="log">Updates</a>
       <a href="#about" data-top="about">About</a>
     </nav>
-    <div class="sys"><span class="jobsn" data-extra="<?= count($tools) + count($portfolios) + count($companies) ?>"><?= (int)$totalOddities ?> Oddities</span><span id="clock"></span><span class="ver" title="Site version: X is a major update, Y a minor one"><?= h($siteVersion) ?></span></div>
+    <div class="sys"><span class="jobsn" data-extra="<?= count($tools) + count($portfolios) + count($companies) ?>"><?= (int)$totalOddities ?> Oddities</span><span class="ver" title="Site version: X is a major update, Y a minor one"><?= h($siteVersion) ?></span><a class="ph" href="https://www.producthunt.com/products/oddities?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-oddities" target="_blank" rel="noopener noreferrer"><img alt="Oddities - A small collection of oddities for creative people. | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1321910&amp;theme=light&amp;t=1795019573351"></a></div>
     <button type="button" id="menuBtn" class="menubtn" aria-label="Menu" aria-expanded="false" aria-controls="tabs"><span></span><span></span><span></span></button>
   </div>
 </header>
@@ -385,7 +385,7 @@ function table_head(bool $dead = false): string
   <section id="logView" class="panel win green" hidden>
     <?= winbar() ?>
     <div class="winbody">
-    <h2>Update log</h2>
+    <h2>Updates</h2>
     <p>Everything that was added, updated, closed or went inactive, newest first.</p>
     <?php
       // One block per day. Inside a day there is ONE pill for each kind of change (so 2 additions + 3 updates = an ADDED pill and an UPDATED pill),

@@ -50,7 +50,7 @@ html, body, button, select, summary { cursor: -webkit-image-set(url(data:image/p
 .brand:hover { text-decoration: none; }
 #tabs { display: flex; align-items: center; gap: 2px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 #tabs::-webkit-scrollbar { display: none; }
-#tabs a { padding: 6px 10px; font-size: 14.5px; color: #707070; white-space: nowrap; border-radius: 6px; }
+#tabs a { padding: 6px 7px; font-size: 14.5px; color: #707070; white-space: nowrap; border-radius: 6px; }
 #tabs a:hover { color: #000; text-decoration: none; }
 #tabs a.on { color: #000; font-weight: 600; }
 #tabs .n { font-size: 11.5px; color: #a0a0a0; font-weight: 400; margin-left: 1px; }
@@ -58,7 +58,10 @@ html, body, button, select, summary { cursor: -webkit-image-set(url(data:image/p
 #tabs .gap { width: 1px; height: 16px; background: #d4d4d4; margin: 0 8px; flex: none; }
 .sys { display: flex; gap: 16px; font-size: 14px; color: #8b8b8b; white-space: nowrap; }
 .sys .jobsn { color: var(--blue); font-weight: 500; }
-.sys .ver { color: #8b8b8b; font-weight: 500; }   /* V.X.Y beside the clock */
+.sys { align-items: center; }
+.sys .ph { display: inline-flex; line-height: 0; }
+.sys .ph img { height: 26px; width: auto; display: block; }   /* small Product Hunt badge beside the Oddities count */
+.sys .ver { color: #8b8b8b; font-weight: 500; }   /* V.X.Y at the right end of the bar */
 /* phone menu button and the strip on top of the phone menu: only shown on phones (see the phone rules at the bottom) */
 .menubtn { display: none; }
 .menu-dots { display: none; }
@@ -318,7 +321,7 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
   /* the tabs become a menu: an icon in the header slides a window frame down */
   .bar { flex-wrap: nowrap; gap: 10px; min-height: 50px; }
   .brand { margin-right: auto; }
-  .sys #clock { display: none; }
+  .sys .ph { display: none; }
   .menubtn {
     display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; flex: none; width: 40px; height: 34px; padding: 0;
     border-radius: 9px; border: 1px solid #a5abb5; cursor: pointer;

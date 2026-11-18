@@ -266,10 +266,6 @@
     }
   });
 
-  // little clock in the menu bar (the visitor's own time)
-  function tick() { var c = $('#clock'); if (c) c.textContent = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
-  tick(); setInterval(tick, 20000);
-
   // admin card (only present on /admin): send the pasted link to the server, show what the AI decided
   (function () {
     var form = $('#adminForm');
