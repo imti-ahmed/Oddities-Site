@@ -397,6 +397,8 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
   table.jobs td.rank { padding-top: 11px; }
   table.jobs td.pin { padding-top: 7px; }
   td.rank, th.rank { width: 30px; padding-left: 6px; padding-right: 2px; }
+  .cochip { font-size: 11px; line-height: 15px; }
+  .cochip::after { display: none; }   /* no hover on a phone: no tooltip */
   #coBar { padding-left: 8px; }   /* starts where the (narrower) numbers start on phones */
   table.jobs td { padding: 10px 8px; }
 }

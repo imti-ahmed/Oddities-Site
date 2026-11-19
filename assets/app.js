@@ -80,6 +80,8 @@
       el.type = 'button'; el.className = 'cochip'; el.textContent = '+' + (n - 1); el.dataset.key = k;
       el.dataset.tip = 'View all ' + n + ' roles'; el.setAttribute('aria-label', 'View all ' + n + ' roles at ' + r.dataset.co);
       cell.appendChild(el);                                       // after the location: "Figma (San Francisco, United States) +9"
+      var meta = $('.meta', r);                                   // phones show the company line inside the job cell: the same pill goes after its location
+      if (meta) { var br = $('br', meta), el2 = el.cloneNode(true); if (br) meta.insertBefore(el2, br); else meta.appendChild(el2); }
     });
     coBar = document.createElement('div'); coBar.id = 'coBar'; coBar.hidden = true;
     coBarText = document.createElement('span'); var all = document.createElement('button'); all.type = 'button'; all.className = 'cobtn'; all.textContent = 'Show all';
