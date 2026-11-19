@@ -45,7 +45,7 @@ html, body, button, select, summary { cursor: -webkit-image-set(url(data:image/p
 .bar { display: flex; align-items: center; gap: 22px; min-height: 52px; }
 .brand { font-size: 17px; font-weight: 600; letter-spacing: -.01em; color: #000; white-space: nowrap; }
 .brand:hover { text-decoration: none; }
-#tabs { display: flex; align-items: center; gap: 2px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+#tabs { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 #tabs::-webkit-scrollbar { display: none; }
 #tabs a { padding: 6px 7px; font-size: 14.5px; color: #707070; white-space: nowrap; border-radius: 6px; }
 #tabs a:hover { color: #000; text-decoration: none; }
