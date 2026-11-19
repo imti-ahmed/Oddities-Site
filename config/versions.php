@@ -8,14 +8,12 @@
 // To release a new version: add one line at the top, with today's date (YYYY-MM-DD) and ONE short line saying what is new
 // (plain words, no full stop, no em dash). Everything else updates by itself. Versions up to 1.3 were written afterwards from the project history.
 return [
-    ['version' => '2.17', 'date' => '2026-11-19', 'note' => 'Meow mode: an Add Manually section on the card to enter a job by hand'],
     ['version' => '2.16', 'date' => '2026-11-19', 'note' => 'A pop-up when you pin or unpin something. Phone menu: dimmed page behind it, a My Pinned page with the Pinned card, and the Product Hunt badge inside it, and the last view count shows instantly'],
     ['version' => '2.15', 'date' => '2026-11-19', 'note' => 'Welcome loader while the page and pictures get ready, plus quick reveal and tab change animations'],
     ['version' => '2.13', 'date' => '2026-11-18', 'note' => 'Product Hunt badge in the top bar, Update log is now Updates, tighter tabs, no clock'],
     ['version' => '2.11', 'date' => '2026-11-17', 'note' => 'Screenshots are kept in a local cache on the server, so they load faster'],
     ['version' => '2.10', 'date' => '2026-11-17', 'note' => 'Page views now come from the imticounter service'],
     ['version' => '2.9', 'date' => '2026-11-13', 'note' => 'Replaced screenshots now show within a minute instead of a day'],
-    ['version' => '2.8', 'date' => '2026-11-13', 'note' => 'Admin mode: a cross on every card and row to remove portfolios, tools, companies and dead entries'],
     ['version' => '2.7', 'date' => '2026-11-13', 'note' => 'Companies tab renamed Cool Companies, and it shows 20 per page with page buttons, like the jobs'],
     ['version' => '2.6', 'date' => '2026-11-13', 'note' => 'Custom scrollbar, and Portfolios and Tools galleries show 15 cards per page'],
     ['version' => '2.5', 'date' => '2026-11-13', 'note' => 'Add several portfolios, tools or companies at once with commas'],

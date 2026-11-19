@@ -249,15 +249,40 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
 #liveBtn:hover { filter: brightness(1.04); } #liveBtn:active { transform: translateY(1px); } #liveBtn:disabled { opacity: .55; cursor: wait; }
 #colStop { height: 36px; padding: 0 16px; border-radius: 999px; font-size: 14px; font-weight: 600; cursor: pointer; color: #111; border: 1px solid #a5abb5;
   background: linear-gradient(#fff 0%, #f7f7f7 48%, #e9e9ea 52%, #f6f6f6 100%); box-shadow: inset 0 1px 0 #fff, 0 4px 12px rgba(0,0,0,.07); }
-.manual { margin-top: 14px; border-top: 1px dashed #b9c4d8; padding-top: 10px; }
+/* Add Manually: the same inputs, pills and glossy buttons as the rest of the /meow card */
+.manual { margin-top: 16px; border-top: 1px solid #e6ecf5; padding-top: 14px; }
 .manual[hidden] { display: none; }
-.manual summary { cursor: pointer; font-size: 14px; font-weight: 700; color: #2b3fa6; }
-.manual form { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-.manual input[type="text"], .manual input[type="date"], .manual select { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; padding: 7px 9px; }
+.manual summary {
+  list-style: none; display: flex; align-items: center; justify-content: center; height: 36px; border-radius: 999px; font-size: 14px; font-weight: 600; color: #111; user-select: none;
+  background: linear-gradient(#fff 0%, #f7f7f7 48%, #e9e9ea 52%, #f6f6f6 100%); border: 1px solid #a5abb5; box-shadow: inset 0 1px 0 #fff, 0 4px 12px rgba(0,0,0,.07);
+}
+.manual summary::-webkit-details-marker { display: none; }
+.manual summary::after { content: "+"; margin-left: 8px; font-weight: 500; color: var(--muted); }
+.manual[open] summary::after { content: "2"; }
+.manual summary:hover { filter: brightness(1.04); }
+.manual summary:focus-visible { outline: 2px solid #99cbf8; outline-offset: 2px; }
+.manual form { display: grid; gap: 8px; margin-top: 12px; }
+.manual input[type="text"], .manual input[type="date"], .manual select {
+  width: 100%; height: 36px; padding: 0 12px; border: 1px solid #a5abb5; border-radius: 8px; background: #fff; font-size: 14px; color: var(--ink);
+}
+.manual input::placeholder { color: var(--faint); }
+.manual select {
+  appearance: none; -webkit-appearance: none; padding-right: 30px; cursor: pointer;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+}
+.manual input:focus, .manual select:focus { outline: 2px solid #99cbf8; outline-offset: 1px; }
 .manual-row { display: flex; gap: 8px; }
 .manual-row select { flex: 1; min-width: 0; }
-.manual-date, .manual-check { font-size: 13.5px; display: flex; align-items: center; gap: 8px; }
-.manual-date input { flex: 1; width: auto; }
+.manual-date, .manual-check { font-size: 14px; color: #333; display: flex; align-items: center; gap: 8px; }
+.manual-date input { flex: 1; width: auto; min-width: 0; }
+.manual-check { cursor: pointer; user-select: none; }
+.manual-check input { width: 16px; height: 16px; margin: 0; accent-color: #2b3fa6; cursor: pointer; }
+#manualBtn {
+  height: 36px; border-radius: 999px; font-size: 14px; font-weight: 600; color: #071a3f; cursor: pointer; border: 1px solid #2b3fa6;
+  background: linear-gradient(#edf4ff 0%, #d6e7ff 18%, #a2c7ff 50%, #99cbf8 80%, #a2d2f7 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 6px 14px rgba(30,60,140,.16);
+}
+#manualBtn:hover { filter: brightness(1.04); } #manualBtn:active { transform: translateY(1px); } #manualBtn:disabled { opacity: .55; cursor: wait; }
 .admin-msg { margin: 12px 0 0 !important; font-size: 14px !important; }
 .admin-msg:empty { display: none; }
 #adminCard .admin-msg.good { color: #17803f; }
