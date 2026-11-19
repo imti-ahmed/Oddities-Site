@@ -8,6 +8,8 @@
 // To release a new version: add one line at the top, with today's date (YYYY-MM-DD) and ONE short line saying what is new
 // (plain words, no full stop, no em dash). Everything else updates by itself. Versions up to 1.3 were written afterwards from the project history.
 return [
+    ['version' => '2.19', 'date' => '2026-11-19', 'note' => 'Tabs and pages now show in the address (for example ?tab=india&page=2) so links open the right tab, a +N pill on companies with several jobs, new welcome card headlines, less empty space at the bottom'],
+    ['version' => '2.18', 'date' => '2026-11-19', 'note' => 'Same company now always has the same name across its jobs, remote jobs simply say Remote, and a new tab title'],
     ['version' => '2.16', 'date' => '2026-11-19', 'note' => 'A pop-up when you pin or unpin something. Phone menu: dimmed page behind it, a My Pinned page with the Pinned card, and the Product Hunt badge inside it, and the last view count shows instantly'],
     ['version' => '2.15', 'date' => '2026-11-19', 'note' => 'Welcome loader while the page and pictures get ready, plus quick reveal and tab change animations'],
     ['version' => '2.13', 'date' => '2026-11-18', 'note' => 'Product Hunt badge in the top bar, Update log is now Updates, tighter tabs, no clock'],

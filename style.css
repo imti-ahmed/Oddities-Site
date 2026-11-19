@@ -26,7 +26,7 @@ body {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: #f5f5f5;
   background-image: radial-gradient(#d6d6d6 1px, transparent 1px);   /* faint dot grid */
-  background-size: 22px 22px; padding-bottom: 56px;
+  background-size: 22px 22px; padding-bottom: 20px;
 }
 a { color: inherit; text-decoration: none; }
 a:hover { text-decoration: underline; }
@@ -397,6 +397,7 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
   table.jobs td.rank { padding-top: 11px; }
   table.jobs td.pin { padding-top: 7px; }
   td.rank, th.rank { width: 30px; padding-left: 6px; padding-right: 2px; }
+  #coBar { padding-left: 8px; }   /* starts where the (narrower) numbers start on phones */
   table.jobs td { padding: 10px 8px; }
 }
 /* admin mode: the delete cross on gallery cards and Dead Zone rows */
@@ -440,3 +441,16 @@ main.tx-in .layout > :not(#pinbox), main.tx-in #logView, main.tx-in #aboutView, 
   opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .14s linear, visibility 0s linear .14s; }
 #toast.show { opacity: 1; visibility: visible; transition: opacity .14s linear, visibility 0s; }
 @media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
+
+/* ---------- several roles at one company: a quiet "+N more" text link in the company cell ---------- */
+.cochip { position: relative; border: 1px solid #b8c0cc; background: var(--chip); color: #475569; border-radius: 999px; padding: 0 7px; margin: 0 0 0 6px; font: inherit; font-size: 11.5px; font-weight: 600; line-height: 16px; cursor: pointer; white-space: nowrap; vertical-align: 1px; }
+.cochip:hover { background: #e2e6ee; border-color: #9aa5b5; color: #111; }
+/* a short tooltip of our own (the browser's slow, plain one is not used) */
+.cochip::after { content: attr(data-tip); position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); padding: 3px 8px; border-radius: 6px; background: #1f2937; color: #fff; font-size: 11.5px; font-weight: 500; line-height: 1.4; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .12s; z-index: 5; }
+.cochip:hover::after, .cochip:focus-visible::after { opacity: 1; }
+table.jobs tbody tr:last-child .cochip::after { top: auto; bottom: calc(100% + 6px); }   /* the last row has no room below: its tooltip goes above */
+table.cofiltered .cochip { display: none; }
+#coBar { display: flex; align-items: center; justify-content: flex-start; gap: 8px; padding: 9px 14px 9px 18px; background: #fafbfe; border-bottom: 1px solid #e6ecf5; font-size: 13px; color: #334155; }
+#coBar[hidden] { display: none; }
+.cobtn { border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: #1d4ed8; cursor: pointer; }
+.cobtn:hover { text-decoration: underline; }

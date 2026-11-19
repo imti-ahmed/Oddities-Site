@@ -65,6 +65,27 @@
   var liveTable = $('#liveTable'), deadTable = $('#deadTable');
   var emptyEl = $('#empty'), pagerEl = $('#pager');
   var view = 'all', page = 1, pendingScroll = false;
+  // Several roles at one company: a small "+N more" chip in the company cell. Click it to see only that company's roles
+  // (a bar above the table says so, with a "Show all" link to come back). The row order never changes.
+  var coFilter = '', coBar, coBarText;
+  function coKey(r) { return (r.dataset.co || '').trim().toLowerCase(); }
+  function showCompany(k) { coFilter = k; page = 1; render(); window.scrollTo(0, 0); }
+  (function () {
+    var rows = $$('#liveTable tbody tr'), count = {};
+    rows.forEach(function (r) { var k = coKey(r); count[k] = (count[k] || 0) + 1; });
+    rows.forEach(function (r) {
+      var k = coKey(r), n = count[k], cell = $('td.company', r);
+      if (n < 2 || !cell) return;
+      var el = document.createElement('button');
+      el.type = 'button'; el.className = 'cochip'; el.textContent = '+' + (n - 1); el.dataset.key = k;
+      el.dataset.tip = 'View all ' + n + ' roles'; el.setAttribute('aria-label', 'View all ' + n + ' roles at ' + r.dataset.co);
+      cell.appendChild(el);                                       // after the location: "Figma (San Francisco, United States) +9"
+    });
+    coBar = document.createElement('div'); coBar.id = 'coBar'; coBar.hidden = true;
+    coBarText = document.createElement('span'); var all = document.createElement('button'); all.type = 'button'; all.className = 'cobtn'; all.textContent = 'Show all';
+    coBar.appendChild(coBarText); coBar.appendChild(all);
+    liveTable.parentNode.insertBefore(coBar, liveTable);   // above the first row
+  })();
 
   /* ---------- pins (saved in this browser with localStorage) ---------- */
   // RULES that keep a visitor's pins safe when the site changes (deploys, new features, database edits never touch this):
@@ -220,7 +241,7 @@
 
     var table = isDead ? deadTable : liveTable;
     var inView = JOB_VIEWS[view];
-    var rows = $$('tbody tr', table).filter(function (r) { return inView(r); });   // the rows that belong to this tab, in order
+    var rows = $$('tbody tr', table).filter(function (r) { return inView(r) && (isDead || !coFilter || coKey(r) === coFilter); });   // the rows that belong to this tab (and company, when one was picked)
     var total = rows.length, pages = Math.max(1, Math.ceil(total / PER_PAGE));
     if (page > pages) page = pages;
     var from = (page - 1) * PER_PAGE, to = from + PER_PAGE;
@@ -232,6 +253,11 @@
       $('.rank', r).textContent = (i + 1) + '.';             // numbering carries on across pages (page 2 starts at 31)
       r.classList.toggle('z', (i - from) % 2 === 1);
     });
+    if (coBar) {
+      coBar.hidden = isDead || !coFilter;
+      liveTable.classList.toggle('cofiltered', !!coFilter);        // the "+N more" chips are not needed once you are looking at one company
+      if (coFilter && rows.length) coBarText.textContent = 'Showing ' + rows.length + (rows.length === 1 ? ' role' : ' roles') + ' at ' + rows[0].dataset.co + '. ';
+    }
 
     emptyEl.hidden = total > 0;
     emptyEl.textContent = isDead ? 'Nothing in the Dead Zone yet.' : (view === 'highlighted' ? 'Nothing is highlighted yet.' : 'No jobs here yet.');
@@ -290,9 +316,14 @@
     add('Next ›', page < pages ? page + 1 : 0, page < pages ? '' : 'off');
   }
 
-  // The web address always stays the plain domain: it never shows #india or ?page=2.
-  // Where you are (which tab, which page) is kept in the browser's history instead, so the Back button still works.
+  // The web address shows where you are: ?tab=portfolios, or ?tab=india&page=2. Opening the plain domain goes to ?tab=jobs (the Jobs section, page 1). Page 1 never shows a page number; later pages are ?tab=jobs&page=2.
+  // Opening such a link shows that tab. An old #india/2 style link still works. The Back button steps through tabs and pages.
   function parse(h) { var parts = String(h || '').split('/'); return { v: parts[0], p: parseInt(parts[1], 10) }; }
+  function fromAddress() {
+    var q = new URLSearchParams(location.search), t = q.get('tab');
+    return t ? { v: t === 'jobs' ? 'all' : t, p: parseInt(q.get('page'), 10) } : parse(location.hash.slice(1));   // (the Jobs section is ?tab=jobs, inside the code it is 'all')
+  }
+  function addressFor(v, p) { return location.pathname + '?tab=' + encodeURIComponent(v === 'all' ? 'jobs' : v) + (p > 1 ? '&page=' + p : '') + ''; }
 
   var mainEl = $('main'), txTimer = 0;
   var QUIET = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -310,6 +341,7 @@
     if (v === 'pinned' && window.innerWidth > 760) v = 'all';       // My Pinned only exists on phones (desktop has the Pinned card beside the list)
     pg = pg > 0 ? pg : 1;
     var same = v === view && pg === page;
+    if (v !== view) coFilter = '';                                  // a picked company is forgotten when you change tab
     view = v; page = pg;
     function draw() {
       render();
@@ -322,18 +354,20 @@
   function go(h) {                                               // a tab or page button was clicked
     var before = view + '/' + page, t = parse(h);
     show(t.v, t.p, true);
-    if (view + '/' + page !== before) history.pushState({ view: view, page: page }, '', location.pathname);   // new Back-button step, same plain address
+    if (view + '/' + page !== before) history.pushState({ view: view, page: page }, '', addressFor(view, page));   // new Back-button step, and the address shows the tab
   }
 
   /* ---------- wiring ---------- */
   window.addEventListener('popstate', function (e) {             // Back / Forward button
     if (e.state) { show(e.state.view, e.state.page, true); return; }
-    var t = parse(location.hash.slice(1)); show(t.v, t.p, true);       // someone typed a #address by hand: honour it once, then tidy the address
-    history.replaceState({ view: view, page: page }, '', location.pathname);
+    var t = fromAddress(); show(t.v, t.p, true);                       // someone typed an address by hand: honour it, then tidy it
+    history.replaceState({ view: view, page: page }, '', addressFor(view, page));
   });
   document.addEventListener('click', function (e) {
     var pin = e.target.closest('.pinbtn');
     var del = e.target.closest('.delbtn');
+    var chip = e.target.closest('.cochip'); if (chip) { showCompany(chip.dataset.key); return; }
+    if (e.target.closest('.cobtn')) { showCompany(''); return; }
     if (del) { deleteEntry(del.closest('tr, .gitem')); return; }
     if (pin) { var prow = pin.closest(PINNABLE); if (isAdmin() && prow.matches('tr:not(.crow)')) toggleHighlight(prow); else togglePin(prow.dataset.id); }
     var link = e.target.closest('a[href^="#"]');                 // our tab and page buttons
@@ -563,7 +597,7 @@
   })();
 
   renderPins();
-  var first = parse(location.hash.slice(1));                     // opening the site: honour an old #link once, then show the plain address
+  var first = fromAddress();                                     // opening the site: honour ?tab=... (or an old #link), then show the tidy address
   show(first.v, first.p);
-  history.replaceState({ view: view, page: page }, '', location.pathname);
+  history.replaceState({ view: view, page: page }, '', addressFor(view, page));
 })();

@@ -77,7 +77,10 @@ STEP 4. CLEAN FACTS
 =====================================================================
 - title: the job title only (no company name, no location, no "(m/f/d)", no "Apply now"). Keep it short and natural.
 - company: the hiring company's name. Not the job board it was found on (not LinkedIn, Indeed, uiuxjobsboard, and so on).
-- location: ONE place only, written "City, Country" (for example "Bengaluru, India"). If there are several places, keep the first. For a remote-only job use the country it is limited to, or "Remote" when there is none. Use "" when unknown.
+  Use the company's ONE short, official brand name, written the same way every time. Do not add "Design", "Studio", "Labs", "Inc", "Ltd" or "Pvt" unless that is how the company itself writes its name, and keep its own capital letters (for example "MindTickle", not "Mindtickle").
+  Roles at the same company must always get the SAME company name. Never write one company two ways ("Lollypop", "Lollypop Studio" and "Lollypop Design Studio" are ONE company). Read the name carefully: do not misspell it or swap letters ("Iverson" is not "Inversion" or "Iversion").
+- location: ONE place only, written "City, Country" (for example "Bengaluru, India"). If there are several places, keep the first. Use "" when unknown.
+  If work_mode is "remote" (a purely remote job), IGNORE any city, country or region named in the posting and write exactly "Remote". Remote jobs never show a place. region and open_to_india still follow STEP 2.
 - posted_at: the date the job was posted as "YYYY-MM-DD" ONLY if the page states it. Otherwise null. Never invent a date.
 - level: one of "intern", "junior", "mid", "senior", "lead", "director", "unknown".
 - confidence: a number from 0 to 1 for how sure you are that ACCEPT is correct and the facts are right. Use below 0.6 when you are unsure.
@@ -113,7 +116,7 @@ Posting: "Senior Product Designer. Figma, San Francisco-based. Location: Bengalu
 Answer: accept true, role "Product Designer", category "Product", region "india", work_mode "hybrid", location "Bengaluru, India".
 
 Posting: "Brand Designer. Remote, US only. Acme Inc."
-Answer: accept true, role "Brand Designer", category "Brand", region "abroad", work_mode "remote", open_to_india false, location "Remote".
+Answer: accept true, role "Brand Designer", category "Brand", region "abroad", work_mode "remote", open_to_india false, location "Remote" (a remote job is always just "Remote", even when limited to the US).
 
 Posting: "Product Design Intern, 6 months, Mumbai. Hybrid."
 Answer: accept true, role "Product Designer", is_internship true, category "Product", region "india", work_mode "hybrid", location "Mumbai, India".

@@ -51,11 +51,36 @@ function db_error_hint(Throwable $e): string
     return mb_substr(preg_replace('/\s+/', ' ', $m), 0, 200);
 }
 
+// Keeps entries tidy: a purely remote job always shows "Remote" as its place, and a company already listed under a slightly different
+// name ("Lollypop" / "Lollypop Studio", "MindTickle" / "Mindtickle") reuses the most common spelling already in the list.
+function job_company_key(string $name): string
+{
+    return trim(preg_replace('/[^a-z0-9]+/', ' ', mb_strtolower($name)));
+}
+function normalize_job_entry(array $job, array $existing): array
+{
+    if (($job['mode'] ?? '') === 'remote') $job['location'] = 'Remote';
+    $key = job_company_key((string)($job['company'] ?? ''));
+    if ($key === '') return $job;
+    $counts = [];
+    foreach ($existing as $j) {
+        $name = trim((string)($j['company'] ?? ''));
+        $k = job_company_key($name);
+        if ($k === '') continue;
+        $short = strlen($k) < strlen($key) ? $k : $key;
+        $same = $k === $key || (strlen($short) >= 5 && (str_starts_with($k . ' ', $key . ' ') || str_starts_with($key . ' ', $k . ' ')));
+        if ($same) $counts[$name] = ($counts[$name] ?? 0) + 1;
+    }
+    if ($counts) { arsort($counts); $job['company'] = (string)array_key_first($counts); }
+    return $job;
+}
+
 // Adds ONE job. $isDuplicate lets the caller refuse at the last moment. Returns 'added' or 'duplicate'.
 function jobs_append(array $job, callable $isDuplicate, string $message = ''): string
 {
     $mode = jobs_store_mode();
     if ($mode === 'none') throw new RuntimeException('Saving is not set up. Add DATABASE_URL in Vercel (the Neon connection string), then redeploy.');
+    try { $job = normalize_job_entry($job, $mode === 'db' ? db_all_jobs(true) : (json_decode((string)@file_get_contents(JOBS_FILE_PATH), true) ?: [])); } catch (Throwable $e) {}
 
     if ($mode === 'db') {
         try {

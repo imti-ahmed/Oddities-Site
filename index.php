@@ -260,7 +260,7 @@ function table_head(bool $dead = false): string
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><?= h($settings['site_name']) ?> - <?= h($settings['tagline']) ?></title>
+  <title><?= h($settings['site_name']) ?> - Collection of Weird Internet Stuff</title>
   <meta name="description" content="<?= h($settings['tagline']) ?>">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32.png">
@@ -319,7 +319,7 @@ function table_head(bool $dead = false): string
       <div class="intro win pink" id="intro">
         <?= winbar() ?>
         <div class="winbody">
-          <p>Hand-picked creative jobs. No noise.</p>
+          <p>Welcome to Oddities. Start here with jobs.</p>
           <p>A simple list of design and creative jobs from companies around the internet. No accounts. No applications here. No bullshit. Just the job and a link to where you can apply.</p>
         </div>
       </div>
@@ -328,7 +328,7 @@ function table_head(bool $dead = false): string
       <div class="intro win pink" id="deadNote" hidden>
         <?= winbar() ?>
         <div class="winbody">
-          <p>Where things go when they stop working.</p>
+          <p>Not everything on the internet survives.</p>
           <p>Jobs that closed or have not been updated in <?= (int)$settings['stale_days'] ?> days, and portfolios or tools whose websites are gone. Every website is checked again every <?= (int)(require __DIR__ . '/config/directory.php')['recheck_days'] ?> days, and moved here when it no longer works. We keep them for reference, never delete them.</p>
         </div>
       </div>
@@ -344,7 +344,7 @@ function table_head(bool $dead = false): string
       <div class="intro win pink" id="introP" hidden>
         <?= winbar() ?>
         <div class="winbody">
-          <p>Good work deserves to be found.</p>
+          <p>Good work deserves a little more attention.</p>
           <p>A collection of portfolios, personal sites, and creative work from people worth discovering. No follower counts. No popularity contests. Just interesting people doing interesting work.</p>
         </div>
       </div>
@@ -358,7 +358,7 @@ function table_head(bool $dead = false): string
       <div class="intro win pink" id="introT" hidden>
         <?= winbar() ?>
         <div class="winbody">
-          <p>Useful things for creative people.</p>
+          <p>For the curious and easily distracted.</p>
           <p>A collection of tools, experiments, and little internet gems that make creating more interesting. Not another list of the usual suspects. Just things that are actually worth knowing about.</p>
         </div>
       </div>
@@ -372,7 +372,7 @@ function table_head(bool $dead = false): string
       <div class="intro win pink" id="introC" hidden>
         <?= winbar() ?>
         <div class="winbody">
-          <p>Companies worth keeping an eye on.</p>
+          <p>Some companies are worth knowing.</p>
           <p>A hand-picked list of cool companies in tech, design and beyond, each with a short note on what they do. No rankings. No sponsored spots. Just places doing interesting work.</p>
         </div>
       </div>
