@@ -1,4 +1,49 @@
 // Everything on the page happens here, in your browser: tabs, page numbers and pins.
+// Loader: the welcome card on the dotted background. It is just an animation (not real progress): the 10 boxes fill one after another,
+// 0 to 100% in about 0.9 seconds, then the page is revealed. Meanwhile the first page of Portfolios and Tools pictures is fetched
+// quietly in the background, so those tabs open instantly.
+(function () {
+  var L = document.getElementById('loader');
+  if (!L) return;
+  var mainEl = document.querySelector('main');
+  var cells = Array.prototype.slice.call(L.querySelectorAll('.lbar i')), pctEl = L.querySelector('.lpct');
+  var FILL = 900, start = Date.now(), finished = false;
+
+  function paint(frac) {
+    var on = Math.floor(frac * 10 + 1e-6);
+    cells.forEach(function (c, i) { c.classList.toggle('on', i < on); });
+    pctEl.textContent = Math.floor(frac * 100) + '%';
+  }
+  function reveal() {
+    if (finished) return; finished = true;
+    paint(1);
+    setTimeout(function () {                                     // a moment on 100% so the full pill is seen
+      L.classList.add('out');
+      var quiet = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!quiet) {
+        var top = document.getElementById('top'); if (top) top.classList.add('rv');
+        if (mainEl) mainEl.classList.add('tx-in', 'tx-first');
+        setTimeout(function () { if (top) top.classList.remove('rv'); if (mainEl) mainEl.classList.remove('tx-in', 'tx-first'); }, 250);
+      }
+      setTimeout(function () { L.remove(); }, 160);
+    }, 50);
+  }
+  function loop() {
+    if (finished) return;
+    var frac = Math.min(1, (Date.now() - start) / FILL);
+    paint(frac);
+    if (frac >= 1) reveal(); else requestAnimationFrame(loop);
+  }
+
+  ['#mainP', '#mainT'].forEach(function (sel) {                  // warm the browser cache with the first page (15 cards) of each gallery
+    var m = document.querySelector(sel);
+    if (m) Array.prototype.slice.call(m.querySelectorAll('.gimg img'), 0, 15).forEach(function (el) { new Image().src = el.currentSrc || el.src; });
+  });
+
+  setTimeout(reveal, FILL + 100);                                // safety net if animation frames are paused (background tab)
+  paint(0); requestAnimationFrame(loop);
+})();
+
 (function () {
   var PER_PAGE = (window.DJ && window.DJ.perPage) || 30;
   var GALLERY_PER_PAGE = 15;                                     // cards on each page of the Portfolios and Tools galleries
@@ -13,7 +58,7 @@
     'remote':    function (r) { return r.dataset.mode === 'remote'; },
     'dead':      function () { return true; }
   };
-  var OTHER_VIEWS = ['log', 'about', 'portfolios', 'tools', 'companies'];
+  var OTHER_VIEWS = ['log', 'about', 'portfolios', 'tools', 'companies', 'pinned'];   // 'pinned' = My Pinned, phones only
 
   var listView = $('#listView'), logView = $('#logView'), aboutView = $('#aboutView');
   var PINNABLE = 'tr[data-id], .gitem[data-id]';                 // a job row, or a card in the Portfolios / Tools gallery
@@ -53,6 +98,7 @@
       x.addEventListener('click', function () { togglePin(p.id); });
       li.appendChild(box); li.appendChild(x); list.appendChild(li);
     });
+    var pn = $('#pinTabN'); if (pn) pn.textContent = pins.length;
     var hint = $('#pinHint');
     if (isAdmin()) { hint.textContent = 'Admin mode: the star highlights a job for everyone (see the Highlighted tab). Pinning for yourself is paused on this page. Portfolios and tools have no highlight yet.'; hint.hidden = false; }
     else { hint.textContent = 'Tap the ☆ on any job to pin it here. Pins are saved in this browser only.'; hint.hidden = pins.length > 0; }
@@ -128,18 +174,32 @@
       .then(function (d) { if (d.status !== 'ok') throw new Error(d.message || 'Could not save.'); })
       .catch(function (e) { set(!on); var m = $('#adminMsg'); if (m) { m.textContent = 'Highlight not saved: ' + e.message; m.className = 'admin-msg bad'; } });
   }
+  // Small pop-up at the bottom that confirms a pin or unpin in a few words. Fades away by itself after about 2.2 seconds.
+  var toastEl, toastTimer;
+  function toast(text) {
+    if (!toastEl) {
+      toastEl = document.createElement('div'); toastEl.id = 'toast'; toastEl.setAttribute('role', 'status'); toastEl.setAttribute('aria-live', 'polite');
+      document.body.appendChild(toastEl);
+    }
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 2200);
+  }
   function togglePin(id) {
-    var r = $('[data-id="' + id + '"]'), url = r ? r.dataset.url : '';
+    var r = $('[data-id="' + id + '"]'), url = r ? r.dataset.url : '', added = false;
     if (isPinned(id, url)) pins = pins.filter(function (p) { return !samePin(p, id, url); });
-    else if (r) pins.unshift({ id: id, title: r.dataset.title, company: r.dataset.co, url: r.dataset.url });
+    else if (r) { pins.unshift({ id: id, title: r.dataset.title, company: r.dataset.co, url: r.dataset.url }); added = true; }
     savePins(); renderPins();
+    if (added) toast('Added to your pins');
+    else toast('Removed from your pins');
   }
 
   /* ---------- showing the right rows ---------- */
   function render() {
     var isList = JOB_VIEWS.hasOwnProperty(view);
-    var isDead = view === 'dead', isP = view === 'portfolios', isT = view === 'tools', isC = view === 'companies';
-    listView.hidden  = !(isList || isP || isT || isC);          // one layout (with the Pinned card) for Jobs, Dead Zone, Portfolios, Tools and Companies
+    var isDead = view === 'dead', isP = view === 'portfolios', isT = view === 'tools', isC = view === 'companies', isPin = view === 'pinned';
+    listView.classList.toggle('pinpage', isPin);
+    listView.hidden  = !(isList || isP || isT || isC || isPin);          // one layout (with the Pinned card) for Jobs, Dead Zone, Portfolios, Tools and Companies
     logView.hidden   = view !== 'log';
     aboutView.hidden = view !== 'about';
     $('#deadNote').hidden = !isDead;
@@ -234,23 +294,41 @@
   // Where you are (which tab, which page) is kept in the browser's history instead, so the Back button still works.
   function parse(h) { var parts = String(h || '').split('/'); return { v: parts[0], p: parseInt(parts[1], 10) }; }
 
-  function show(v, pg) {                                         // show a tab and page (a bad name or too-big page number is tidied up)
+  var mainEl = $('main'), txTimer = 0;
+  var QUIET = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function swap(fn) {                                            // old content fades out (70ms), new content fades in (140ms)
+    clearTimeout(txTimer);
+    mainEl.classList.remove('tx-in', 'tx-first'); mainEl.classList.add('tx-out');
+    txTimer = setTimeout(function () {
+      fn();
+      mainEl.classList.remove('tx-out'); void mainEl.offsetWidth; mainEl.classList.add('tx-in');
+      txTimer = setTimeout(function () { mainEl.classList.remove('tx-in'); }, 200);
+    }, 70);
+  }
+  function show(v, pg, animate) {                                // show a tab and page (a bad name or too-big page number is tidied up)
     if (!JOB_VIEWS.hasOwnProperty(v) && OTHER_VIEWS.indexOf(v) === -1) v = 'all';
-    view = v; page = pg > 0 ? pg : 1;
-    render();
-    if (pendingScroll) { pendingScroll = false; var card = $('#listView .card'); if (card && !listView.hidden) card.scrollIntoView(); }
+    if (v === 'pinned' && window.innerWidth > 760) v = 'all';       // My Pinned only exists on phones (desktop has the Pinned card beside the list)
+    pg = pg > 0 ? pg : 1;
+    var same = v === view && pg === page;
+    view = v; page = pg;
+    function draw() {
+      render();
+      if (pendingScroll) { pendingScroll = false; var card = $('#listView .card'); if (card && !listView.hidden) card.scrollIntoView(); }
+    }
+    if (animate && !same && !QUIET && mainEl) swap(draw);
+    else { clearTimeout(txTimer); mainEl.classList.remove('tx-out'); draw(); }
   }
 
   function go(h) {                                               // a tab or page button was clicked
     var before = view + '/' + page, t = parse(h);
-    show(t.v, t.p);
+    show(t.v, t.p, true);
     if (view + '/' + page !== before) history.pushState({ view: view, page: page }, '', location.pathname);   // new Back-button step, same plain address
   }
 
   /* ---------- wiring ---------- */
   window.addEventListener('popstate', function (e) {             // Back / Forward button
-    if (e.state) { show(e.state.view, e.state.page); return; }
-    var t = parse(location.hash.slice(1)); show(t.v, t.p);       // someone typed a #address by hand: honour it once, then tidy the address
+    if (e.state) { show(e.state.view, e.state.page, true); return; }
+    var t = parse(location.hash.slice(1)); show(t.v, t.p, true);       // someone typed a #address by hand: honour it once, then tidy the address
     history.replaceState({ view: view, page: page }, '', location.pathname);
   });
   document.addEventListener('click', function (e) {
@@ -450,6 +528,18 @@
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') set(false); });
     window.addEventListener('resize', function () { if (window.innerWidth > 760) set(false); });
+  })();
+
+  // Views: the counter service answers slowly, so show the last number it gave us (kept in this browser) straight away.
+  // When the service answers, the new number replaces it and is kept for next time.
+  (function () {
+    var vc = $('[data-view-counter]'); if (!vc) return;
+    var KEY = 'dj_views';
+    try { var last = localStorage.getItem(KEY); if (last && !/\d/.test(vc.textContent)) vc.textContent = last; } catch (e) {}
+    new MutationObserver(function () {
+      var t = vc.textContent.trim();
+      if (/\d/.test(t)) { try { localStorage.setItem(KEY, t); } catch (e) {} }
+    }).observe(vc, { childList: true, characterData: true, subtree: true });
   })();
 
   renderPins();

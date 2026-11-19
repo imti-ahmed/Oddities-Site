@@ -106,7 +106,7 @@ function job_row(array $j, bool $isDead, int $staleDays): string
       <td class="rank"></td>
       <td class="job">
         <a class="jt" href="<?= h($j['url']) ?>" target="_blank" rel="nofollow noopener"><?= $titleHtml ?></a>
-        <div class="m-only meta"><span class="co"><?= h($j['company']) ?></span><?php if ($j['location']): ?> (<?= h($j['location']) ?>)<?php endif; ?><br><?php if (!$isDead): ?><?= pills($j['tags']) ?><br><?php endif; ?><?= h(trim(($isDead && $dateCell ? 'Removed ' : '') . $dateCell)) ?></div>
+        <div class="m-only meta"><span class="co"><?= h($j['company']) ?></span><?php if ($j['location']): ?> (<?= h($j['location']) ?>)<?php endif; ?><br><?php if (!$isDead): ?><?= pills($j['tags']) ?><?= ($j['tags'] && $dateCell) ? ' &middot; ' : '' ?><?php endif; ?><?= h(trim(($isDead && $dateCell ? 'Removed ' : '') . $dateCell)) ?></div>
       </td>
       <td class="company"><span class="cn"><?= h($j['company']) ?></span><?php if ($j['location']): ?> <span class="cloc">(<?= h($j['location']) ?>)</span><?php endif; ?></td>
       <?php if (!$isDead): ?><td class="tags"><?= pills($j['tags']) ?></td><?php endif; ?>
@@ -164,7 +164,7 @@ function company_row(array $c, int $i): string
       <td class="rank"><?= $i + 1 ?>.</td>
       <td class="job">
         <a class="jt" href="<?= h($c['link']) ?>" target="_blank" rel="nofollow noopener"><?= title_with_pill($c['name'], $c['badge'] ?? null) ?></a>
-        <div class="m-only meta"><a class="glink" href="<?= h($c['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($host) ?></a><?= $c['type'] !== '' ? ' &middot; ' . h($c['type']) : '' ?><?php if ($c['description'] !== ''): ?><br><?= h($c['description']) ?><?php endif; ?></div>
+        <div class="m-only meta"><?php if ($c['description'] !== ''): ?><?= h($c['description']) ?><br><?php endif; ?><a class="glink" href="<?= h($c['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($host) ?></a><?= $c['type'] !== '' ? ' &middot; ' . h($c['type']) : '' ?></div>
       </td>
       <td class="cweb"><a class="glink" href="<?= h($c['link']) ?>" target="_blank" rel="nofollow noopener"><?= h($host) ?></a></td>
       <td class="ctype"><?= h($c['type']) ?></td>
@@ -250,6 +250,22 @@ function table_head(bool $dead = false): string
 </head>
 <body>
 
+<!-- Welcome / loader card: sits on the dotted background until the fonts and the first gallery pictures are ready (see the loader part of assets/app.js).
+     No JavaScript, or something stuck? The CSS hides it by itself after 8 seconds. -->
+<div id="loader" role="status" aria-live="polite">
+  <div class="win pink lcard" id="lcard">
+    <?= winbar() ?>
+    <div class="winbody">
+      <p class="lmsg">Catching the internet oddities..</p>
+      <div class="lrow">
+        <div class="lbar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <span class="lpct">0%</span>
+      </div>
+    </div>
+  </div>
+</div>
+<script>(function(){var c=["pink","orange","green","purple",""],k=c[Math.floor(Math.random()*c.length)],e=document.getElementById("lcard");e.classList.remove("pink");if(k)e.classList.add(k);var t=["Catching the internet oddities..","Dusting off the pixels..","Sharpening the pencils..","Unpacking the weird stuff..","Herding the good links..","Polishing the oddities.."];e.querySelector(".lmsg").textContent=t[Math.floor(Math.random()*t.length)];})();</script>
+
 <header id="top">
   <div class="bar wrap">
     <a class="brand" href="#all"><?= h($settings['site_name']) ?></a>
@@ -260,15 +276,18 @@ function table_head(bool $dead = false): string
       <a href="#portfolios" data-top="portfolios">Portfolios <span class="n"><?= count($portfolios) ?></span></a>
       <a href="#tools" data-top="tools">Tools <span class="n"><?= count($tools) ?></span></a>
       <a href="#companies" data-top="companies">Cool Companies <span class="n"><?= count($companies) ?></span></a>
+      <a class="m-tab" href="#pinned" data-top="pinned">My Pinned <span class="n" id="pinTabN">0</span></a>   <!-- phone menu only: the Pinned card on its own page -->
       <span class="gap"></span>
       <a href="#dead" data-top="dead">Dead Zone <span class="n"><?= count($deadItems) ?></span></a>
       <a href="#log" data-top="log">Updates</a>
       <a href="#about" data-top="about">About</a>
+      <a class="ph-menu" href="https://www.producthunt.com/products/oddities?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-oddities" target="_blank" rel="noopener noreferrer"><img alt="Oddities on Product Hunt" width="250" height="54" loading="lazy" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1321910&amp;theme=light&amp;t=1795019573351"></a>   <!-- phone menu only -->
     </nav>
     <div class="sys"><span class="jobsn" data-extra="<?= count($tools) + count($portfolios) + count($companies) ?>"><?= (int)$totalOddities ?> Oddities</span><span class="ver" title="Site version: X is a major update, Y a minor one"><?= h($siteVersion) ?></span><a class="ph" href="https://www.producthunt.com/products/oddities?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-oddities" target="_blank" rel="noopener noreferrer"><img alt="Oddities - A small collection of oddities for creative people. | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1321910&amp;theme=light&amp;t=1795019573351"></a></div>
     <button type="button" id="menuBtn" class="menubtn" aria-label="Menu" aria-expanded="false" aria-controls="tabs"><span></span><span></span><span></span></button>
   </div>
 </header>
+<div id="scrim" aria-hidden="true"></div>   <!-- dark overlay behind the phone menu -->
 
 <main class="wrap">
 
@@ -279,7 +298,7 @@ function table_head(bool $dead = false): string
         <?= winbar() ?>
         <div class="winbody">
           <p>Hand-picked creative jobs. No noise.</p>
-          <p>A simple list of design and creative jobs from companies around the internet.<br>No accounts. No applications here. No bullshit. Just the job and a link to where you can apply.</p>
+          <p>A simple list of design and creative jobs from companies around the internet. No accounts. No applications here. No bullshit. Just the job and a link to where you can apply.</p>
         </div>
       </div>
 
@@ -304,7 +323,7 @@ function table_head(bool $dead = false): string
         <?= winbar() ?>
         <div class="winbody">
           <p>Good work deserves to be found.</p>
-          <p>A collection of portfolios, personal sites, and creative work from people worth discovering.<br>No follower counts. No popularity contests. Just interesting people doing interesting work.</p>
+          <p>A collection of portfolios, personal sites, and creative work from people worth discovering. No follower counts. No popularity contests. Just interesting people doing interesting work.</p>
         </div>
       </div>
       <div class="main" id="mainP" hidden>
@@ -318,7 +337,7 @@ function table_head(bool $dead = false): string
         <?= winbar() ?>
         <div class="winbody">
           <p>Useful things for creative people.</p>
-          <p>A collection of tools, experiments, and little internet gems that make creating more interesting.<br>Not another list of the usual suspects. Just things that are actually worth knowing about.</p>
+          <p>A collection of tools, experiments, and little internet gems that make creating more interesting. Not another list of the usual suspects. Just things that are actually worth knowing about.</p>
         </div>
       </div>
       <div class="main" id="mainT" hidden>
@@ -332,7 +351,7 @@ function table_head(bool $dead = false): string
         <?= winbar() ?>
         <div class="winbody">
           <p>Companies worth keeping an eye on.</p>
-          <p>A hand-picked list of cool companies in tech, design and beyond, each with a short note on what they do.<br>No rankings. No sponsored spots. Just places doing interesting work.</p>
+          <p>A hand-picked list of cool companies in tech, design and beyond, each with a short note on what they do. No rankings. No sponsored spots. Just places doing interesting work.</p>
         </div>
       </div>
       <div class="main" id="mainC" hidden>

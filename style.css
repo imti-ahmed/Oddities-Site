@@ -17,12 +17,9 @@
 
 * { box-sizing: border-box; }
 
-/* Custom scrollbar: a glossy blue thumb on a soft track (Firefox gets the thin version) */
-html { scrollbar-color: #7aa7f0 #eef2f9; }
-::-webkit-scrollbar { width: 14px; height: 14px; }
-::-webkit-scrollbar-track { background: #eef2f9; border-left: 1px solid var(--line); }
-::-webkit-scrollbar-thumb { background: linear-gradient(90deg, #cfe0fb, #7aa7f0); border: 1px solid #5f8fd8; border-radius: 8px; }
-::-webkit-scrollbar-thumb:hover { background: linear-gradient(90deg, #b9d3fa, #5f93ea); }
+/* Scrollbar: hidden everywhere */
+html { scrollbar-width: none; }   /* scrollbar hidden (scrolling still works) */
+::-webkit-scrollbar { display: none; }
 #tabs::-webkit-scrollbar { display: none; }
 body {
   margin: 0; color: var(--ink); font-size: 15px; line-height: 1.45;
@@ -61,6 +58,8 @@ html, body, button, select, summary { cursor: -webkit-image-set(url(data:image/p
 .sys { align-items: center; }
 .sys .ph { display: inline-flex; line-height: 0; }
 .sys .ph img { height: 26px; width: auto; display: block; }   /* small Product Hunt badge beside the Oddities count */
+#tabs a.m-tab, #tabs a.ph-menu { display: none; }   /* the Product Hunt pill inside the phone menu: phones only */
+#scrim { display: none; }   /* dark overlay behind the phone menu: phones only */
 .sys .ver { color: #8b8b8b; font-weight: 500; }   /* V.X.Y at the right end of the bar */
 /* phone menu button and the strip on top of the phone menu: only shown on phones (see the phone rules at the bottom) */
 .menubtn { display: none; }
@@ -170,6 +169,8 @@ table.dead td.posted, table.dead th.posted { width: 140px; }
 .jt:visited { color: #6b7280; }
 .meta { font-size: 13px; color: var(--muted); margin-top: 3px; }
 .meta .co { font-weight: 600; color: #334155; }
+.meta .glink { color: var(--ink); }   /* the link under a company name is black, like the title */
+.meta .tag { font-size: inherit; font-weight: inherit; color: inherit; }   /* on phones the tag reads like the date beside it */
 .m-only { display: none; }
 
 td.company { font-size: 14px; line-height: 1.3; color: #334155; }
@@ -348,8 +349,19 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
   #tabs .n { font-size: 13px; }
   #tabs .gap { display: block; width: auto; height: 7px; margin: 0; background: #f4f6fa; border-top: 1px solid #e6ecf5; border-bottom: 1px solid #e6ecf5; }
   #tabs .gap + a { border-top: 0; }
+  #tabs a.m-tab { display: flex; }
+  #listView:not(.pinpage) #pinbox { display: none; }   /* on phones the Pinned card lives on its own page (My Pinned in the menu) */
+  #listView.pinpage #pinbox.nopins { display: block; }   /* ...and with no pins it shows the empty card (with the hint), not nothing */
+  #tabs a.ph-menu { display: flex; justify-content: center; padding: 12px 16px; line-height: 0; }
+  #tabs a.ph-menu img { height: 30px; width: auto; display: block; }
+  #scrim { display: block; position: fixed; inset: 0; z-index: 15; background: rgba(15,20,35,.45); opacity: 0; visibility: hidden; transition: opacity .2s ease, visibility 0s linear .2s; }
+  #top.menu-open + #scrim { opacity: 1; visibility: visible; transition: opacity .2s ease, visibility 0s; }
   th.company, td.company, th.posted, td.posted, th.tags, td.tags, th.type, td.type, th.cweb, td.cweb, th.ctype, td.ctype, th.cdesc, td.cdesc { display: none; }
   .m-only { display: block; }
+  table.jobs thead { display: none; }                                  /* no header row on phones */
+  table.jobs td.rank, table.jobs td.pin { vertical-align: top; }       /* the number and the star sit beside the job title, not centred on the whole row */
+  table.jobs td.rank { padding-top: 11px; }
+  table.jobs td.pin { padding-top: 7px; }
   td.rank, th.rank { width: 30px; padding-left: 6px; padding-right: 2px; }
   table.jobs td { padding: 10px 8px; }
 }
@@ -358,3 +370,39 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
 .gitem .gcap .pinbtn { margin-left: auto; }
 .gitem .gcap .delbtn { margin-left: 0; }
 #deadTable td.posted .delbtn { margin-left: 8px; }
+
+/* ---------- loader card (welcome + a pill split into 10 parts, each part = 10%) ---------- */
+#loader {
+  position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px;
+  background-color: #f5f5f5; background-image: radial-gradient(#d6d6d6 1px, transparent 1px); background-size: 22px 22px;
+  transition: opacity .15s ease; animation: loader-failsafe .01s 8s forwards;   /* if the script never finishes, get out of the way after 8s */
+}
+#loader.out { opacity: 0; pointer-events: none; }
+@keyframes loader-failsafe { to { opacity: 0; visibility: hidden; pointer-events: none; } }
+.lcard { width: min(380px, 100%); margin: 0; }
+.lcard .winbody { padding: 16px 18px 18px; }
+.lmsg { margin: 0 0 14px; font-size: 16px; font-weight: 600; letter-spacing: -.01em; color: #000; }
+.lrow { display: flex; align-items: center; gap: 12px; }
+.lbar { flex: 1; display: flex; height: 18px; background: #fff; border: 1px solid var(--win-line); border-radius: 999px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,.08); }
+.lbar i { flex: 1; border-right: 1px solid #e3e7ee; transition: background-color .06s linear; }
+.lbar i:last-child { border-right: 0; }
+.lbar i.on { background: linear-gradient(var(--strip-a), var(--strip-b)); border-right-color: var(--strip-line); }   /* same gradient as the card headers */
+.lpct { min-width: 38px; text-align: right; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--muted); }
+
+/* ---------- quick reveal and tab change animations (short on purpose) ---------- */
+@keyframes tx-in { from { opacity: 0; } }
+@keyframes tx-out { to { opacity: 0; } }
+main.tx-out .layout > :not(#pinbox), main.tx-out #logView, main.tx-out #aboutView { animation: tx-out .07s linear forwards; }
+main.tx-in .layout > :not(#pinbox), main.tx-in #logView, main.tx-in #aboutView, main.tx-first #pinbox { animation: tx-in .14s linear backwards; }
+#top.rv { animation: tx-in .14s linear backwards; }
+@media (prefers-reduced-motion: reduce) {
+  #loader, .lcard { transition: none; animation: none; }
+  main.tx-in *, main.tx-out *, #top.rv { animation: none !important; }
+}
+
+/* pin pop-up (bottom centre, fades in and out) */
+#toast { position: fixed; left: 50%; bottom: 24px; z-index: 60; transform: translateX(-50%); max-width: calc(100vw - 32px);
+  padding: 9px 16px; border-radius: 10px; background: rgba(20,22,28,.94); color: #fff; font-size: 13.5px; line-height: 1.35; box-shadow: 0 10px 28px rgba(0,0,0,.22);
+  opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .14s linear, visibility 0s linear .14s; }
+#toast.show { opacity: 1; visibility: visible; transition: opacity .14s linear, visibility 0s; }
+@media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
