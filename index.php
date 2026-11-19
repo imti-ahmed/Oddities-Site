@@ -216,6 +216,28 @@ function admin_card(): string
             </form>
             <p id="adminMsg" class="admin-msg" role="status"></p>
             <ul id="adminLog" class="admin-log"></ul>
+            <details class="manual" id="manualBox">
+              <summary>Add Manually</summary>
+              <form id="manualForm" autocomplete="off">
+                <input type="text" name="title" placeholder="Job title" aria-label="Job title" required>
+                <input type="text" name="company" placeholder="Company" aria-label="Company" required>
+                <input type="text" inputmode="url" name="url" placeholder="Job link https://..." aria-label="Job link" autocapitalize="off" spellcheck="false" required>
+                <input type="text" name="location" placeholder="Location (City, Country)" aria-label="Location">
+                <select name="role" aria-label="Role" required>
+                  <option value="">Role...</option>
+                  <?php foreach ((require __DIR__ . '/config/roles.php')['tags'] as $t): if ($t['tag'] === 'Internship') continue; ?>
+                  <option value="<?= h($t['tag']) ?>"><?= h($t['tag']) ?></option>
+                  <?php endforeach; ?>
+                </select>
+                <div class="manual-row">
+                  <select name="region" aria-label="Region"><option value="india">India</option><option value="abroad">Abroad</option></select>
+                  <select name="mode" aria-label="Work mode"><option value="">Mode: not stated</option><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="in-office">In-office</option></select>
+                </div>
+                <label class="manual-date">Posted on <input type="date" name="posted_at" aria-label="Posted date"></label>
+                <label class="manual-check"><input type="checkbox" name="intern"> Internship</label>
+                <button type="submit" id="manualBtn">Add job</button>
+              </form>
+            </details>
           </div>
         </div>
     <?php return ob_get_clean();

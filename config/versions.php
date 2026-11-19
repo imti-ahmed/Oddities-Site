@@ -8,6 +8,7 @@
 // To release a new version: add one line at the top, with today's date (YYYY-MM-DD) and ONE short line saying what is new
 // (plain words, no full stop, no em dash). Everything else updates by itself. Versions up to 1.3 were written afterwards from the project history.
 return [
+    ['version' => '2.17', 'date' => '2026-11-19', 'note' => 'Meow mode: an Add Manually section on the card to enter a job by hand'],
     ['version' => '2.16', 'date' => '2026-11-19', 'note' => 'A pop-up when you pin or unpin something. Phone menu: dimmed page behind it, a My Pinned page with the Pinned card, and the Product Hunt badge inside it, and the last view count shows instantly'],
     ['version' => '2.15', 'date' => '2026-11-19', 'note' => 'Welcome loader while the page and pictures get ready, plus quick reveal and tab change animations'],
     ['version' => '2.13', 'date' => '2026-11-18', 'note' => 'Product Hunt badge in the top bar, Update log is now Updates, tighter tabs, no clock'],

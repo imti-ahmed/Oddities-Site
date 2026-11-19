@@ -249,6 +249,15 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
 #liveBtn:hover { filter: brightness(1.04); } #liveBtn:active { transform: translateY(1px); } #liveBtn:disabled { opacity: .55; cursor: wait; }
 #colStop { height: 36px; padding: 0 16px; border-radius: 999px; font-size: 14px; font-weight: 600; cursor: pointer; color: #111; border: 1px solid #a5abb5;
   background: linear-gradient(#fff 0%, #f7f7f7 48%, #e9e9ea 52%, #f6f6f6 100%); box-shadow: inset 0 1px 0 #fff, 0 4px 12px rgba(0,0,0,.07); }
+.manual { margin-top: 14px; border-top: 1px dashed #b9c4d8; padding-top: 10px; }
+.manual[hidden] { display: none; }
+.manual summary { cursor: pointer; font-size: 14px; font-weight: 700; color: #2b3fa6; }
+.manual form { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.manual input[type="text"], .manual input[type="date"], .manual select { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; padding: 7px 9px; }
+.manual-row { display: flex; gap: 8px; }
+.manual-row select { flex: 1; min-width: 0; }
+.manual-date, .manual-check { font-size: 13.5px; display: flex; align-items: center; gap: 8px; }
+.manual-date input { flex: 1; width: auto; }
 .admin-msg { margin: 12px 0 0 !important; font-size: 14px !important; }
 .admin-msg:empty { display: none; }
 #adminCard .admin-msg.good { color: #17803f; }

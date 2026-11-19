@@ -363,7 +363,8 @@
       tools:      { button: 'Add tool',      help: 'Paste a link to a tool, or several separated by commas. The AI names each one and picks its tag (the kind of tool), and a screenshot is taken. Nothing is judged: whatever you paste is added.' }
     };
     function currentKind() { var r = $('input[name="adminKind"]:checked'); return r ? r.value : 'job'; }
-    function applyKind() { var k = KINDS[currentKind()]; btn.textContent = k.button; $('#adminHelp').textContent = k.help; msg.textContent = ''; logBox.innerHTML = ''; }
+    function applyKind() { var mb = $('#manualBox'); if (mb) { mb.hidden = currentKind() !== 'job'; if (mb.hidden) mb.open = false; }
+      var k = KINDS[currentKind()]; btn.textContent = k.button; $('#adminHelp').textContent = k.help; msg.textContent = ''; logBox.innerHTML = ''; }
     $$('input[name="adminKind"]').forEach(function (r) { r.addEventListener('change', applyKind); });
     function post(url, single) {
       return fetch('/api/index.php?add=1', {
@@ -450,6 +451,25 @@
         })
         .catch(function () { say('Could not reach the server. Check your internet and try again.', 'bad'); })
         .then(function () { btn.disabled = false; });
+    });
+
+    // "Add Manually" (jobs only): the details are typed in, nothing is read or judged by the AI
+    var mForm = $('#manualForm');
+    if (mForm) mForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var f = mForm.elements, mBtn = $('#manualBtn');
+      var body = { kind: 'manual_job', intern: f.intern.checked };
+      ['title', 'company', 'url', 'location', 'role', 'region', 'mode', 'posted_at'].forEach(function (k) { body[k] = f[k].value.trim(); });
+      if (body.url && !/^https?:\/\//i.test(body.url)) body.url = 'https://' + body.url;
+      mBtn.disabled = true; logBox.innerHTML = ''; say('Saving...', 'wait');
+      fetch('/api/index.php?add=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().catch(function () { return { status: 'error', message: 'The server gave an answer we could not read. Try again in a moment.' }; }); })
+        .then(function (d) {
+          say(d.message || 'Done.', d.status === 'added' ? 'good' : (d.status === 'duplicate' ? 'wait' : 'bad'));
+          if (d.status === 'added') mForm.reset();
+        })
+        .catch(function () { say('Could not reach the server. Check your internet and try again.', 'bad'); })
+        .then(function () { mBtn.disabled = false; });
     });
 
     // "Check open jobs": is every listed job still open? No AI: just web requests. Closed jobs move to the Dead Zone.

@@ -71,6 +71,35 @@ if ($action !== '') {                                // the "Check open jobs" bu
     reply(200, liveness_action($action, $in));
 }
 
+if (($in['kind'] ?? '') === 'manual_job') {          // "Add manually" on the /meow card: the details are typed by hand, so no page is read and no AI is asked
+    $roles = require __DIR__ . '/../config/roles.php';
+    $settings = require __DIR__ . '/../config/settings.php';
+    $url = trim((string)($in['url'] ?? ''));
+    [$ok, $why] = check_public_url($url, false);
+    if ($url === '' || mb_strlen($url) > 1500 || !$ok) reply(200, ['status' => 'error', 'message' => $url === '' ? 'Enter the job link.' : ($why ?: 'That link does not look right.')]);
+    $title = clean_line((string)($in['title'] ?? ''), 200);
+    $company = clean_line((string)($in['company'] ?? ''), 120);
+    if ($title === '' || $company === '') reply(200, ['status' => 'error', 'message' => 'Job title and company are both needed.']);
+    $role = (string)($in['role'] ?? '');
+    $roleCategory = array_column($roles['tags'], 'category', 'tag');
+    if (!isset($roleCategory[$role]) || $role === 'Internship') reply(200, ['status' => 'error', 'message' => 'Pick a role from the list.']);
+    $location = format_location(clean_line((string)($in['location'] ?? ''), 120));
+    $region = strtolower((string)($in['region'] ?? ''));
+    if (!in_array($region, ['india', 'abroad'], true)) reply(200, ['status' => 'error', 'message' => 'Pick India or Abroad.']);
+    $mode = strtolower((string)($in['mode'] ?? ''));
+    $today = date('Y-m-d');
+    $posted = (string)($in['posted_at'] ?? '');
+    if ($posted === '') $posted = $today;
+    elseif (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $posted) || !strtotime($posted)) reply(200, ['status' => 'error', 'message' => 'The posted date does not look right.']);
+    if ($posted > $today) $posted = $today;
+    if ((strtotime($today) - strtotime($posted)) / 86400 > (int)($settings['stale_days'] ?? 90)) reply(200, ['status' => 'error', 'message' => 'That job was posted more than ' . (int)($settings['stale_days'] ?? 90) . ' days ago, so it would go straight to the Dead Zone.']);
+    $job = ['title' => $title, 'company' => $company, 'location' => $location, 'url' => normalize_job_url($url), 'posted_at' => $posted, 'added_at' => $today,
+            'region' => $region, 'tags' => [$roleCategory[$role] . (!empty($in['intern']) ? ' · Intern' : '')], 'role' => $role, 'source' => 'admin'];
+    if (in_array($mode, ['remote', 'hybrid', 'in-office'], true)) $job['mode'] = $mode;
+    try { $existing = jobs_read_fresh(); } catch (Throwable $e) { reply(200, ['status' => 'error', 'message' => $e->getMessage()]); }
+    reply(200, intake_save($job, $existing));
+}
+
 $url = trim((string)($in['url'] ?? ''));
 if ($url === '' || mb_strlen($url) > 1500) reply(400, ['status' => 'error', 'message' => 'Paste a job link first.']);
 
