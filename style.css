@@ -204,7 +204,6 @@ table.jobs:has(.delbtn) td.pin, table.jobs:has(.delbtn) th.pin { width: 76px; wh
 .pill.updated          { --tint: #ffeaad; --dot: #ffb21e; --edge: #a36b00; }   /* amber */
 .pill.site             { --tint: #d9e8ff; --dot: #4a8df5; --edge: #1d4ed8; }   /* blue (Update log only: SITE UPDATE) */
 .pill.closed           { --tint: #ffdada; --dot: #f06a6a; --edge: #b02a2a; }   /* red (Update log only) */
-.pill.spot            { --tint: #fff6a8; --dot: #f2d200; --edge: #a38b00; }   /* yellow (Today's Spotlights) */
 .pill.inactive         { --tint: #eceff4; --dot: #a9b2c1; --edge: #66738a; }   /* grey (Update log only) */
 .nw { white-space: nowrap; }                              /* keeps the last word of the role name and its pill together */
 /* ONE blink timer for the whole page (instead of one per pill, which drifted apart for pills lower down the table): it moves the
