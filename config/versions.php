@@ -8,6 +8,7 @@
 // To release a new version: add one line at the top, with today's date (YYYY-MM-DD) and ONE short line saying what is new
 // (plain words, no full stop, no em dash). Everything else updates by itself. Versions up to 1.3 were written afterwards from the project history.
 return [
+    ['version' => '2.22', 'date' => '2026-11-26', 'note' => 'New Todays Spotlights card: a job, a company, a portfolio and a tool picked fresh every day'],
     ['version' => '2.21', 'date' => '2026-11-19', 'note' => 'The +N pill for companies with several jobs now also shows on phones'],
     ['version' => '2.20', 'date' => '2026-11-19', 'note' => 'A little more room between the tabs in the top bar'],
     ['version' => '2.19', 'date' => '2026-11-19', 'note' => 'Tabs and pages now show in the address (for example ?tab=india&page=2) so links open the right tab, a +N pill on companies with several jobs, new welcome card headlines, less empty space at the bottom'],

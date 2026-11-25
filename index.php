@@ -61,6 +61,32 @@ $withBadges = function (array $list) use ($settings, $newCut): array {
 };
 $tools = $withBadges($tools); $portfolios = $withBadges($portfolios); $companies = $withBadges($companies);
 
+// Highlights of the day: one random job, company, portfolio and tool, new every day. Nothing needs saving: the picks are replayed from the last 40 days,
+// each day taking the item with the lowest hash (a stable "random") among those not picked in the 13 days before it, so an item never comes back within 14 days.
+// (If a list has 13 items or fewer it cannot avoid repeats for 14 days, so it takes the one that was picked longest ago.)
+function daily_pick(array $items, string $cat): ?array
+{
+    if (!$items) return null;
+    $last = []; $pick = null; $now = strtotime(date('Y-m-d') . ' 12:00');
+    for ($d = 40; $d >= 0; $d--) {
+        $day = date('Y-m-d', $now - $d * 86400);
+        $best = null; $bestKey = null;
+        foreach ($items as $it) {
+            $since = isset($last[$it['id']]) ? $last[$it['id']] - $d : 99;   // days since it was last picked (99 = never)
+            $key = [$since < 14 ? 1 : 0, $since < 14 ? -$since : 0, crc32($day . '|' . $cat . '|' . $it['id'])];
+            if ($bestKey === null || $key < $bestKey) { $bestKey = $key; $best = $it; }
+        }
+        $last[$best['id']] = $d; $pick = $best;
+    }
+    return $pick;
+}
+$highlights = [
+    'job'       => daily_pick($live, 'job'),
+    'company'   => daily_pick($companies, 'company'),
+    'portfolio' => daily_pick($portfolios, 'portfolio'),
+    'tool'      => daily_pick($tools, 'tool'),
+];
+
 // Numbers shown on the tabs
 $n = ['all' => count($live), 'highlighted' => 0, 'india' => 0, 'abroad' => 0, 'remote' => 0];
 foreach ($live as $j) {
@@ -411,9 +437,30 @@ function table_head(bool $dead = false): string
         <template id="adminTpl"><?= admin_card() ?></template>
         <?php endif; ?>
 
-        <aside id="pinbox" class="win orange" aria-label="Pinned jobs">
+        <?php if (array_filter($highlights)): ?>
+        <aside id="hlbox" class="win green" aria-label="Today's Spotlights">
           <?= winbar() ?>
+          <!-- the halftone-dot fill (same look as the pills) used by the stars below -->
+          <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><pattern id="spotdots" width="3" height="3" patternUnits="userSpaceOnUse"><rect width="3" height="3" fill="#fff6a8"/><g fill="#f2d200"><circle cx="0" cy="0" r=".7"/><circle cx="3" cy="0" r=".7"/><circle cx="0" cy="3" r=".7"/><circle cx="3" cy="3" r=".7"/><circle cx="1.5" cy="1.5" r=".7"/></g></pattern></defs></svg>
+          <div class="hlhead">Today's Spotlights</div>
           <div class="winbody">
+            <?php
+              $hlRows = [];
+              if ($highlights['job'])       { $j = $highlights['job'];       $hlRows[] = [trim($j['title']) . ' (' . trim($j['company']) . ')', 'Job', $j['url']]; }
+              if ($highlights['company'])   { $c = $highlights['company'];   $hlRows[] = [$c['name'], $c['type'] !== '' ? 'Company · ' . $c['type'] : 'Company', $c['link']]; }
+              if ($highlights['portfolio']) { $p = $highlights['portfolio']; $hlRows[] = [$p['name'], 'Portfolio', $p['link']]; }
+              if ($highlights['tool'])      { $t = $highlights['tool'];      $hlRows[] = [$t['name'], $t['tag'] !== '' ? 'Tool · ' . $t['tag'] : 'Tool', $t['link']]; }
+              foreach ($hlRows as [$title, $type, $url]): ?>
+            <a class="hltext" href="<?= h($url) ?>" target="_blank" rel="nofollow noopener"><span class="hlt"><svg class="spotstar" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 14.9,8.6 22,9.3 16.6,14 18.2,21 12,17.3 5.8,21 7.4,14 2,9.3 9.1,8.6"/></svg><b><?= h($title) ?></b></span><small><?= h($type) ?></small></a>
+            <?php endforeach; ?>
+          </div>
+        </aside>
+        <?php endif; ?>
+
+        <aside id="pinbox" class="win orange collapsible" aria-label="Pinned jobs">
+          <?= winbar() ?>
+          <button type="button" class="colhead" data-collapse="pinbox" aria-expanded="true"><span>Pinned</span><i class="chev" aria-hidden="true"></i></button>
+          <div class="winbody colbody">
             <ul id="pinList"></ul>
             <div class="hint" id="pinHint">Tap the &#9734; on any job to pin it here. Pins are saved in this browser only.</div>
           </div>

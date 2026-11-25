@@ -380,6 +380,17 @@
     }
   });
 
+  // collapsible side cards (Highlights of the day, Pinned): tap the title to fold a card up; it stays folded in this browser
+  $$('.colhead').forEach(function (b) {
+    var card = b.closest('.collapsible'), k = 'dj_shut_' + b.dataset.collapse;
+    function set(shut) { card.classList.toggle('shut', shut); b.setAttribute('aria-expanded', shut ? 'false' : 'true'); }
+    try { set(localStorage.getItem(k) === '1'); } catch (e) {}
+    b.addEventListener('click', function () {
+      var shut = !card.classList.contains('shut'); set(shut);
+      try { localStorage.setItem(k, shut ? '1' : '0'); } catch (e) {}
+    });
+  });
+
   // admin card (only present on /meow): send the pasted link to the server, show what the AI decided
   (function () {
     var form = $('#adminForm');
