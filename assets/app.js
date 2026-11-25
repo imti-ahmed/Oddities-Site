@@ -380,6 +380,90 @@
     }
   });
 
+  // /meow only: draw the Today's Spotlights card on a canvas (1:1 or 4:3, on the site's dotted background) and copy it to the clipboard as a PNG
+  function spotlightCopyButtons() {
+    var box = $('#hlbox .winbody'); if (!box || $('.spotcopy', box)) return;
+    var row = document.createElement('div'); row.className = 'spotcopy';
+    [['4:3', 1080, 810]].forEach(function (f) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = 'Copy ' + f[0] + ' image';
+      b.addEventListener('click', function () {
+        b.disabled = true; b.textContent = 'Drawing...';
+        drawSpotlight(f[1], f[2]).then(function (blob) {
+          return navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function () { b.textContent = 'Copied!'; }, function () {
+            var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'todays-spotlights.png'; a.click();   // clipboard blocked: save the picture instead
+            b.textContent = 'Saved as file';
+          });
+        }).catch(function () { b.textContent = 'Failed'; }).then(function () {
+          setTimeout(function () { b.disabled = false; b.textContent = 'Copy ' + f[0] + ' image'; }, 1800);
+        });
+      });
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+  }
+
+  function drawSpotlight(W, H) {
+    var rows = $$('#hlbox .hltext').map(function (a) { return { title: $('b', a).textContent, type: $('small', a).textContent }; });
+    return Promise.all([document.fonts.load('600 20px Inter'), document.fonts.load('500 20px Inter')]).catch(function () {}).then(function () {
+      var S = 2, c = document.createElement('canvas'); c.width = W * S; c.height = H * S; var x = c.getContext('2d');   // drawn at double size so the picture stays sharp
+      x.scale(S, S); x.imageSmoothingQuality = 'high';
+      var F = 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+      function wrap(text, font, maxW) {
+        x.font = font; var words = text.split(' '), lines = [], cur = '';
+        words.forEach(function (w) { var t = cur ? cur + ' ' + w : w; if (cur && x.measureText(t).width > maxW) { lines.push(cur); cur = w; } else cur = t; });
+        if (cur) lines.push(cur); return lines;
+      }
+      // pick the biggest scale at which the whole card (and the site name under it) fits the frame
+      var k = 2.6, cw, lay, total, foot = 0;
+      for (; k > 1; k -= 0.05) {
+        cw = Math.min(W - 120, 330 * k); var maxW = cw - (18 + 17 + 7 + 18) * k; total = 26 * k + 33 * k;
+        lay = rows.map(function (r) {
+          var tl = wrap(r.title, '600 ' + 14 * k + 'px ' + F, maxW), yl = wrap(r.type, '500 ' + 12.5 * k + 'px ' + F, maxW), h = 9 * k + tl.length * 14 * k * 1.35 + yl.length * 12.5 * k * 1.4 + 10 * k;
+          total += h; return { t: tl, y: yl, h: h };
+        });
+        if (total + foot <= H - 90) break;
+      }
+      // background: the site's dotted grid
+      x.fillStyle = '#f5f5f5'; x.fillRect(0, 0, W, H);
+      x.fillStyle = '#d6d6d6'; for (var gx = 11; gx < W; gx += 22) for (var gy = 11; gy < H; gy += 22) { x.beginPath(); x.arc(gx, gy, 1.2, 0, 7); x.fill(); }
+      var cx = (W - cw) / 2, cy = (H - total - foot) / 2;
+      function rr(px, py, w, h, r) { x.beginPath(); x.moveTo(px + r, py); x.arcTo(px + w, py, px + w, py + h, r); x.arcTo(px + w, py + h, px, py + h, r); x.arcTo(px, py + h, px, py, r); x.arcTo(px, py, px + w, py, r); x.closePath(); }
+      x.save(); x.shadowColor = 'rgba(20,40,80,.14)'; x.shadowBlur = 28 * k; x.shadowOffsetY = 10 * k; x.fillStyle = '#fff'; rr(cx, cy, cw, total, 10 * k); x.fill(); x.restore();
+      x.save(); rr(cx, cy, cw, total, 10 * k); x.clip();
+      var g = x.createLinearGradient(0, cy, 0, cy + 26 * k); g.addColorStop(0, '#eaf8ee'); g.addColorStop(1, '#c6ecd3');
+      x.fillStyle = g; x.fillRect(cx, cy, cw, 26 * k); x.fillStyle = '#9dd4b0'; x.fillRect(cx, cy + 26 * k - 1, cw, 1);
+      [['#ff5f57', '#df4740'], ['#febc2e', '#dba024'], ['#28c840', '#1ca832']].forEach(function (d, i) {
+        x.beginPath(); x.arc(cx + 11 * k + 5.5 * k + i * 17 * k, cy + 13 * k, 5.5 * k, 0, 7); x.fillStyle = d[0]; x.fill(); x.lineWidth = k; x.strokeStyle = d[1]; x.stroke();
+      });
+      var y = cy + 26 * k;
+      x.fillStyle = '#fafbfe'; x.fillRect(cx, y, cw, 33 * k); x.fillStyle = '#e6ecf5'; x.fillRect(cx, y + 33 * k - 1, cw, 1);
+      x.fillStyle = '#9ca3af'; x.textBaseline = 'middle'; x.font = '500 ' + 12.5 * k + 'px ' + F; x.fillText("Today's Spotlights", cx + 18 * k, y + 16.5 * k);
+      y += 33 * k; x.textBaseline = 'alphabetic';
+      // the halftone-dot fill of the stars
+      var t = document.createElement('canvas'); t.width = t.height = Math.max(3, Math.round(3 * k * S)); var tc = t.getContext('2d'), ts = t.width;
+      tc.fillStyle = '#fff6a8'; tc.fillRect(0, 0, ts, ts); tc.fillStyle = '#f2d200';
+      [[0, 0], [ts, 0], [0, ts], [ts, ts], [ts / 2, ts / 2]].forEach(function (p) { tc.beginPath(); tc.arc(p[0], p[1], .7 * ts / 3, 0, 7); tc.fill(); });
+      var pat = x.createPattern(t, 'repeat'); pat.setTransform(new DOMMatrix().scale(1 / S));
+      var P = [[12,2],[14.9,8.6],[22,9.3],[16.6,14],[18.2,21],[12,17.3],[5.8,21],[7.4,14],[2,9.3],[9.1,8.6]];
+      rows.forEach(function (r, i) {
+        var L = lay[i]; if (i) { x.fillStyle = '#eef1f6'; x.fillRect(cx + 18 * k, y, cw - 36 * k, 1); }
+        var ty = y + 9 * k, tx = cx + (18 + 17 + 7) * k;
+        // star, centred on the first line of the title
+        var sz = 17 * k / 24, sx = cx + 18 * k, sy = ty + 14 * k * 1.35 / 2 - 17 * k / 2;
+        x.beginPath(); P.forEach(function (p, j) { x[j ? 'lineTo' : 'moveTo'](sx + p[0] * sz, sy + p[1] * sz); }); x.closePath();
+        x.fillStyle = pat; x.fill(); x.lineWidth = 2 * sz; x.lineJoin = 'round'; x.strokeStyle = '#a38b00'; x.stroke();
+        x.fillStyle = '#111'; x.font = '600 ' + 14 * k + 'px ' + F;
+        L.t.forEach(function (ln) { ty += 14 * k * 1.35; x.fillText(ln, tx, ty - 14 * k * 0.3); });
+        x.fillStyle = '#6b7280'; x.font = '500 ' + 12.5 * k + 'px ' + F;
+        L.y.forEach(function (ln) { ty += 12.5 * k * 1.4; x.fillText(ln, tx, ty - 12.5 * k * 0.3); });
+        y += L.h;
+      });
+      x.restore();
+      x.lineWidth = Math.max(1.5, k); x.strokeStyle = '#86bf9b'; rr(cx, cy, cw, total, 10 * k); x.stroke();   // the card's green outline
+      return new Promise(function (res, rej) { c.toBlob(function (b) { b ? res(b) : rej(); }, 'image/png'); });
+    });
+  }
+
   // collapsible side cards (Highlights of the day, Pinned): tap the title to fold a card up; it stays folded in this browser
   $$('.colhead').forEach(function (b) {
     var card = b.closest('.collapsible'), k = 'dj_shut_' + b.dataset.collapse;
@@ -395,23 +479,24 @@
   (function () {
     var form = $('#adminForm');
     if (!form && /^\/meow\/?$/.test(location.pathname)) {       // backup: the address is /meow but the server did not add the card
-      var tpl = $('#adminTpl'), pin = $('#pinbox');
+      var tpl = $('#adminTpl'), pin = $('#hlbox') || $('#pinbox');
       if (tpl && pin) { pin.parentNode.insertBefore(tpl.content.cloneNode(true), pin); form = $('#adminForm'); }
     }
     if (!form) return;
+    spotlightCopyButtons();
     var urlBox = $('#adminUrl'), btn = $('#adminBtn'), msg = $('#adminMsg');
     function say(text, kind) { msg.textContent = text; msg.className = 'admin-msg ' + kind; }
     var logBox = $('#adminLog');
     // What are we adding? Job (the AI checks it against our roles), or a Portfolio / a Tool (the AI just fills in the entry: name, and the tag for a tool).
     var KINDS = {
-      job:        { button: 'Add job',       help: 'Paste a job link, or a page that lists many jobs. The AI checks every job against our roles and lists the ones that fit.' },
-      portfolios: { button: 'Add portfolio', help: 'Paste a link to a portfolio or personal site, or several separated by commas. The AI names each entry and a screenshot is taken. Nothing is judged: whatever you paste is added.' },
-      companies:  { button: 'Add company',    help: 'Paste a link to a company website, or several separated by commas. The AI names each one, picks its type (Tech, Design, Studio...) and writes a short description. Nothing is judged: whatever you paste is added.' },
-      tools:      { button: 'Add tool',      help: 'Paste a link to a tool, or several separated by commas. The AI names each one and picks its tag (the kind of tool), and a screenshot is taken. Nothing is judged: whatever you paste is added.' }
+      job:        { button: 'Add job' },
+      portfolios: { button: 'Add portfolio' },
+      companies:  { button: 'Add company' },
+      tools:      { button: 'Add tool' }
     };
     function currentKind() { var r = $('input[name="adminKind"]:checked'); return r ? r.value : 'job'; }
     function applyKind() { var mb = $('#manualBox'); if (mb) { mb.hidden = currentKind() !== 'job'; if (mb.hidden) mb.open = false; }
-      var k = KINDS[currentKind()]; btn.textContent = k.button; $('#adminHelp').textContent = k.help; msg.textContent = ''; logBox.innerHTML = ''; }
+      var k = KINDS[currentKind()]; btn.textContent = k.button; msg.textContent = ''; logBox.innerHTML = ''; }
     $$('input[name="adminKind"]').forEach(function (r) { r.addEventListener('change', applyKind); });
     function post(url, single) {
       return fetch('/api/index.php?add=1', {
@@ -506,7 +591,7 @@
       e.preventDefault();
       var f = mForm.elements, mBtn = $('#manualBtn');
       var body = { kind: 'manual_job', intern: f.intern.checked };
-      ['title', 'company', 'url', 'location', 'role', 'region', 'mode', 'posted_at'].forEach(function (k) { body[k] = f[k].value.trim(); });
+      ['title', 'company', 'url', 'location', 'role', 'region', 'mode'].forEach(function (k) { body[k] = f[k].value.trim(); });
       if (body.url && !/^https?:\/\//i.test(body.url)) body.url = 'https://' + body.url;
       mBtn.disabled = true; logBox.innerHTML = ''; say('Saving...', 'wait');
       fetch('/api/index.php?add=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })

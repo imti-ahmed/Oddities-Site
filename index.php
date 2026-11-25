@@ -235,7 +235,6 @@ function admin_card(): string
               <label><input type="radio" name="adminKind" value="tools"><span>Tools</span></label>
               <label><input type="radio" name="adminKind" value="companies"><span>Company</span></label>
             </div>
-            <p id="adminHelp">Paste a job link, or a page that lists many jobs. The AI checks every job against our roles and lists the ones that fit.</p>
             <form id="adminForm" autocomplete="off">
               <input type="text" inputmode="url" id="adminUrl" placeholder="https://..." aria-label="Link" autocapitalize="off" spellcheck="false" required>
               <button type="submit" id="adminBtn">Add job</button>
@@ -259,7 +258,6 @@ function admin_card(): string
                   <select name="region" aria-label="Region"><option value="india">India</option><option value="abroad">Abroad</option></select>
                   <select name="mode" aria-label="Work mode"><option value="">Mode: not stated</option><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="in-office">In-office</option></select>
                 </div>
-                <label class="manual-date">Posted on <input type="date" name="posted_at" aria-label="Posted date"></label>
                 <label class="manual-check"><input type="checkbox" name="intern"> Internship</label>
                 <button type="submit" id="manualBtn">Add job</button>
               </form>
