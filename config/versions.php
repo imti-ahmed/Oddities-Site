@@ -8,6 +8,8 @@
 // To release a new version: add one line at the top, with today's date (YYYY-MM-DD) and ONE short line saying what is new
 // (plain words, no full stop, no em dash). Everything else updates by itself. Versions up to 1.3 were written afterwards from the project history.
 return [
+    ['version' => '2.24', 'date' => '2026-11-26', 'note' => 'Swipe left or right on phones to move between tabs, and a new Sync Devices card: a 6 character code pairs your computer with your phone so your pins match on both, no account needed'],
+    ['version' => '2.23', 'date' => '2026-11-26', 'note' => 'On phones a bottom bar holds the page buttons and Pinned and Spotlight buttons that pop their card up on every page, the Highlighted filter is gone, and the job filters are smaller'],
     ['version' => '2.22', 'date' => '2026-11-26', 'note' => 'New Todays Spotlights card: a job, a company, a portfolio and a tool picked fresh every day'],
     ['version' => '2.21', 'date' => '2026-11-19', 'note' => 'The +N pill for companies with several jobs now also shows on phones'],
     ['version' => '2.20', 'date' => '2026-11-19', 'note' => 'A little more room between the tabs in the top bar'],

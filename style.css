@@ -58,7 +58,8 @@ html, body, button, select, summary { cursor: -webkit-image-set(url(data:image/p
 .sys { align-items: center; }
 .sys .ph { display: inline-flex; line-height: 0; }
 .sys .ph img { height: 26px; width: auto; display: block; }   /* small Product Hunt badge beside the Oddities count */
-#tabs a.m-tab, #tabs a.ph-menu { display: none; }   /* the Product Hunt pill inside the phone menu: phones only */
+#dock, #sheet { display: none; }   /* the phone bottom bar and its pop-up card: phones only (see the phone rules at the bottom) */
+#tabs a.ph-menu { display: none; }   /* the Product Hunt pill inside the phone menu: phones only */
 #scrim { display: none; }   /* dark overlay behind the phone menu: phones only */
 .sys .ver { color: #8b8b8b; font-weight: 500; }   /* V.X.Y at the right end of the bar */
 /* phone menu button and the strip on top of the phone menu: only shown on phones (see the phone rules at the bottom) */
@@ -305,8 +306,7 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
 /* Highlights of the day: four plain text rows, Title then Type */
 #hlbox .winbody { padding: 2px 18px 4px; }
 .hlhead { padding: 9px 18px; background: #fafbfe; border-bottom: 1px solid #e6ecf5; font-size: 12.5px; font-weight: 500; color: var(--faint); }
-.hltext { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 7px; align-items: baseline; padding: 9px 0 10px; border-top: 1px solid #eef1f6; color: var(--ink); }
-.hltext:first-of-type { border-top: 0; }   /* the header bar already has a line under it */
+.hltext { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 7px; align-items: baseline; padding: 9px 0 10px; color: var(--ink); }
 .hlt { display: contents; }   /* the pill and the title become two grid cells; the type sits under the title */
 .spotstar { width: 17px; height: 17px; align-self: center; opacity: var(--blink); overflow: visible; }   /* blinks together with the pills */
 .spotstar polygon { fill: url(#spotdots); stroke: #a38b00; stroke-width: 2; stroke-linejoin: round; }
@@ -401,9 +401,6 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
   #tabs .n { font-size: 13px; }
   #tabs .gap { display: block; width: auto; height: 7px; margin: 0; background: #f4f6fa; border-top: 1px solid #e6ecf5; border-bottom: 1px solid #e6ecf5; }
   #tabs .gap + a { border-top: 0; }
-  #tabs a.m-tab { display: flex; }
-  #listView:not(.pinpage) #pinbox, #listView:not(.pinpage) #hlbox { display: none; }   /* on phones the Pinned card lives on its own page (My Pinned in the menu) */
-  #listView.pinpage #pinbox.nopins { display: block; }   /* ...and with no pins it shows the empty card (with the hint), not nothing */
   #tabs a.ph-menu { display: flex; justify-content: center; padding: 12px 16px; line-height: 0; }
   #tabs a.ph-menu img { height: 30px; width: auto; display: block; }
   #scrim { display: block; position: fixed; inset: 0; z-index: 15; background: rgba(15,20,35,.45); opacity: 0; visibility: hidden; transition: opacity .2s ease, visibility 0s linear .2s; }
@@ -415,6 +412,48 @@ html { animation: blink-all 1.3s ease-in-out infinite; }
   table.jobs td.rank { padding-top: 11px; }
   table.jobs td.pin { padding-top: 7px; }
   td.rank, th.rank { width: 30px; padding-left: 6px; padding-right: 2px; }
+  /* the bottom bar: the same height and look as the top bar, white with a soft shadow above. Cards scroll underneath it. */
+  .pager { display: none; }                                       /* the page buttons under the list: the bar shows them on phones */
+  body { padding-bottom: calc(73px + env(safe-area-inset-bottom)); }   /* the bar's height plus a gap like the one under the top bar */
+  #toast { bottom: calc(66px + env(safe-area-inset-bottom)); }
+  #dock {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; box-sizing: border-box;
+    min-height: calc(51px + env(safe-area-inset-bottom)); padding: 0 12px env(safe-area-inset-bottom);
+    background: rgba(255,255,255,.97); backdrop-filter: blur(8px); border-top: 1px solid #d4d8e0; box-shadow: 0 -8px 20px rgba(20,40,80,.08);
+  }
+  #dockPager { display: flex; align-items: center; gap: 5px; }
+  #dockPager[hidden] { display: none; }
+  .dock-right { display: flex; gap: 6px; margin-left: auto; }
+  /* the pills: all the same height, the two on the right the same width, the page buttons round */
+  #dock .pg { height: 34px; min-width: 34px; padding: 0 12px; box-sizing: border-box; font: inherit; font-size: 13.5px; font-weight: 500; line-height: 1; white-space: nowrap; }
+  #dock .dock-right .pg { min-width: 80px; }
+  #dock .dock-right .pg.ic { min-width: 34px; width: 34px; padding: 0; }   /* the two round icon buttons: Pinned and Sync */
+  #dock .pg svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  #dockPager .pg { padding: 0; }                                  /* the numbers take the same text size as the Spotlight pill (13.5px, set on #dock .pg) */
+  #dockPager .pg[aria-label$="page"] { font-size: 16px; }         /* only the two arrows are a little bigger */
+  /* the current page is the blue circle (.pg.on) */
+  #dock button.pg.on { cursor: pointer; }                         /* the open one (Pinned or Spotlight) is glossy blue, like the current page */
+  /* the pop-up above the bar: holds the real Pinned and Spotlights cards, one at a time */
+  #sheet {
+    display: block; position: fixed; left: 12px; right: 12px; bottom: calc(59px + env(safe-area-inset-bottom)); z-index: 24;
+    max-height: calc(100vh - 160px - env(safe-area-inset-bottom)); overflow-y: auto; border-radius: 10px; box-shadow: 0 14px 34px rgba(20,40,80,.22);
+    opacity: 0; visibility: hidden; transform: translateY(8px); transition: opacity .16s ease, transform .16s ease, visibility 0s linear .16s;
+  }
+  #sheet.open { opacity: 1; visibility: visible; transform: none; transition: opacity .16s ease, transform .16s ease, visibility 0s; }
+  /* a light dark overlay behind the pop-up (over the page and the top bar, under the card and the bottom bar); tapping it closes the card */
+  body::after { content: ""; position: fixed; inset: 0; z-index: 23; background: rgba(15,20,35,.32); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .16s ease, visibility 0s linear .16s; }
+  body:has(#sheet.open)::after { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity .16s ease, visibility 0s; }
+  #sheet > .win { margin: 0; }
+  #sheet .win { display: none; }                                  /* only the card for the open button shows, one at a time */
+  #sheet[data-card="pin"] #pinbox, #sheet[data-card="spot"] #hlbox, #sheet[data-card="sync"] #syncbox { display: block; }   /* (Pinned with no pins still shows, with its hint) */
+  #sheet #pinList { max-height: none; }
+  #sheet #syncbox .colhead { display: none; }                      /* on a phone the Sync card has no title strip */
+  #sheet .chev { display: none; }                                 /* in the pop-up the Pinned card is always open */
+  #sheet .collapsible.shut .colbody { display: block; }
+  @media (prefers-reduced-motion: reduce) { #sheet { transition: none; } }
+  #pills { flex-wrap: nowrap; gap: 6px; margin-bottom: 14px; }   /* the job filter pills share one row and together are as wide as the list below */
+  #pills .pg { flex: 1 1 0; height: 30px; min-width: 0; padding: 0 4px; font-size: 12.5px; }
+  #pills .n { font-size: 10.5px; margin-left: 4px; }
   .cochip { font-size: 11px; line-height: 15px; }
   .cochip::after { display: none; }   /* no hover on a phone: no tooltip */
   #coBar { padding-left: 8px; }   /* starts where the (narrower) numbers start on phones */
@@ -482,3 +521,19 @@ table.cofiltered .cochip { display: none; }
   background: linear-gradient(#fff 0%, #f7f7f7 48%, #e9e9ea 52%, #f6f6f6 100%); box-shadow: inset 0 1px 0 #fff, 0 4px 12px rgba(0,0,0,.07);
 }
 .spotcopy button:hover { filter: brightness(1.04); } .spotcopy button:active { transform: translateY(1px); } .spotcopy button:disabled { opacity: .55; cursor: wait; }
+
+/* ---------- Sync card: a code to carry the pins to another device (desktop: below Spotlight; phones: the sync circle in the bottom bar) ---------- */
+#syncbox .winbody { padding: 10px 18px 14px; }
+#syncbox p { margin: 0 0 10px; line-height: 1.45; font-size: 13.5px; color: #334155; }
+#syncbox p:last-child { margin-bottom: 0; }
+#syncForm { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sync-boxes { display: grid; grid-template-columns: repeat(6, 32px); gap: 4px; }
+.sync-boxes input { width: 100%; min-width: 0; height: 34px; padding: 0; border: 1px solid #a5abb5; border-radius: 7px; background: #fff; font: inherit; font-size: 16px; font-weight: 700; text-align: center; text-transform: uppercase; color: var(--ink); caret-color: var(--blue); }
+.sync-boxes input:focus { outline: 2px solid #99cbf8; outline-offset: 0; border-color: #6aa6e8; }
+.sync-go { flex: 1; min-width: 0; height: 34px; padding: 0 10px; font: inherit; font-size: 13.5px; font-weight: 500; }
+.sync-boxes input[readonly] { background: #f4f6fa; cursor: default; }   /* a code that is already in use: shown, not editable */
+@media (min-width: 761px) {
+  #syncbox.nocode { display: none; }   /* a computer shows the card once it has a code */
+  .sync-go { display: none; }          /* the computer card has no buttons: it only shows the code (the phone types it in) */
+}
+.sync-revert { width: 100%; height: 34px; margin-top: 2px; font: inherit; font-size: 13.5px; font-weight: 500; }

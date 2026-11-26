@@ -52,13 +52,13 @@
 
   var JOB_VIEWS = {
     'all':       function () { return true; },
-    'highlighted': function (r) { return r.dataset.hl === '1'; },
     'india':     function (r) { return r.dataset.region === 'india'; },
     'abroad':    function (r) { return r.dataset.region === 'abroad'; },
     'remote':    function (r) { return r.dataset.mode === 'remote'; },
     'dead':      function () { return true; }
   };
-  var OTHER_VIEWS = ['log', 'about', 'portfolios', 'tools', 'companies', 'pinned'];   // 'pinned' = My Pinned, phones only
+  var OTHER_VIEWS = ['log', 'about', 'portfolios', 'tools', 'companies'];
+  function isPhone() { return window.matchMedia('(max-width: 760px)').matches; }
 
   var listView = $('#listView'), logView = $('#logView'), aboutView = $('#aboutView');
   var PINNABLE = 'tr[data-id], .gitem[data-id]';                 // a job row, or a card in the Portfolios / Tools gallery
@@ -99,7 +99,7 @@
   try { pins = JSON.parse(localStorage.getItem(KEY) || '[]') || []; } catch (e) { pins = []; }
   if (!Array.isArray(pins)) pins = [];
   pins = pins.filter(function (p) { return p && typeof p === 'object' && typeof p.id === 'string' && typeof p.url === 'string'; });
-  function savePins() { try { localStorage.setItem(KEY, JSON.stringify(pins)); } catch (e) { /* storage blocked: pins just last until the page closes */ } }
+  function savePins() { try { localStorage.setItem(KEY, JSON.stringify(pins)); } catch (e) { /* storage blocked: pins just last until the page closes */ } syncPush(); }
   function samePin(p, id, url) { return p.id === id || (!!url && p.url === url); }
   function isPinned(id, url) { return pins.some(function (p) { return samePin(p, id, url); }); }
   function findEntry(p) {                                   // the entry on the page that a pin belongs to: by id, else by link
@@ -121,9 +121,8 @@
       x.addEventListener('click', function () { togglePin(p.id); });
       li.appendChild(box); li.appendChild(x); list.appendChild(li);
     });
-    var pn = $('#pinTabN'); if (pn) pn.textContent = pins.length;
     var hint = $('#pinHint');
-    if (isAdmin()) { hint.textContent = 'Admin mode: the star highlights a job for everyone (see the Highlighted tab). Pinning for yourself is paused on this page. Portfolios and tools have no highlight yet.'; hint.hidden = false; }
+    if (isAdmin()) { hint.textContent = 'Admin mode: the star highlights a job for everyone. Pinning for yourself is paused on this page. Portfolios and tools have no highlight yet.'; hint.hidden = false; }
     else { hint.textContent = 'Tap the ☆ on any job to pin it here. Pins are saved in this browser only.'; hint.hidden = pins.length > 0; }
     $('#pinbox').classList.toggle('nopins', pins.length === 0 && !isAdmin());
     if (isAdmin()) $$('#deadTable tbody tr').forEach(function (r) { if (!$('.delbtn', r)) addDelBtn(r, $('td.posted', r)); });
@@ -142,11 +141,6 @@
 
   // Admin mode (the /meow card is on the page): the star highlights the job for EVERYONE, saved in the database.
   function isAdmin() { return !!$('#adminCard'); }
-  function updateHighlightTab() {
-    var tab = $('#pills a[data-view="highlighted"]'); if (!tab) return;
-    $('.n', tab).textContent = '(' + $$('#liveTable tbody tr').filter(function (r) { return r.dataset.hl === '1'; }).length + ')';
-    if (isAdmin()) tab.hidden = false;
-  }
   // The numbers on the tabs (and "N jobs" at the top right), counted again from the rows that are on the page.
   function recountTabs() {
     var rows = $$('#liveTable tbody tr');
@@ -190,7 +184,7 @@
   }
   function toggleHighlight(row) {
     var on = row.dataset.hl !== '1';
-    function set(v) { row.dataset.hl = v ? '1' : ''; renderPins(); updateHighlightTab(); if (view === 'highlighted') render(); }
+    function set(v) { row.dataset.hl = v ? '1' : ''; renderPins(); }
     set(on);                                                       // shown at once; undone below if saving fails
     fetch('/api/index.php?add=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'highlight', url: row.dataset.url, on: on }) })
       .then(function (r) { return r.json(); })
@@ -217,12 +211,207 @@
     else toast('Removed from your pins');
   }
 
+  /* ---------- phone bottom bar: the page buttons (left) and Pinned / Spotlight (right) ---------- */
+  // On phones the bar shows ‹ (current page) › on the left. Pinned and Spotlight pop their card up above the bar, on every page:
+  // the real cards are moved into #sheet on phones, and back into the side column on bigger screens.
+  var dockPager = $('#dockPager'), sheet = $('#sheet'), dockPin = $('#dockPin'), dockSpot = $('#dockSpot'), dockSync = $('#dockSync');
+  var pinCard = $('#pinbox'), hlCard = $('#hlbox'), syncCard = $('#syncbox');
+  var cardHome = [pinCard, syncCard, hlCard].filter(Boolean).map(function (c) { return { el: c, parent: c.parentNode, next: c.nextSibling }; });   // the last card first: each one is put back in front of the card that followed it
+  function placeCards() {
+    if (isPhone()) { cardHome.slice().reverse().forEach(function (h) { if (h.el.parentNode !== sheet) sheet.appendChild(h.el); }); }
+    else cardHome.forEach(function (h) { if (h.el.parentNode === sheet) h.parent.insertBefore(h.el, h.next && h.next.parentNode === h.parent ? h.next : null); });
+    if (!isPhone()) closeSheet();
+  }
+  function setDock(pages) {
+    dockPager.innerHTML = ''; dockPager.hidden = pages < 2;
+    if (pages < 2) return;
+    function btn(label, target, cls, aria) {
+      var el = document.createElement(target ? 'a' : 'span'); el.className = 'pg ' + cls; el.textContent = label;
+      if (target) el.href = '#' + view + (target > 1 ? '/' + target : '');
+      if (aria) el.setAttribute('aria-label', aria);
+      dockPager.appendChild(el); return el;
+    }
+    btn('‹', page > 1 ? page - 1 : 0, page > 1 ? '' : 'off', 'Previous page');
+    var first = page < pages ? page : page - 1;                    // two number circles: this page and the next (on the last page: the one before and this one)
+    [first, first + 1].forEach(function (n) {
+      var el = btn(String(n), n === page ? 0 : n, n === page ? 'on' : '', 'Page ' + n + ' of ' + pages);
+      if (n === page) el.setAttribute('aria-current', 'page');
+    });
+    btn('›', page < pages ? page + 1 : 0, page < pages ? '' : 'off', 'Next page');
+  }
+  function closeSheet() {
+    sheet.classList.remove('open'); sheet.dataset.card = '';
+    [dockPin, dockSpot, dockSync].forEach(function (b) { if (b) { b.classList.remove('on'); b.setAttribute('aria-expanded', 'false'); } });
+  }
+  function toggleSheet(card, btn) {
+    var wasOpen = sheet.classList.contains('open') && sheet.dataset.card === card;
+    closeSheet();
+    if (wasOpen) return;
+    sheet.dataset.card = card; sheet.classList.add('open'); btn.classList.add('on'); btn.setAttribute('aria-expanded', 'true');
+  }
+  dockPin.addEventListener('click', function () { toggleSheet('pin', dockPin); });
+  if (dockSpot) dockSpot.addEventListener('click', function () { toggleSheet('spot', dockSpot); });
+  dockSync.addEventListener('click', function () { toggleSheet('sync', dockSync); });
+  document.addEventListener('click', function (e) { if (sheet.classList.contains('open') && !e.target.closest('#sheet, #dock')) closeSheet(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSheet(); });
+  window.addEventListener('resize', placeCards);
+
+  /* ---------- sync: pair ONE computer with ONE phone using a 6-character code (no accounts) ---------- */
+  // The computer makes the code and shows it. The phone types it in once and from then on the two keep the same pins: every change is sent to the
+  // server (last change wins) and the pins are fetched again when the page opens or comes back into view. One code pairs exactly one computer and one
+  // phone. On the phone, Revert unpairs them: the phone keeps its pins, and the computer shows its code again for a phone to use.
+  var SYNC_KEY = 'dj_sync_code', syncCode = '', syncPeer = false, syncTimer = 0, syncBusy = false, syncDevice = '';
+  try { syncCode = localStorage.getItem(SYNC_KEY) || ''; syncPeer = localStorage.getItem('dj_sync_peer') === '1'; syncDevice = localStorage.getItem('dj_device') || ''; } catch (e) {}
+  if (!syncDevice) {                                                // a random id for this browser (only used to keep a code to one computer and one phone)
+    try { var rnd = new Uint8Array(12); crypto.getRandomValues(rnd); syncDevice = Array.prototype.map.call(rnd, function (n) { return ('0' + n.toString(16)).slice(-2); }).join(''); }
+    catch (e) { syncDevice = String(Math.random()).slice(2) + String(Date.now()); }
+    try { localStorage.setItem('dj_device', syncDevice); } catch (e) {}
+  }
+  function syncSay(text, kind) { if (kind !== 'wait') toast(text); }   // answers show in the small pop-up, so the card stays plain
+  function syncApi(body) {
+    var msg = Object.assign({ device: syncDevice, role: isPhone() ? 'mobile' : 'desktop' }, body);
+    return fetch('/api/index.php?sync=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(msg) })
+      .then(function (r) { return r.json().catch(function () { return { status: 'error', message: 'The server gave an answer we could not read. Try again in a moment.' }; }); })
+      .catch(function () { return { status: 'error', message: 'Could not reach the server. Check your internet and try again.' }; });
+  }
+  var SYNC_TAG = 'Carry your pins to another device. No account, no sign-up, just a code.';
+  var SYNC_DONE_PHONE = 'Your pins are now synced with your computer. No account, no sign-up, just a code.';
+  var SYNC_DONE_DESK = 'Your pins are now synced with your phone. No account, no sign-up, just a code.';
+  // What the card shows. Synced = on a phone: it has a code; on a computer: a phone has paired with its code.
+  //   not synced: the text, and the six boxes (computer: its code, locked; phone: empty, to type the code in, with the Sync button)
+  //   synced:     only the text saying so (phone: and a Revert button)
+  function syncPaint() {
+    if (!syncBoxes) return;
+    var phone = isPhone(), has = !!syncCode, done = has && (phone || syncPeer);
+    if (syncCard) syncCard.classList.toggle('nocode', !phone && !has);       // a computer shows the card once it has a code
+    syncBoxes.forEach(function (b, i) { if (!phone) b.value = syncCode.charAt(i); b.readOnly = !phone; });
+    $('#syncForm').hidden = done;
+    $('#syncRevert').hidden = !(phone && done);
+    $('#syncText').textContent = done ? (phone ? SYNC_DONE_PHONE : SYNC_DONE_DESK) : SYNC_TAG;
+  }
+  function syncSet(code) {
+    syncCode = code || '';
+    if (!syncCode) syncSetPeer(false);
+    try { if (syncCode) localStorage.setItem(SYNC_KEY, syncCode); else localStorage.removeItem(SYNC_KEY); } catch (e) {}
+    syncPaint();
+  }
+  function syncSetPeer(v) {                                         // computer: has a phone paired with this code?
+    syncPeer = !!v;
+    try { if (syncPeer) localStorage.setItem('dj_sync_peer', '1'); else localStorage.removeItem('dj_sync_peer'); } catch (e) {}
+    syncPaint();
+  }
+  function takePins(list) {                                         // the server's list becomes this device's list (saved here without sending it back)
+    pins = (list || []).filter(function (p) { return p && typeof p.id === 'string' && typeof p.url === 'string'; });
+    try { localStorage.setItem(KEY, JSON.stringify(pins)); } catch (e) {}
+    renderPins();
+  }
+  function syncLost(d) { if (d.reason === 'notfound') { syncSet(''); syncEnsure(); } }   // the server does not know this code (for this device) any more: start again
+  // The computer makes its code once (then it is kept in this browser). A phone never makes one: it types in the code from the computer.
+  function syncEnsure() {
+    if (syncCode || syncBusy || isPhone() || isAdmin()) return;
+    syncBusy = true;
+    syncApi({ action: 'create', pins: pins }).then(function (d) {
+      syncBusy = false;
+      if (d.status === 'ok') { syncSet(d.code); syncSetPeer(false); syncPush(); }
+    });
+  }
+  function syncPush() {
+    if (!syncCode) { syncEnsure(); return; }
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(function () {
+      syncTimer = 0;
+      syncApi({ action: 'save', code: syncCode, pins: pins }).then(syncLost);
+    }, 400);
+  }
+  function syncPull() {
+    if (!syncCode || syncTimer) return;
+    syncApi({ action: 'load', code: syncCode }).then(function (d) {
+      if (d.status !== 'ok') { syncLost(d); return; }
+      if (!isPhone()) syncSetPeer(d.synced);
+      if (!syncTimer && JSON.stringify(d.pins) !== JSON.stringify(pins)) takePins(d.pins);
+    });
+  }
+  // A computer showing its code checks every few seconds whether a phone has paired (and, once paired, now and then for new pins).
+  (function () {
+    var tick = 0;
+    setInterval(function () { if (document.hidden || !syncCode || isPhone()) return; tick++; if (!syncPeer || tick % 6 === 0) syncPull(); }, 5000);
+  })();
+
+  // The six code boxes (phone): typing moves on to the next box, Backspace goes back, and pasting a whole code fills all six.
+  var syncBoxes = $$('#syncBoxes input');
+  function boxesValue() { return syncBoxes.map(function (b) { return b.value; }).join(''); }
+  function boxesFill(text) {
+    var t = String(text).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+    syncBoxes.forEach(function (b, i) { b.value = t.charAt(i); });
+    syncBoxes[Math.min(t.length, 5)].focus();
+  }
+  syncBoxes.forEach(function (b, i) {
+    b.addEventListener('input', function () {
+      if (b.readOnly) return;
+      var v = b.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (v.length > 1) { boxesFill(v); return; }
+      b.value = v; if (v && i < 5) syncBoxes[i + 1].focus();
+    });
+    b.addEventListener('keydown', function (e) {
+      if (b.readOnly) return;
+      if (e.key === 'Backspace' && !b.value && i > 0) { e.preventDefault(); syncBoxes[i - 1].value = ''; syncBoxes[i - 1].focus(); }
+      else if (e.key === 'ArrowLeft' && i > 0) { e.preventDefault(); syncBoxes[i - 1].focus(); }
+      else if (e.key === 'ArrowRight' && i < 5) { e.preventDefault(); syncBoxes[i + 1].focus(); }
+    });
+    b.addEventListener('paste', function (e) { e.preventDefault(); if (!b.readOnly) boxesFill((e.clipboardData || window.clipboardData).getData('text')); });
+    b.addEventListener('focus', function () { b.select(); });
+  });
+  $('#syncForm').addEventListener('submit', function (e) {         // phone: the Sync button (once, with the code from the computer)
+    e.preventDefault();
+    if (!isPhone() || syncCode || syncBusy) return;
+    var code = boxesValue();
+    if (code.length !== 6) { syncSay('A code has 6 letters and numbers.', 'bad'); return; }
+    syncBusy = true;
+    syncApi({ action: 'join', code: code, pins: pins }).then(function (d) {
+      syncBusy = false;
+      if (d.status !== 'ok') { syncSay(d.message || 'Could not sync.', 'bad'); return; }
+      syncSet(code); takePins(d.pins); document.activeElement.blur();
+      syncSay('Synced. Your pins now stay the same on both devices.', 'good');
+    });
+  });
+  $('#syncRevert').addEventListener('click', function () {         // phone: remove the sync. The phone keeps its pins and the computer is free to pair again.
+    if (syncBusy) return;
+    syncBusy = true;
+    clearTimeout(syncTimer); syncTimer = 0;
+    syncApi({ action: 'revert', code: syncCode }).then(function () {
+      syncBusy = false;
+      syncSet(''); syncBoxes.forEach(function (b) { b.value = ''; });
+      syncSay('Sync removed. Your pins stay on this phone.', 'good');
+    });
+  });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) syncPull(); });
+  window.addEventListener('resize', syncPaint);                    // the card looks different on a phone and on a computer
+
+  /* ---------- phones: swipe left or right to move between the tabs (Jobs, Portfolios, Tools, Companies, Dead Zone, Updates, About) ---------- */
+  (function () {
+    var ORDER = ['all', 'portfolios', 'tools', 'companies', 'dead', 'log', 'about'];
+    var x0 = 0, y0 = 0, t0 = 0, live = false;
+    function section(v) { return JOB_VIEWS.hasOwnProperty(v) && v !== 'dead' ? 'all' : v; }   // All, India, Abroad and Remote are all "Jobs"
+    document.addEventListener('touchstart', function (e) {
+      live = isPhone() && e.touches.length === 1 && !sheet.classList.contains('open') && !$('#top.menu-open') &&
+        !e.target.closest('input, textarea, select, #dock, #sheet, #adminCard');
+      if (live) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now(); }
+    }, { passive: true });
+    document.addEventListener('touchend', function (e) {
+      if (!live) return; live = false;
+      var t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+      if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8 || Date.now() - t0 > 700) return;   // a clear, quick sideways swipe only (not a scroll)
+      var next = ORDER[ORDER.indexOf(section(view)) + (dx < 0 ? 1 : -1)];
+      if (next) { go(next); window.scrollTo(0, 0); }
+    }, { passive: true });
+  })();
+
   /* ---------- showing the right rows ---------- */
   function render() {
     var isList = JOB_VIEWS.hasOwnProperty(view);
-    var isDead = view === 'dead', isP = view === 'portfolios', isT = view === 'tools', isC = view === 'companies', isPin = view === 'pinned';
-    listView.classList.toggle('pinpage', isPin);
-    listView.hidden  = !(isList || isP || isT || isC || isPin);          // one layout (with the Pinned card) for Jobs, Dead Zone, Portfolios, Tools and Companies
+    var isDead = view === 'dead', isP = view === 'portfolios', isT = view === 'tools', isC = view === 'companies';
+    setDock(0);                                                          // the page buttons in the phone bar: renderPager fills them in again when this tab has pages
+    listView.hidden  = !(isList || isP || isT || isC);                   // one layout (with the Pinned card) for Jobs, Dead Zone, Portfolios, Tools and Companies
     logView.hidden   = view !== 'log';
     aboutView.hidden = view !== 'about';
     $('#deadNote').hidden = !isDead;
@@ -262,7 +451,7 @@
     }
 
     emptyEl.hidden = total > 0;
-    emptyEl.textContent = isDead ? 'Nothing in the Dead Zone yet.' : (view === 'highlighted' ? 'Nothing is highlighted yet.' : 'No jobs here yet.');
+    emptyEl.textContent = isDead ? 'Nothing in the Dead Zone yet.' : 'No jobs here yet.';
     table.hidden = total === 0;
     renderPager(pagerEl, pages);
   }
@@ -294,6 +483,7 @@
 
   // Page buttons: Prev, 1 2 3 ... , Next. With many pages: first, last and the pages around the current one, with ... between.
   function renderPager(pagerEl, pages) {
+    setDock(pages);
     pagerEl.innerHTML = '';
     pagerEl.hidden = pages < 2;
     if (pages < 2) return;
@@ -305,7 +495,8 @@
       pagerEl.appendChild(el);
       return el;
     }
-    add('‹ Prev', page > 1 ? page - 1 : 0, page > 1 ? '' : 'off');
+    var narrow = window.matchMedia('(max-width: 760px)').matches;   // phones: just the arrows, so the bottom bar fits
+    add(narrow ? '‹' : '‹ Prev', page > 1 ? page - 1 : 0, page > 1 ? '' : 'off');
     var last = 0;
     for (var n = 1; n <= pages; n++) {
       var keep = n === 1 || n === pages || Math.abs(n - page) <= 1 || (page <= 3 && n <= 4) || (page >= pages - 2 && n >= pages - 3);
@@ -315,7 +506,7 @@
       if (n === page) el.setAttribute('aria-current', 'page');
       last = n;
     }
-    add('Next ›', page < pages ? page + 1 : 0, page < pages ? '' : 'off');
+    add(narrow ? '›' : 'Next ›', page < pages ? page + 1 : 0, page < pages ? '' : 'off');
   }
 
   // The web address shows where you are: ?tab=portfolios, or ?tab=india&page=2. Opening the plain domain goes to ?tab=jobs (the Jobs section, page 1). Page 1 never shows a page number; later pages are ?tab=jobs&page=2.
@@ -340,7 +531,7 @@
   }
   function show(v, pg, animate) {                                // show a tab and page (a bad name or too-big page number is tidied up)
     if (!JOB_VIEWS.hasOwnProperty(v) && OTHER_VIEWS.indexOf(v) === -1) v = 'all';
-    if (v === 'pinned' && window.innerWidth > 760) v = 'all';       // My Pinned only exists on phones (desktop has the Pinned card beside the list)
+    closeSheet();
     pg = pg > 0 ? pg : 1;
     var same = v === view && pg === page;
     if (v !== view) coFilter = '';                                  // a picked company is forgotten when you change tab
@@ -375,7 +566,7 @@
     var link = e.target.closest('a[href^="#"]');                 // our tab and page buttons
     if (link && e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) {
       e.preventDefault();
-      if (link.closest('.pager')) pendingScroll = true;          // after changing page, bring the top of the table into view
+      if (link.closest('.pager, #dockPager')) pendingScroll = true;          // after changing page, bring the top of the table into view
       go(link.getAttribute('href').slice(1));
     }
   });
@@ -446,7 +637,7 @@
       var pat = x.createPattern(t, 'repeat'); pat.setTransform(new DOMMatrix().scale(1 / S));
       var P = [[12,2],[14.9,8.6],[22,9.3],[16.6,14],[18.2,21],[12,17.3],[5.8,21],[7.4,14],[2,9.3],[9.1,8.6]];
       rows.forEach(function (r, i) {
-        var L = lay[i]; if (i) { x.fillStyle = '#eef1f6'; x.fillRect(cx + 18 * k, y, cw - 36 * k, 1); }
+        var L = lay[i];
         var ty = y + 9 * k, tx = cx + (18 + 17 + 7) * k;
         // star, centred on the first line of the title
         var sz = 17 * k / 24, sx = cx + 18 * k, sy = ty + 14 * k * 1.35 / 2 - 17 * k / 2;
@@ -468,7 +659,8 @@
   $$('.colhead').forEach(function (b) {
     var card = b.closest('.collapsible'), k = 'dj_shut_' + b.dataset.collapse;
     function set(shut) { card.classList.toggle('shut', shut); b.setAttribute('aria-expanded', shut ? 'false' : 'true'); }
-    try { set(localStorage.getItem(k) === '1'); } catch (e) {}
+    set(b.dataset.collapse === 'syncbox');                       // the Sync card starts folded up; the others start open
+    try { var saved = localStorage.getItem(k); if (saved !== null) set(saved === '1'); } catch (e) {}
     b.addEventListener('click', function () {
       var shut = !card.classList.contains('shut'); set(shut);
       try { localStorage.setItem(k, shut ? '1' : '0'); } catch (e) {}
@@ -694,7 +886,11 @@
     }).observe(vc, { childList: true, characterData: true, subtree: true });
   })();
 
+  placeCards();
+  syncPaint();
   renderPins();
+  syncPull();
+  syncEnsure();                                                  // a computer gets its sync code the first time it opens the site
   var first = fromAddress();                                     // opening the site: honour ?tab=... (or an old #link), then show the tidy address
   show(first.v, first.p);
   history.replaceState({ view: view, page: page }, '', addressFor(view, page));

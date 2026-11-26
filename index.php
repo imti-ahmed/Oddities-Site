@@ -100,7 +100,7 @@ $lastUpdate = max($all ? max(array_column($all, 'change')) : 0, ...array_column(
 $isAdmin = defined('IS_ADMIN') && IS_ADMIN;                    // true only when the page is opened at /meow (see api/index.php)
 if (!$isAdmin) header('Cache-Control: public, s-maxage=60, stale-while-revalidate=300');   // Vercel keeps the page for a minute, so the database is not asked on every visit
 
-$tabs = [['all', 'All'], ['highlighted', 'Highlighted'], ['india', 'India'], ['abroad', 'Abroad'], ['remote', 'Remote']];
+$tabs = [['all', 'All'], ['india', 'India'], ['abroad', 'Abroad'], ['remote', 'Remote']];
 
 // The tag (the kind of job) is shown as plain text.
 function pills(array $tags): string
@@ -322,7 +322,6 @@ function table_head(bool $dead = false): string
       <a href="#portfolios" data-top="portfolios">Portfolios <span class="n"><?= count($portfolios) ?></span></a>
       <a href="#tools" data-top="tools">Tools <span class="n"><?= count($tools) ?></span></a>
       <a href="#companies" data-top="companies">Cool Companies <span class="n"><?= count($companies) ?></span></a>
-      <a class="m-tab" href="#pinned" data-top="pinned">My Pinned <span class="n" id="pinTabN">0</span></a>   <!-- phone menu only: the Pinned card on its own page -->
       <span class="gap"></span>
       <a href="#dead" data-top="dead">Dead Zone <span class="n"><?= count($deadItems) ?></span></a>
       <a href="#log" data-top="log">Updates</a>
@@ -360,7 +359,7 @@ function table_head(bool $dead = false): string
       <!-- The pills under the welcome card: they switch between the job lists. Same width as the card and the table. -->
       <nav id="pills" aria-label="Job lists">
         <?php foreach ($tabs as [$key, $label]): ?>
-          <a class="pg" href="#<?= $key ?>" data-view="<?= $key ?>"<?= ($key === 'highlighted' && !$n['highlighted'] && !$isAdmin) ? ' hidden' : '' ?>><?= h($label) ?> <span class="n">(<?= $n[$key] ?>)</span></a>
+          <a class="pg" href="#<?= $key ?>" data-view="<?= $key ?>"><?= h($label) ?> <span class="n">(<?= $n[$key] ?>)</span></a>
         <?php endforeach; ?>
       </nav>
 
@@ -454,6 +453,27 @@ function table_head(bool $dead = false): string
           </div>
         </aside>
         <?php endif; ?>
+
+        <!-- Sync Devices. One code pairs ONE computer with ONE phone. Computer: shows the code it made (no buttons), then only says it is synced. Phone: types the code in once (Sync), then only says it is synced, with a Revert button that unpairs. No accounts. -->
+        <aside id="syncbox" class="win purple collapsible" aria-label="Sync Devices">
+          <?= winbar() ?>
+          <button type="button" class="colhead" data-collapse="syncbox" aria-expanded="true"><span>Sync Devices</span><i class="chev" aria-hidden="true"></i></button>
+          <div class="winbody colbody">
+            <p class="sync-tag" id="syncText">Carry your pins to another device. No account, no sign-up, just a code.</p>
+            <form id="syncForm" autocomplete="off">
+              <div class="sync-boxes" id="syncBoxes" role="group" aria-label="Sync code">
+              <input type="text" maxlength="1" inputmode="text" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" aria-label="Character 1">
+              <input type="text" maxlength="1" inputmode="text" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" aria-label="Character 2">
+              <input type="text" maxlength="1" inputmode="text" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" aria-label="Character 3">
+              <input type="text" maxlength="1" inputmode="text" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" aria-label="Character 4">
+              <input type="text" maxlength="1" inputmode="text" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" aria-label="Character 5">
+              <input type="text" maxlength="1" inputmode="text" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" aria-label="Character 6">
+              </div>
+              <button type="submit" class="pg sync-go" id="syncGo">Sync</button>
+            </form>
+            <button type="button" class="pg sync-revert" id="syncRevert" hidden>Revert</button>
+          </div>
+        </aside>
 
         <aside id="pinbox" class="win orange collapsible" aria-label="Pinned jobs">
           <?= winbar() ?>
@@ -558,6 +578,17 @@ function table_head(bool $dead = false): string
   </section>
 
 </main>
+
+<!-- Phones only: the bottom bar. Left: the page buttons (arrows and the current page). Right: Pinned and Spotlight, which pop their card up above the bar. -->
+<div id="dock">
+  <nav id="dockPager" aria-label="Pages" hidden></nav>
+  <div class="dock-right">
+    <?php if (array_filter($highlights)): ?><button type="button" class="pg" id="dockSpot" aria-expanded="false" aria-controls="sheet">Spotlight</button><?php endif; ?>
+    <button type="button" class="pg ic" id="dockPin" aria-label="Pinned" title="Pinned" aria-expanded="false" aria-controls="sheet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6z"/><path d="M12 14v7"/></svg></button>
+    <button type="button" class="pg ic" id="dockSync" aria-label="Sync" title="Sync" aria-expanded="false" aria-controls="sheet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14-4L4 9"/><path d="M4 4v5h5"/><path d="M4 13a8 8 0 0 0 14 4l2-2"/><path d="M20 20v-5h-5"/></svg></button>
+  </div>
+</div>
+<div id="sheet" data-card="" aria-live="polite"></div>   <!-- on phones the real Pinned, Spotlights and Sync cards are moved in here (see assets/app.js) -->
 
 <script>window.DJ = { perPage: <?= (int)$settings['jobs_per_page'] ?> };</script>
 <script><?= file_get_contents(__DIR__ . '/assets/app.js') ?></script>
